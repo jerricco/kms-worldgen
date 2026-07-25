@@ -1,0 +1,123 @@
+import * as pc from 'playcanvas'
+import { MapGenerator, type Tile } from '../../lib/generation';
+import { REGION_PALETTES } from '../../data/color';
+import { hexToRgb } from '../../lib/utils';
+
+export class MapRenderer extends pc.Script {
+    static scriptName = 'MapRenderer';
+
+    /**
+     * Determines the colouring for the map topology.
+     * 
+     * @attribute
+     * @type {{ [KEY: string]: string }}
+     * @title Colour Palette
+     */
+    palette = REGION_PALETTES['MAP']
+    
+    /**
+     * Object of perlin grid generation.
+     * 
+     * @attribute
+     * @type {MapGenerator}
+     * @title Map Generation
+     */
+    generation?: MapGenerator
+
+    tileSize = 1
+    targetLayer = 1
+
+    private width: number = MapGenerator.DEFAULT_WIDTH;
+    private height: number = MapGenerator.DEFAULT_HEIGHT;
+    private seed ?: string;
+    
+    // @TODO: update properly
+    update() {
+        const seedUpdated = this.generation.seed !== this.seed
+        const widthUpdated = this.generation.width !== this.width
+        const heightUpdated = this.generation.height !== this.height
+
+        if (seedUpdated) this.seed = this.generation?.seed;
+        if (widthUpdated) this.width = this.generation?.width;
+        if (heightUpdated) this.height = this.generation?.height;
+
+        if (seedUpdated || widthUpdated || heightUpdated) {
+            this.createVisualGrid()
+        }
+    }
+
+    public createVisualGrid(): pc.Entity {
+        const { positions, colors, normals, indices } = this.getMeshData();
+        const gridEntity = new pc.Entity("Batched3DGrid");
+        this.app.root.addChild(gridEntity);
+
+        const mesh = new pc.Mesh(this.app.graphicsDevice);
+        mesh.setPositions(positions);
+        mesh.setNormals(normals);
+        mesh.setColors(colors);
+        mesh.setIndices(indices);
+        mesh.update(pc.PRIMITIVE_TRIANGLES); 
+        mesh.aabb.compute(positions)
+
+        const material = new pc.StandardMaterial();
+        material.useLighting = true;
+        material.diffuseVertexColor = true;
+        material.diffuseVertexColorChannel = "rgb";
+        material.update();
+        
+        const meshInstance = new pc.MeshInstance(mesh, material, gridEntity);
+        gridEntity.addComponent("render", {
+            type: "box",
+        });
+
+        gridEntity.render!.meshInstances = [meshInstance]
+
+        return gridEntity;
+    }
+
+    getMeshData(): { [key: string]: number[] } {
+        const positions: number[] = [];
+        const colors: number[] = [];
+        const normals: number[] = [];
+        const indices: number[] = [];
+        let vertexIndex = 0;
+
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                const tile: Tile = this.generation.grid[x][y];
+
+                // Fallback default colour if a cell profile is empty or out of bounds
+                const tileColor = tile ? this.palette[tile.region.name] : new pc.Color(0.5, 0.5, 0.5);
+
+                const xPos = x * this.tileSize;
+                const zPos = y * this.tileSize;
+
+                // Build out 4 flat corner vertices per tile
+                positions.push(
+                    xPos, 0, zPos + this.tileSize,                 // bottom left
+                    xPos + this.tileSize, 0, zPos + this.tileSize, // bottom-right
+                    xPos + this.tileSize, 0, zPos,                 // top-left
+                    xPos, 0, zPos,                                 // top-right
+                );
+
+                for (let i = 0; i < 4; i++) {
+                    normals.push(0, 1, 0);
+                }
+
+                const rgb = tileColor instanceof pc.Color ? tileColor : hexToRgb(tileColor);
+                for (let i = 0; i < 4; i++) {
+                    colors.push(rgb.r, rgb.g, rgb.b, 1.0);
+                }
+
+                indices.push(
+                    vertexIndex, vertexIndex + 1, vertexIndex + 2,
+                    vertexIndex, vertexIndex + 2, vertexIndex + 3
+                );
+
+                vertexIndex += 4;
+            }
+        }
+
+        return { positions, colors, normals, indices }
+    }
+}
