@@ -11,16 +11,18 @@ export class RuleGridRenderer extends pc.Script {
     public zAxisColor: pc.Color = new pc.Color(0.1, 0.5, 0.8, 1.0); // Blue
 
     /** @attribute */
-    public font?: pc.Asset
+    public font: pc.Asset | null = null;
     public poolRadius: number = 12
     
     private gridMaterial!: pc.StandardMaterial;
     private axisMaterial!: pc.StandardMaterial;
     private textPool: pc.Entity[] = [];
     private screenEntity!: pc.Entity;
-    private labelsCreated: boolean = false;
 
     initialize(): void {
+        // load assets
+        this.font = this.app.assets.find('PatrickHandFont');
+
         // grid frame rendering
         const gd: pc.GraphicsDevice = this.app.graphicsDevice;
         const zeroColor = new Float32Array([0, 0, 0, 0]);
@@ -61,12 +63,11 @@ export class RuleGridRenderer extends pc.Script {
         this.screenEntity = new pc.Entity('GridLabelsScreen');
         this.screenEntity.addComponent('screen', { screenSpace: false });
         this.app.root.addChild(this.screenEntity);
-
+        
+        this.createLabels();
     }
 
-    public update(dt: number): void {
-        this.createLabelEntitiesIfEmpty();
-        
+    public update(): void {
         const cam = this.app.root.findByName('OrthoCamera')
         if (!cam || !cam.camera) return;
 
@@ -214,9 +215,7 @@ export class RuleGridRenderer extends pc.Script {
         });
     }
 
-    private createLabelEntitiesIfEmpty() {
-        if (this.font === undefined || this.labelsCreated) return;
-
+    private createLabels() {
         const sideLength = (this.poolRadius * 2) + 1;
         const totalElements = sideLength * sideLength;
 
@@ -240,7 +239,5 @@ export class RuleGridRenderer extends pc.Script {
             this.screenEntity.addChild(labelEntity);
             this.textPool.push(labelEntity);
         }
-
-        this.labelsCreated = true;
     }
 }

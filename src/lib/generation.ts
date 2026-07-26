@@ -85,11 +85,6 @@ export const defaultSettings: MapSettings = {
     }
 }
 
-// @TODO: get all non-river hydrological tiles to slosh their altitude slightly back and forth across the map like waves.
-// any tiles which are affected by this should become a relevant hydrological land tile (such as lakebed - beaches handle this for ocean).
-// @TODO: do a pass to wrap other generated structures such as rivers with riverbeds.
-// @TODO: do a pass to wrap enclosed features on the map, such as turning small inland bodies of water into either LAKE, POND or BASIN. 
-// A LAKE can only form if a RIVER runs into a BASIN.
 export class MapGenerator {
     static DEFAULT_WIDTH = 750;
     static DEFAULT_HEIGHT = 750;
@@ -215,7 +210,6 @@ export class MapGenerator {
 
                 tile.elevation = finalElevation;
 
-                // @TODO: improve cliff detection by determining where tectonic shoving can happen in different directions
                 const { slope, cardinalDir } = MapGenerator.findNearestSlopeAspect(x, y, width, height, grid)
                 // Tectonic Rule: Only allow cliffs to form if they face West, North-West, or South-West
                 // This simulates a mountain range being shoved from the East!
@@ -414,17 +408,6 @@ export class MapGenerator {
 
         return { ...vect, angleDeg, cardinalDir };
     }
-
-    // @TODO: findNearestSlopeAspect() // gets the cardinal facing direction of the slope for lighting purposes
-    // @TODO: findNearestSlopeCurvature() // Measures whether a slope is becoming convex/concave and the sharpness of the ridge
-
-    // HYDROLOGICAL FLOW
-    // @TODO: determineFlowAccumulation() // Finds places where water flow accumulation is highest, tracing paths for rivers
-    // @TODO: findWatershedBoundaries() // Reverses the flow paths of water to find the exact boundary of a watershed.
-
-    // GRAPH-BASED CONNECTIVITY
-    // @TODO: determineAdjacencyGraph() // Create an adjacency graph for better pathfinding by treating tiles as graph nodes
-    // @TODO: determineMapContours() // Groups connected tiles of the same graph weight simplifies the map into geometric vector rings - defines coasts and plateu boundaries
 
     // IMPROVEMENTS
     // DECOUPLED FEATURE MASKING

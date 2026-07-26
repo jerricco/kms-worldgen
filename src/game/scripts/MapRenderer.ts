@@ -1,5 +1,5 @@
 import * as pc from 'playcanvas'
-import { MapGenerator, type Tile } from '../../lib/generation';
+import { MapGenerator, type MapSettings, type Tile } from '../../lib/generation';
 import { REGION_PALETTES } from '../../data/color';
 import { hexToRgb } from '../../lib/utils';
 
@@ -23,33 +23,47 @@ export class MapRenderer extends pc.Script {
      * @title Map Generation
      */
     generation?: MapGenerator
+    gridEntity?: pc.Entity;
 
     tileSize = 1
     targetLayer = 1
 
-    private width: number = MapGenerator.DEFAULT_WIDTH;
-    private height: number = MapGenerator.DEFAULT_HEIGHT;
-    private seed ?: string;
+    width: number = MapGenerator.DEFAULT_WIDTH;
+    height: number = MapGenerator.DEFAULT_HEIGHT;
+    seed ?: string;
+    config: MapSettings = {} as MapSettings;
+
+    initialize() {
+        if (!this.seed) return; // we'll be ok.
+        this.generation = new MapGenerator(this.seed, this.width, this.height, this.config);
+        this.createVisualGrid()
+    }
     
-    // @TODO: update properly
     update() {
+        if (!this.generation || !this.seed) return;
+
         const seedUpdated = this.generation.seed !== this.seed
         const widthUpdated = this.generation.width !== this.width
         const heightUpdated = this.generation.height !== this.height
-
+        
         if (seedUpdated) this.seed = this.generation?.seed;
         if (widthUpdated) this.width = this.generation?.width;
         if (heightUpdated) this.height = this.generation?.height;
-
+        
         if (seedUpdated || widthUpdated || heightUpdated) {
+            this.generation = new MapGenerator(this.seed, this.width, this.height, this.config)
             this.createVisualGrid()
         }
     }
 
     public createVisualGrid(): pc.Entity {
+        if (this.gridEntity) {
+            this.gridEntity.enabled = false;
+            this.gridEntity.destroy();
+        }
+
         const { positions, colors, normals, indices } = this.getMeshData();
         const gridEntity = new pc.Entity("Batched3DGrid");
-        this.app.root.addChild(gridEntity);
 
         const mesh = new pc.Mesh(this.app.graphicsDevice);
         mesh.setPositions(positions);
@@ -71,6 +85,9 @@ export class MapRenderer extends pc.Script {
         });
 
         gridEntity.render!.meshInstances = [meshInstance]
+
+        this.gridEntity = gridEntity
+        this.entity.addChild(gridEntity);
 
         return gridEntity;
     }

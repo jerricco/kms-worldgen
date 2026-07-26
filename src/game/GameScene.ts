@@ -4,15 +4,9 @@ import * as pc from 'playcanvas'
 import { MapGenerator, type MapSettings } from '../lib/generation';
 import { MapRenderer } from './scripts/MapRenderer';
 import { OrthoCameraController } from './scripts/OrthoCamera';
-import { RuleGridRenderer } from './scripts/RuleGridRenderer';
-import { GameUiController } from './scripts/GameUI';
+import { DebugUiController } from './scripts/DebugUi';
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 
-// @TODO: generate an runtime lightmap for the output grid - 
-// this is so lighting data can stay prebaked for the topology
-// @TODO: Create a Directional Disk sun/moon to track day night cycles.
-// @TODO: shadows handling for objects on a tile
-// @TODO: I mean, the font doesn't display but it loads, HELP.
 export class GameScene {
     public app: pc.Application;
     public camera!: pc.Entity;
@@ -28,32 +22,34 @@ export class GameScene {
 
         this.app = GameScene.getGameApp(canvas);
 
+        // preload relevant assets
+        this.font = new pc.Asset('PatrickHandFont', 'font', { url: fontJsonUrl })
+        this.font.preload = true;
+        this.app.assets.add(this.font);
+        this.app.assets.load(this.font);
+
         // @DEBUG START
         this.app.scene.ambientLight = new pc.Color(0.98, 0.98, 0.98);
         this.app.start();
 
-        console.timeEnd('Initialising...')
-
+        
         // @DEBUG - this will need a lot more orchestration logic once we have menu/ui
-        this.startLevel(
-            { 
-                // Good seeds (so far):
-                // - 'Donaldo Ronaldo Trumpino'
-                // - 'poo'
-                // - 'strange bedfellows by stephen king'
-                // - 'Pooline Handson'
-                // - 'Hershey Testereo'
-                // - 'sanga ranga bangaranga'
-                seed: 'Donaldo Ronaldo Trumpino',
-                // @NOTE: this commented value generates a portrait window but the perlin noise treats x,y as 
-                // equivalent and truncates it. The generation is still different, but does not work in this config
-                width: MapGenerator.DEFAULT_WIDTH, // 300, 
-                height: MapGenerator.DEFAULT_HEIGHT,
-            }
-        )        
+        this.startLevel({ 
+            // Good seeds (so far):
+            // - 'Donaldo Ronaldo Trumpino'
+            // - 'poo'
+            // - 'strange bedfellows by stephen king'
+            // - 'Pooline Handson'
+            // - 'Hershey Testereo'
+            // - 'sanga ranga bangaranga'
+            seed: 'fuck me I wish I were dead, aye',
+            width: MapGenerator.DEFAULT_WIDTH, 
+            height: MapGenerator.DEFAULT_HEIGHT,
+        })     
+
+        console.timeEnd('Initialising...')
     }
 
-    // @TODO: game_settings should eventually be the saved data of a save file. If it's not present, start a new game.
     startLevel(game_settings: any = {
         seed: 'Donaldo Ronaldo Trumpino',
         width: MapGenerator.DEFAULT_WIDTH,
@@ -61,32 +57,22 @@ export class GameScene {
         config: {}
     }) {
         const { seed, width, height, config } = game_settings
-        console.log(seed)
-
-
-        // @TODO: asset loading
-        this.font = new pc.Asset('PatrickHandFont', 'font', { url: fontJsonUrl })
-        this.app.assets.add(this.font);
-        this.app.assets.load(this.font);
-
-        this.font.ready((asset) => {
-            const ruler = new pc.Entity('RuleGridEntity')
-            this.app.root.addChild(ruler)
-            ruler.addComponent('script')
-            const rulegrid = ruler.script.create(RuleGridRenderer)
-            rulegrid.font = asset
-    
-            this.map = this.getMapRenderer(seed, width, height, config);
-            this.camera = this.getOrthoCamera(width, height);
-            this.ui = this.getUI(asset)
-        })
-        
+        this.map = this.getMapRenderer(seed, width, height, config);
+        this.camera = this.getOrthoCamera(width, height);
+        this.ui = this.getUI(this.font)
     }
 
     static getGameApp(canvas: HTMLCanvasElement): pc.Application {
+        const elementInput = new pc.ElementInput(canvas, {
+            useMouse: true,
+            useTouch: true,
+        });
+
         const app = new pc.Application(canvas, {
+            elementInput,
             mouse: new pc.Mouse(canvas),
-            keyboard: new pc.Keyboard(window)
+            keyboard: new pc.Keyboard(window),
+            touch: new pc.TouchDevice(canvas),
         });
 
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
@@ -124,16 +110,15 @@ export class GameScene {
     getMapRenderer(seed:string , width: number, height: number, config: MapSettings): pc.Entity {
         // create script to use
         const map = new pc.Entity('MapRenderEntity')
+        
+        map.addComponent('script')        
+        const script = map.script?.create(MapRenderer)
+        script.seed = seed;
+        script.width = width;
+        script.height = height;
+        script.config = config;        
+        
         this.app.root.addChild(map)
-
-        
-        map.addComponent('script')
-        if (!map.script) throw new Error('Whoops, MapRender couldn\'t add a script!');
-        
-        const script = map.script.create(MapRenderer)
-        script.generation = new MapGenerator(seed, width, height, config)
-
-        
         return map
     }
 
@@ -142,8 +127,7 @@ export class GameScene {
         this.app.root.addChild(ui);
 
         ui.addComponent('script')
-        const script = ui.script.create(GameUiController);
-        script.font = font;
+        const script = ui.script.create(DebugUiController);
         return ui;
     }
 }

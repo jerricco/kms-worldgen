@@ -72,7 +72,6 @@ export class OrthoCameraController extends pc.Script {
 
         this.on('destroy', () => {
             this.app.mouse.off(pc.EVENT_MOUSEDOWN, this.onMouseDown, this);
-            // @TODO: ensure this only fires when it crosses over the drawn map, not when it crosses UI.
             this.app.mouse.off(pc.EVENT_MOUSEMOVE, this.onMouseMove, this);
             this.app.mouse.off(pc.EVENT_MOUSEUP, this.onMouseUp, this);
             this.app.mouse.off(pc.EVENT_MOUSEWHEEL, this.onMouseWheel, this);
@@ -102,7 +101,6 @@ export class OrthoCameraController extends pc.Script {
     }
 
     private onMouseDown(event: pc.MouseEvent) {
-        // @TODO: select tiles on click
         if (event.button === pc.MOUSEBUTTON_LEFT || event.button === pc.MOUSEBUTTON_RIGHT) {
             this.isPanning = true;
             this.lastMousePos.set(event.x, event.y);
@@ -123,7 +121,6 @@ export class OrthoCameraController extends pc.Script {
     }
 
     private onMouseUp() {
-        // @TODO: implement click-drag selection 
         this.isPanning = false;
     }
 
@@ -173,7 +170,7 @@ export class OrthoCameraController extends pc.Script {
 
     private findTileInformation(x: number, y: number): Tile | null {
         const map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer;
-        if (!map) return null;
+        if (!map || !map.generation) return null;
 
         const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
         const intersectX = rayStart.x;
@@ -190,11 +187,11 @@ export class OrthoCameraController extends pc.Script {
         this.lastPosHovered.y = gridY;
 
         const tile: Tile = map.generation.grid[gridX][gridY] || null;
-        if (tile) {
-            console.log(`${tile.region.name} Tile (@${gridX},${gridY}) - elevation: ${tile.elevation.toFixed(2)}`);
-        } else {
-            console.log(`[Tile Hovered] Empty space or boundary edge at: (${gridX}, ${gridY})`);
-        }
+        // if (tile) {
+        //     console.log(`${tile.region.name} Tile (@${gridX},${gridY}) - elevation: ${tile.elevation.toFixed(2)}`);
+        // } else {
+        //     console.log(`[Tile Hovered] Empty space or boundary edge at: (${gridX}, ${gridY})`);
+        // }
 
         return tile;
     }
@@ -213,6 +210,13 @@ export class OrthoCameraController extends pc.Script {
 
     private clampCameraToMap() {
         const map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer;
+        
+        if (!map) {
+            this.targetPosition.x = 0;
+            this.targetPosition.z = 0;
+            return;
+        }
+
         const targetX = this.targetPosition.x
         const targetZ = this.targetPosition.z
         const minX = -(map.generation.width / 2) + 100;

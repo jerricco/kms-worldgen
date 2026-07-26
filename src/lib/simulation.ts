@@ -33,8 +33,6 @@ export class PlanetoidSimulator {
         }
 
         while (this.accumulator >= this.timestep) {
-            // @TODO: simulation game rules pass here
-            // @TODO: spatial chunking architecture (once biomes are divisible)
             this.tickSimulation(this.planetoid.grid)
             this.accumulator -= this.timestep
             this.ticks++

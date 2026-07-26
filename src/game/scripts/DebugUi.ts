@@ -1,11 +1,16 @@
 import * as pc from 'playcanvas';
-import type { Tile } from '../../lib/generation';
+import { MapGenerator, type Tile } from '../../lib/generation';
+import { RuleGridRenderer } from './RuleGridRenderer';
+import { TextInputBinder } from './TextInputBinder';
+import { TextboxEntity } from '../entities/TextboxEntity';
+import type { MapRenderer } from './MapRenderer';
 
-export class GameUiController extends pc.Script {
-    static scriptName=  'game-ui-controller';
+export class DebugUiController extends pc.Script {
+    static scriptName=  'debug-ui-controller';
 
-    public font!: pc.Asset;
+    public font: pc.Asset | null = null;
     private screenEntity!: pc.Entity;
+    private map: MapRenderer;
 
     // References to UI groups for toggling visibility or pulling data
     private seedModifierInput!: pc.Entity;
@@ -18,18 +23,24 @@ export class GameUiController extends pc.Script {
     private tileTypeTextEl!: pc.Entity;
     private tileCoordTextEl!: pc.Entity;
 
-    private fontLoaded = false;
-
     // Track mock value for the input box
     private currentInputValue: string = "Input a seed...";
 
-    update() {
-        if (!this.font || this.fontLoaded) return;
-
-        this.fontLoaded = true;
+    initialize() {
+        this.font = this.app.assets.find('PatrickHandFont');
+        this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
+        
+        // create debug UI
         this.createUiHierarchy();
-        this.setupEventHandlers();
         this.hideTileInfo(); // start hidden, only show when a tile is seleted
+
+        // create debug grid rulers
+        const ruler = new pc.Entity('RuleGridEntity')
+        this.entity.addChild(ruler)
+        ruler.addComponent('script')
+        ruler.script.create(RuleGridRenderer)
+
+        // @TODO: activate normal game scene UI elements
     }
 
     // build screen canvas heirarchy
@@ -44,45 +55,40 @@ export class GameUiController extends pc.Script {
         this.app.root.addChild(this.screenEntity);
 
         // Render sections
-        this.buildTextInputAndButton();
+        this.buildSeedDebugInput();
         this.buildHoverCornerBox();
         this.buildTileInfoBox();
     }
 
-    private buildTextInputAndButton() {
-        const map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer;
-        this.currentInputValue = map.generation.seed;
-
-        this.seedModifierInput = new pc.Entity('TextInputGroup');
-        this.seedModifierInput.setLocalPosition(20, -20, 0)
-        this.seedModifierInput.addComponent('element', {
+    private buildSeedDebugInput() {
+        this.currentInputValue = this.map.generation?.seed || this.currentInputValue;
+        
+        // BUILD ELEMENTS
+        const group = new pc.Entity('SeedDebugInputGroup');
+        group.setLocalPosition(20, -20, 0);
+        group.addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0, 1, 0, 1), // Top center
             pivot: new pc.Vec2(0, 1),
             width: 500,
             height: 60,
-            color: new pc.Color(0.15, 0.15, 0.15, 0.8),
-            useInput: true
+            margin: new pc.Vec4(0, 0, 0, 0),
+            color: new pc.Color(0.15, 0.15, 0.15, 0.6),
         });
 
-        // The editable text container
-        const textBox = new pc.Entity('TextBoxElement');
-        textBox.addComponent('element', {
-            type: pc.ELEMENTTYPE_TEXT,
-            anchor: new pc.Vec4(0, 0, 0.7, 1), // Takes left 70% of group width
+        const inputContainer = new pc.Entity('SeedDebugInputContainer')
+        inputContainer.addComponent('element', {
+            type: pc.ELEMENTTYPE_IMAGE,
+            anchor: new pc.Vec4(0, 0, 0.73, 1),
             pivot: new pc.Vec2(0, 0.5),
-            margin: new pc.Vec4(15, 0, 0, 0),
-            text: this.currentInputValue,
-            fontSize: 24,
-            color: new pc.Color(1, 1, 1),
-            enableOutline: true,
-            outlineColor: new pc.Color(0, 0, 0),
-            useInput: true,
-            fontAsset: this.font
+            margin: new pc.Vec4(8, 8, 0, 8),
         });
 
-        this.seedModifierInput.addChild(textBox);
-        this.textInputElement = textBox.element!;
+        group.addChild(inputContainer)
+        const seedTextElement = TextboxEntity.create(this.app, inputContainer, this.currentInputValue);
+        seedTextElement.on('ui:blur', (text) => {
+            if (text !== this.currentInputValue) this.refreshSeed(text);
+        })
 
         // Action / Refresh Button Next To Textbox
         const refreshBtn = new pc.Entity('RefreshButton');
@@ -90,32 +96,37 @@ export class GameUiController extends pc.Script {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0.75, 0, 1, 1), // Takes right 25% of group width
             pivot: new pc.Vec2(1, 0.5),
-            margin: new pc.Vec4(0, 5, 5, 5),
+            margin: new pc.Vec4(0, 8, 8, 8),
             color: new pc.Color(0.2, 0.6, 0.26),
             useInput: true
         });
-        refreshBtn.addComponent('button', {
-            active: true,
-            fadeDuration: 0.1,
-            hoverColor: new pc.Color(0.25, 0.75, 0.33),
-            pressedColor: new pc.Color(0.15, 0.5, 0.2)
-        });
+        // refreshBtn.addComponent('button', {
+        //     active: true,
+        //     fadeDuration: 0.1,
+        //     hoverColor: new pc.Color(0.25, 0.75, 0.33),
+        //     pressedColor: new pc.Color(0.15, 0.5, 0.2)
+        // });
+        // refreshBtn.on('click', () => {
+        //     this.refreshSeed(this.currentInputValue);
+        // });
 
-        const btnText = new pc.Entity('BtnText');
-        btnText.addComponent('element', {
-            type: pc.ELEMENTTYPE_TEXT,
-            anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
-            pivot: new pc.Vec2(0.5, 0.5),
-            text: "REFRESH",
-            fontSize: 18,
-            color: new pc.Color(1, 1, 1),
-            fontAsset: this.font
-        });
+        // const btnText = new pc.Entity('BtnText');
+        // btnText.addComponent('element', {
+        //     type: pc.ELEMENTTYPE_TEXT,
+        //     anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
+        //     pivot: new pc.Vec2(0.5, 0.5),
+        //     text: "REFRESH",
+        //     fontSize: 18,
+        //     color: new pc.Color(1, 1, 1),
+        //     fontAsset: this.font,
+        //     useInput: true
+        // });
 
-        refreshBtn.addChild(btnText);
-        this.seedModifierInput.addChild(refreshBtn);
 
-        this.screenEntity.addChild(this.seedModifierInput);
+        // compose elements for display
+        // refreshBtn.addChild(btnText);
+        group.addChild(refreshBtn);
+        this.screenEntity.addChild(group);
     }
 
     private buildHoverCornerBox() {
@@ -182,29 +193,9 @@ export class GameUiController extends pc.Script {
         this.screenEntity.addChild(this.tileInfoBox);
     }
 
-    private setupEventHandlers() {
-        // Text box focus execution setup 
-        this.textInputElement.entity.element!.on('click', () => {
-            const userInput = prompt("Modify field text value:", this.currentInputValue);
-            if (userInput !== null) {
-                this.currentInputValue = userInput;
-                this.textInputElement.text = userInput;
-            }
-        });
-
-        // Trigger action via refresh button
-        const refreshBtnEntity = this.seedModifierInput.findByName('RefreshButton');
-        refreshBtnEntity?.element!.on('click', () => {
-            this.refreshSeed(this.currentInputValue);
-        });
-
-        // Hover Corner Interactions 
-        // @TODO: Make this appear/disappear when the OrthoCamera has a tile in its sights.
-    }
-
     private refreshSeed(textValue: string) {
-        console.log(`[UI Action] Refresh button clicked! Processing text payload: "${textValue}"`);
-        // Append engine state manipulation actions here
+        const { width, height, settings: config } = this.map.generation as MapGenerator;
+        this.map.generation = new MapGenerator(textValue, width, height, config)
     }
 
     public showTileInfo(data: Tile) {
