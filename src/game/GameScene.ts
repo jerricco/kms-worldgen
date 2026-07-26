@@ -42,7 +42,7 @@ export class GameScene {
             // - 'Hershey Testereo'
             // - 'sanga ranga bangaranga'
             // - 'fuck me I wish I were dead, aye'
-            seed: 'Mitchell Wetperson McPherson',
+            seed: 'fuck me I wish I were dead, aye',
             width: MapGenerator.DEFAULT_WIDTH, 
             height: MapGenerator.DEFAULT_HEIGHT,
         })     

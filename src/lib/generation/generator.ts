@@ -1,8 +1,9 @@
-import type { REGION_CONFIG as RegionConfig } from './regions'
+import type { REGION, REGION_CONFIG as RegionConfig } from './regions'
 import { REGIONS } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
 import type { Grid, SlopeAspect, SlopeVector, Tile } from './types';
+import { random } from 'playcanvas/build/playcanvas/src/core/math/random.js';
 
 // dynamic settings
 export type RiverSetting = {
@@ -125,30 +126,58 @@ export class MapGenerator {
     static generate(width: number, height: number, settings: MapSettings, grid: Grid, noise: OpenSimplexNoise, rng: SeededRandom) {
         const centerX = width / 2;
         const centerY = height / 2;
-        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
 
         // Substantial offsets derived from seed to guarantee absolute structural variance
         const mOffsetX = rng.nextRange(10000, 90000);
         const mOffsetY = rng.nextRange(10000, 90000);
 
+        const randomAngle = rng.nextRange(0, Math.PI * 2);
+        const cosA = Math.cos(randomAngle);
+        const sinA = Math.sin(randomAngle)
+
+        const stretchX = 0.7;
+        const stretchY = 1.3; 
+        // @NOTE: this clamp multiplier determines proportion of the map size it will try to use
+        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY) * 0.98; 
+
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
                 const tile = grid[x][y];
 
-                // use domain warping to create sinusoidal lines for coastlines
+                // 1. use domain warping to create sinusoidal lines for coastlines
                 const { sampleX, sampleY } = MapGenerator.#getDomainWarpedSample(x, y, mOffsetX, mOffsetY, settings, noise)
+
+                // 2. eliptical distance gradient
+                const dx = x - centerX, dy = y - centerY; // displacement from center
+                const rx = dx * cosA - dy * sinA, ry = dx * sinA + dy * cosA;
+                // Compress one axis to stretch the island shape out into an organic ridge/oval
+
+                // 3. macro mask warping
+                // Low-frequency noise deforms the boundary mask drastically, carving huge bays/gulfs
+                const maskWarpX = noise.noise2D(sampleX * 0.4, sampleY * 0.4) * 0.25;
+                const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * 0.25;
+
+                // Recompute distance with warped input space
+                const finalMaskDist = Math.sqrt(
+                    Math.pow((rx + maskWarpX * centerX) * stretchX, 2) +
+                    Math.pow((ry + maskWarpY * centerY) * stretchY, 2)
+                );
+
+                const normalizedDistance = finalMaskDist / maxRadius;
                 
+                // @TODO: Make this a config option instead of the above squeeziness? Both types?
+                // @NOTE: I may be able to use settings.landlocked or something to set the clamp multiplier outside this loop?
                 // generate distorted distance gradient from the center of the map
                 // this creates a mask shape that looks like an island.
-                const dx = x - centerX, dy = y - centerY;                            // displacement from center
-                const edgeWarp = noise.noise2D(sampleX * 1.2, sampleY * 1.2) * 0.12; // warp edges of current noise
-                const normalizedDistance = (Math.sqrt(dx * dx + dy * dy) / maxRadius) + edgeWarp; // fuzzy circular edge distance
+                // const edgeWarp = noise.noise2D(sampleX * 1.2, sampleY * 1.2) * 0.12; // warp edges of current noise
+                // const normalizedDistance = (Math.sqrt(dx * dx + dy * dy) / maxRadius) + edgeWarp; // fuzzy circular edge distance
+
 
 
                 // Create a radial boundary to force the edges toward oceans.
                 const sizeModifier = 1.0 / settings.islandRadius;
                 const maskStrength = normalizedDistance * settings.squishFactor * sizeModifier;
-                const islandMask = Math.max(0, 1.0 - Math.pow(maskStrength, 4.0));
+                const islandMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0)); // @NOTE: was 4.0, changed for testing
 
                 // 3. ELEVATION PASSES
                 const baseLand = MapGenerator.#getStandardfBm(sampleX, sampleY, 4, noise);
@@ -189,34 +218,45 @@ export class MapGenerator {
 
                 tile.elevation = finalElevation;
 
-                const { slope, cardinalDir } = MapGenerator.findNearestSlopeAspect(x, y, width, height, grid)
-                // Tectonic Rule: Only allow cliffs to form if they face West, North-West, or South-West
-                // This simulates a mountain range being shoved from the East!
-                const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir)
+                
 
                 // 6. REGION TRANSLATION PIPELINE
-                if (tile.elevation < settings.seaLevel) {
-                    if (tile.elevation < settings.abyssalLevel) {
-                        tile.region = REGIONS.ABYSSAL;
-                    } else if (tile.elevation < settings.trenchLevel) {
-                        tile.region = REGIONS.DEEP_OCEAN;
-                    } else {
-                        tile.region = REGIONS.OCEAN;
-                    }
-                } else if (tile.elevation < settings.beachLevel) {
-                    tile.region = REGIONS.BEACH;
-                } else if (tile.elevation < settings.plainLevel) {
-                    tile.region = REGIONS.PLAINS;
-                } else if (tile.elevation < settings.hillLevel) {
-                    tile.region = REGIONS.HILLS;
-                } else if (tile.elevation < settings.treeLevel) {
-                    tile.region = slope > 0.4 && tectonicallyShoved ? REGIONS.CLIFF : REGIONS.FOOTHILLS;
-                } else if (tile.elevation < settings.peakLevel) {
-                    tile.region = slope > 0.5 && tectonicallyShoved ? REGIONS.CLIFF : REGIONS.MOUNTAIN;
-                } else {
-                    tile.region = REGIONS.PEAK;
-                }
+                this._determineTileRegion(x, y, width, height, grid, tile, settings)
             }
+        }
+    }
+
+    static _determineTileRegion(
+        x: number, y: number, 
+        width: number, height: number, 
+        grid: Grid, tile: Tile, 
+        settings: MapSettings
+    ): void {
+        const { slope, cardinalDir } = MapGenerator.findNearestSlopeAspect(x, y, width, height, grid)
+        // Tectonic Rule: Only allow cliffs to form if they face West, North-West, or South-West
+        // This simulates a mountain range being shoved from the East!
+        const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir)
+
+        if (tile.elevation < settings.seaLevel) {
+            if (tile.elevation < settings.abyssalLevel) {
+                tile.region = REGIONS.ABYSSAL;
+            } else if (tile.elevation < settings.trenchLevel) {
+                tile.region = REGIONS.DEEP_OCEAN;
+            } else {
+                tile.region = REGIONS.OCEAN;
+            }
+        } else if (tile.elevation < settings.beachLevel) {
+            tile.region = REGIONS.BEACH;
+        } else if (tile.elevation < settings.plainLevel) {
+            tile.region = REGIONS.PLAINS;
+        } else if (tile.elevation < settings.hillLevel) {
+            tile.region = REGIONS.HILLS;
+        } else if (tile.elevation < settings.treeLevel) {
+            tile.region = slope > 0.4 && tectonicallyShoved ? REGIONS.CLIFF : REGIONS.FOOTHILLS;
+        } else if (tile.elevation < settings.peakLevel) {
+            tile.region = slope > 0.5 && tectonicallyShoved ? REGIONS.CLIFF : REGIONS.MOUNTAIN;
+        } else {
+            tile.region = REGIONS.PEAK;
         }
     }
 
