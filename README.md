@@ -14,3 +14,16 @@ Feel free to take and fiddle with this source code, but I consider it my researc
 External use of it is strictly contained under [GNU GPL 3.0](https://choosealicense.com/licenses/gpl-3.0/).
 
 Distribute the love and keep everything open.
+
+## Prereqiusites
+
+- NodeJS
+- Probably a bunch of stuff on my system I don't remember - I'll update as needed.
+
+## How to run
+
+1) Pull this repository down.
+2) Open a CLI at this repository root.
+3) Run `npm install`.
+4) Run `vite dev`
+5) Open localhost link and view in browser
