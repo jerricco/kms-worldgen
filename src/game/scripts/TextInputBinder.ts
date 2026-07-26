@@ -58,8 +58,8 @@ export class TextInputBinder extends pc.Script {
             // Remove last character
             this.currentText = this.currentText.slice(0, -1);
         } else if (e.key === 'Enter' || e.key === 'Escape') {
-            // Remove focus on confirmation keys
-            this.isFocused = false;
+            // Remove focus on confirmation keys -> @TODO: escape shouldn't do this but eh for now.
+            this.blurInput()
             return;
         } else if (e.key.length === 1) {
             // Append single character keys (letters, numbers, space)
@@ -72,8 +72,7 @@ export class TextInputBinder extends pc.Script {
         }
     }
 
-    private blurInput(e: FocusEvent) {
-        e.stopPropagation();
+    private blurInput() {
         if (this.isFocused) {
             this.isFocused = false;
             // this.app.keyboard.enabled = true; // enable game controls // @TODO: cleanly disable correct game control entities.
