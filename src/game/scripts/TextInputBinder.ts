@@ -43,13 +43,10 @@ export class TextInputBinder extends pc.Script {
     private focusInput(e: FocusEvent) {
         e.stopPropagation();
         this.isFocused = true;
-        // @TODO: indicate focus visually
-        // this.app.keyboard.enabled = false; // disable game controls // @TODO: cleanly disable correct game control entities.
         this.entity.fire('ui:focus', this.currentText);
     }
 
     private handleKeyDown(e: KeyboardEvent) {
-        // @TODO: handle ctrl+shift+arrows/backspace/(shift+arrows) like normal key input
         // Only accept typing if user has clicked/focused this UI element
         if (!this.isFocused) return;
 
@@ -79,8 +76,6 @@ export class TextInputBinder extends pc.Script {
     private blurInput() {
         if (this.isFocused) {
             this.isFocused = false;
-            // this.app.keyboard.enabled = true; // enable game controls // @TODO: cleanly disable correct game control entities.
-            // @TODO: indicate blur visually
             this.entity.fire('ui:blur', this.currentText);
         }
     }

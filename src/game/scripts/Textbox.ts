@@ -22,7 +22,6 @@ export class Textbox extends pc.Script {
     }
 
     initialize() {
-        // @TODO: better font handling
         const fontAsset = this.app.assets.find('PatrickHandFont');
 
         const inputElement = new pc.Entity('InputWrapper');
@@ -34,7 +33,6 @@ export class Textbox extends pc.Script {
             color: new pc.Color(1, 1, 1, 1),
         });
 
-        // @TODO: ensure the textbox masks overlfow text and can scroll through the whole value if it does.
         this.inputText = new pc.Entity('InputText');
         this.inputText.addComponent('element', {
             type: pc.ELEMENTTYPE_TEXT,

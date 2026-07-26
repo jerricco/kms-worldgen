@@ -41,7 +41,6 @@ export class DebugUiController extends pc.Script {
         this.ruler.addComponent('script')
         this.ruler.script.create(RuleGridRenderer)
 
-        // @TODO: activate normal game scene UI elements
     }
 
     update() {
@@ -109,7 +108,7 @@ export class DebugUiController extends pc.Script {
         });
 
         this.refreshBtn.addComponent('button', {
-            active: true, // @TODO: init this false, and make it only active when the input is no longer pristine
+            active: true, 
             fadeDuration: 0.1, 
             transitionMode: pc.BUTTON_TRANSITION_MODE_TINT,
             imageEntity: this.refreshBtn,
