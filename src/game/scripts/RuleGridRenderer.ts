@@ -1,6 +1,6 @@
 import * as pc from 'playcanvas'
-import type { Grid, MapGenerator } from '../../lib/generation';
-import type { MapRenderer } from './MapRenderer';
+import type { MapGenerator } from '../../lib/generation';
+import twoSidedLighting from 'playcanvas/build/playcanvas/src/scene/shader-lib/glsl/chunks/lit/frag/twoSidedLighting.js';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';
@@ -8,19 +8,52 @@ export class RuleGridRenderer extends pc.Script {
     public fadeMinZoom = 30;
     public fadeMaxZoom = 50;
 
-    public gridColor: pc.Color = new pc.Color(0.25, 0.25, 0.25, 1.0);
+
+    // grid LOD lerp fade
+    public zoomLODFadeGrid = 48;
+    private startGridAlpha!: number;
+    private endGridAlpha!: number;
+    private lerpGridProgress = 0;
+    private isGridLerping = false;
+
+    private startGridAlphaLerp(from: number, to: number) {
+        this.startGridAlpha = from;
+        this.endGridAlpha = to;
+        this.lerpGridProgress = 0
+        this.isGridLerping = true;
+    }
+
+    // label LOD lerp fade
+    public zoomLODFadeLabels = 12;
+    private startLabelAlpha!: number;
+    private endLabelAlpha!: number;
+    private lerpLabelProgress = 0;
+    private isLabelLerping = false;
+
+    private startLabelAlphaLerp(from: number, to: number) {
+        this.startLabelAlpha = from;
+        this.endLabelAlpha = to;
+        this.lerpLabelProgress = 0
+        this.isLabelLerping = true;
+    }
+
+    public gridColor: pc.Color = new pc.Color(0.25, 0.25, 0.25, 0.5);
     public xAxisColor: pc.Color = new pc.Color(0.8, 0.1, 0.1, 1.0); // Red
     public zAxisColor: pc.Color = new pc.Color(0.1, 0.5, 0.8, 1.0); // Blue
 
     /** @attribute */
     public font: pc.Asset | null = null;
-    public grid: Grid | null = null;
+    public gen: MapGenerator | null = null;
     
     private gridMaterial!: pc.ShaderMaterial;
     private axisMaterial!: pc.ShaderMaterial;
+    private labelScreen!: pc.Entity;
     
-    public poolRadius: number = 12
+    // @TODO: Make poolRadius 2D and have it calculate the poolRadiusZ to be by the
+    // screen device's aspect ratio
+    public poolRadius: number = 16
     private textPool: pc.Entity[] = [];
+    private _workingColor: pc.Color = new pc.Color();
 
     initialize(): void {
         // load assets
@@ -38,88 +71,33 @@ export class RuleGridRenderer extends pc.Script {
         // Define grid shader & attach it to a screen
         const gridScreen = this.createGridScreen(mesh);
         const axisScreen = this.createAxisScreen(mesh)
-        const labelScreen = this.createLabelScreen();
+        this.labelScreen = this.createLabelScreen();
         
         this.app.root.addChild(gridScreen);
         this.app.root.addChild(axisScreen);
-        this.app.root.addChild(labelScreen);
+        this.app.root.addChild(this.labelScreen);
     }
 
-    update(): void {
+    update(dt: number): void {
         const cam = this.app.root.findByName('OrthoCamera') as pc.Entity
         if (!cam || !cam.camera) return;
-
-        const camPos: pc.Vec3 = cam.getPosition();
+        
         const camera: pc.CameraComponent = cam?.camera;
-
-        // Position tracking: Keeps the plane perfectly centered under the screen viewport coordinates
+        
+        // ensure the drawn entity stays stationary as the map is traversed.
+        const camPos: pc.Vec3 = cam.getPosition();
         this.entity.setPosition(camPos.x, 0, camPos.z);
 
-        // Zoom-dependent fading implementation
-        if (camera.projection === pc.PROJECTION_ORTHOGRAPHIC) {
-            const zoom: number = camera.orthoHeight;
-            let alphaFade: number = 1.0;
-            let charFade: number = 1.0;
-            
-            if (zoom >= this.fadeMaxZoom) {
-                alphaFade = 0.0;
-            } else if (zoom > this.fadeMinZoom) {
-                alphaFade = 1.0 - (zoom - this.fadeMinZoom) / (this.fadeMaxZoom - this.fadeMinZoom);
-            }
-
-            // grid rendering - fade out regular grid lines
-            this.gridMaterial.setParameter('uFade', alphaFade);
-            if (alphaFade < 1.0) {
-                this.gridMaterial.blendType = pc.BLEND_NORMAL;
-                this.gridMaterial.depthWrite = false; // Disable depth write only when transparent to prevent artifacts
-            } else {
-                this.gridMaterial.blendType = pc.BLEND_NONE;
-                this.gridMaterial.depthWrite = true;  // Enable full depth write when opaque
-            }
-            this.gridMaterial.update();
-
-            // text rendering
-            this.grid = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer.generation.grid;
-            const centerGridX = Math.round(camPos.x);
-            const centerGridZ = Math.round(camPos.z);
-            let poolIndex = 0;
-            for (let xOffset = -this.poolRadius; xOffset <= this.poolRadius; xOffset++) {
-                for (let zOffset = -this.poolRadius; zOffset <= this.poolRadius; zOffset++) {
-                    const currentLabel = this.textPool[poolIndex];
-                    if (!currentLabel || !currentLabel.element) continue;
-                    
-                    if (alphaFade <= 0.0) {
-                        poolIndex++;
-                        continue;
-                    }
-                    
-                    const cellWorldX = (centerGridX + xOffset + 0.035), cellWorldZ = (centerGridZ + zOffset + 0.15);
-                    currentLabel.setPosition(cellWorldX, 0.01, cellWorldZ);
-                    
-                    // @NOTE: this is the display value, which won't be zero indexed
-                    const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ);
-                    let labelText = `X:${gridX + 1}, Z:${gridY + 1}`; 
-                    
-                    const tile = this.grid?.[gridX]?.[gridY];
-                    labelText += `\n${tile?.region.name || 'VOID'}`
-                    labelText += `\nY:${tile?.elevation.toFixed(2) || 0.00}`
-                    
-                    if (currentLabel.element.text !== labelText) {
-                        currentLabel.element.text = labelText;
-                    }
-
-                    charFade = zoom >= (this.fadeMaxZoom / 5) ? 0.0 : 1.0;
-                    currentLabel.enabled = !(zoom >= this.fadeMaxZoom / 5);
-
-                    const currentColor = currentLabel.element.color;
-                    currentLabel.element.color = new pc.Color(currentColor.r, currentColor.g, currentColor.b, charFade);
-
-                    poolIndex++;
-                }
-            } 
-        }
+        // update grid object to ensure it gets any level generation updates.
+        const gen = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer.generation;
+        if (!this.gen || gen.seed !== this.gen.seed) this.gen = gen;
+        
+        // update the entitie's elements
+        this.updateGridRender(dt, camera);
+        this.updateLabelRender(dt, camera, camPos)
     }
 
+    // init rendering
     private getAxisShaderMaterial(uniqueName?: string): pc.ShaderMaterial {
         const vertexShader: string = `
             attribute vec3 vertex_position;
@@ -203,14 +181,22 @@ export class RuleGridRenderer extends pc.Script {
     }
 
     private createGridScreen(mesh: pc.Mesh): pc.Entity {
+        const cam = this.app.root.findByName('OrthoCamera') as pc.Entity
+        const camera: pc.CameraComponent = cam?.camera;
+        
         const zeroColor = new Float32Array([0, 0, 0, 0]);
+        const initAlpha = camera.orthoHeight >= this.zoomLODFadeGrid ? 0 : 1;
 
         this.gridMaterial = this.getAxisShaderMaterial('grid_instance');
         this.gridMaterial.setParameter('uGridColor', new Float32Array([this.gridColor.r, this.gridColor.g, this.gridColor.b, this.gridColor.a]));
         this.gridMaterial.setParameter('uXAxisColor', zeroColor); // Ignore axis rendering
         this.gridMaterial.setParameter('uZAxisColor', zeroColor);
-        this.gridMaterial.setParameter('uFade', 1.0);
+        this.gridMaterial.setParameter('uFade', initAlpha);
         this.gridMaterial.setParameter('uIsAxisPass', 0.0);
+        // since grid lines are always alpha, blend them
+        this.gridMaterial.blendType = pc.BLEND_NORMAL;
+        this.gridMaterial.depthWrite = false;
+
         this.gridMaterial.update();
 
         const gridMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.gridMaterial);
@@ -249,6 +235,7 @@ export class RuleGridRenderer extends pc.Script {
     private createLabelScreen() {
         const labelScreen = new pc.Entity('GridLabelsScreen');
         labelScreen.addComponent('screen', { screenSpace: false, priority: 2 });
+        labelScreen['uFade'] = 0; // store the uFade arbitrarily so we can track it for lerping
 
         const sideLength = (this.poolRadius * 2) + 1;
         const totalElements = sideLength * sideLength;
@@ -276,4 +263,106 @@ export class RuleGridRenderer extends pc.Script {
 
         return labelScreen
     }
+
+    // update rendering
+    private updateGridRender(dt: number, camera: pc.CameraComponent) {
+        const uFade = this.gridMaterial.getParameter('uFade');
+        const currentAlpha = Number.isNaN(uFade.data) ? 0 : uFade.data
+
+        // start lerping if necessary
+        if (!this.isGridLerping) {
+            const shouldFadeOut = camera.orthoHeight >= this.zoomLODFadeGrid;
+            const shouldFadeIn = camera.orthoHeight < this.zoomLODFadeGrid;
+            if (shouldFadeOut && currentAlpha > 0) {
+                this.startGridAlphaLerp(1, 0);
+            } else if (shouldFadeIn && currentAlpha < 1) {
+                this.startGridAlphaLerp(0, 1);
+            }
+        } else {
+            this.lerpGridProgress += dt;
+            const alphaFactor = pc.math.clamp(this.lerpGridProgress / 0.32, 0, 1);
+            const lerpAlpha = pc.math.lerp(this.startGridAlpha, this.endGridAlpha, alphaFactor);
+
+            this.gridMaterial.setParameter('uFade', lerpAlpha);
+            this.gridMaterial.update();
+
+            // cancel lerp once done.
+            if (alphaFactor >= 1) this.isGridLerping = false;
+        }
+    }
+
+    private updateLabelRender(dt: number, camera: pc.CameraComponent, camPos: pc.Vec3) {
+        // retrieve arbitrary prop to track lerp
+        const uFade = this.labelScreen['uFade'];
+        const currentAlpha = Number.isNaN(uFade) ? 0 : uFade
+        
+        const shouldFadeOut = camera.orthoHeight >= this.zoomLODFadeLabels;
+        const shouldFadeIn = camera.orthoHeight < this.zoomLODFadeLabels;
+        
+        // start lerping if necessary
+        if (!this.isLabelLerping) {
+            if (shouldFadeOut && currentAlpha > 0) {
+                this.startLabelAlphaLerp(currentAlpha, 0);
+            } else if (shouldFadeIn && currentAlpha < 1) {
+                this.startLabelAlphaLerp(currentAlpha, 1);
+            }
+        }
+        
+        let lerpAlpha = currentAlpha;
+        if (this.isLabelLerping) {
+            this.lerpLabelProgress += dt;
+            const alphaFactor = pc.math.clamp(this.lerpLabelProgress / 0.32, 0, 1);
+            lerpAlpha = pc.math.lerp(this.startLabelAlpha, this.endLabelAlpha, alphaFactor);
+            this.labelScreen['uFade'] = lerpAlpha; // update screen alpha reference
+            
+            if (alphaFactor >= 1) {
+                this.isLabelLerping = false;
+            }
+        }
+
+        // lerp render labels
+        const centerGridX = Math.round(camPos.x);
+        const centerGridZ = Math.round(camPos.z);
+        let poolIndex = 0
+
+        for (let xOffset = -this.poolRadius; xOffset <= this.poolRadius; xOffset++) {
+            for (let zOffset = -this.poolRadius; zOffset <= this.poolRadius; zOffset++) {
+                const currentLabel = this.textPool[poolIndex];
+
+                if (!currentLabel || !currentLabel.element) continue;
+                poolIndex++;
+
+                if (lerpAlpha <= 0) {
+                    if (currentLabel.enabled) currentLabel.enabled = false;
+                    continue;
+                }
+
+                // Ensure element is visible
+                if (!currentLabel.enabled) currentLabel.enabled = true;
+
+                const element = currentLabel.element;
+                this._workingColor.copy(element.color);
+                this._workingColor.a = lerpAlpha;
+                element.color = this._workingColor;
+
+                const cellWorldX = (centerGridX + xOffset + 0.035);
+                const cellWorldZ = (centerGridZ + zOffset + 0.15);
+                currentLabel.setPosition(cellWorldX, 0.01, cellWorldZ);
+                    
+                let labelText = this.getLabelText(cellWorldX, cellWorldZ)
+                if (currentLabel.element.text !== labelText) {
+                    currentLabel.element.text = labelText;
+                }
+            }
+        }
+    }
+
+    private getLabelText(cellWorldX: number, cellWorldZ: number): string {
+        const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ); // @NOTE: this is the display value, which won't be zero indexed
+        const tile = this.gen?.grid?.[gridX]?.[gridY];
+        return `X:${gridX + 1}, Z:${gridY + 1}`
+            + `\n${tile?.region.name || 'VOID'}`
+            + `\nY:${tile?.elevation.toFixed(2) || 0.00}`;
+    }
 }
+

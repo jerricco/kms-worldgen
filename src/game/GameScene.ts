@@ -57,8 +57,8 @@ export class GameScene {
         config: {}
     }) {
         const { seed, width, height, config } = game_settings
-        this.ui = this.getUI()
         this.camera = this.getOrthoCamera(width, height);
+        this.ui = this.getUI()
         this.map = this.getMapRenderer(seed, width, height, config);
     }
 
