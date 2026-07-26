@@ -15,6 +15,12 @@ export class Textbox extends pc.Script {
         return this.inputText?.element?.text || '';
     }
 
+    set inputValue(text: string) {
+        // update the text in appropriate places
+        this.inputText.element.text = text;
+        this.inputText?.script['text-input-binder'].setInputText(text)
+    }
+
     initialize() {
         // @TODO: better font handling
         const fontAsset = this.app.assets.find('PatrickHandFont');

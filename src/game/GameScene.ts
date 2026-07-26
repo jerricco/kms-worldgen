@@ -57,9 +57,9 @@ export class GameScene {
         config: {}
     }) {
         const { seed, width, height, config } = game_settings
-        this.map = this.getMapRenderer(seed, width, height, config);
+        this.ui = this.getUI()
         this.camera = this.getOrthoCamera(width, height);
-        this.ui = this.getUI(this.font)
+        this.map = this.getMapRenderer(seed, width, height, config);
     }
 
     static getGameApp(canvas: HTMLCanvasElement): pc.Application {
@@ -122,12 +122,12 @@ export class GameScene {
         return map
     }
 
-    getUI(font: pc.Asset) {
+    getUI() {
         const ui = new pc.Entity('UIContainerEntity');
         this.app.root.addChild(ui);
 
         ui.addComponent('script')
-        const script = ui.script.create(DebugUiController);
+        ui.script.create(DebugUiController);
         return ui;
     }
 }

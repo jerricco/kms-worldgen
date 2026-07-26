@@ -25,6 +25,10 @@ export class TextInputBinder extends pc.Script {
         window.addEventListener('touchstart', this.blurHandler);
     }
 
+    setInputText(text: string) {
+        this.entity.element.text = this.currentText = text;
+    }
+
     destroy() {
         window.removeEventListener('keydown', this.keydownHandler);
         window.removeEventListener('mousedown', this.blurHandler);

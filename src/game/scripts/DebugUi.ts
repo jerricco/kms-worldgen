@@ -22,14 +22,14 @@ export class DebugUiController extends pc.Script {
     private tileCoordTextEl!: pc.Entity;
 
     private inputContainer!: pc.Entity;
+    private inputScript!: pc.Entity;
     private refreshBtn!: pc.Entity;
 
     // Track value for the input box
-    private currentInputValue: string = "Input a seed...";
+    private currentInputValue: string | null = null;
 
     initialize() {
         this.font = this.app.assets.find('PatrickHandFont');
-        this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
         
         // create debug UI
         this.createUiHierarchy();
@@ -42,6 +42,13 @@ export class DebugUiController extends pc.Script {
         this.ruler.script.create(RuleGridRenderer)
 
         // @TODO: activate normal game scene UI elements
+    }
+
+    update() {
+        if (this.currentInputValue === null) {
+            this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
+            this.inputScript.inputValue = this.currentInputValue = (this.map?.generation?.seed || this.currentInputValue)
+        }
     }
 
     // build screen canvas heirarchy
@@ -62,9 +69,7 @@ export class DebugUiController extends pc.Script {
         this.buildTileInfoBox();
     }
 
-    private buildSeedDebugInput() {
-        this.currentInputValue = this.map.generation?.seed || this.currentInputValue;
-        
+    private buildSeedDebugInput() {        
         // BUILD ELEMENTS
         // group element
         const group = new pc.Entity('SeedDebugInputGroup');
@@ -90,8 +95,7 @@ export class DebugUiController extends pc.Script {
         });
 
         this.inputContainer.addComponent('script');
-        const inputScript = this.inputContainer.script?.create(Textbox);
-        inputScript.initValue = this.currentInputValue;
+        this.inputScript = this.inputContainer.script?.create(Textbox);
 
         // seed refresh button
         this.refreshBtn = new pc.Entity('RefreshButton');
@@ -131,6 +135,8 @@ export class DebugUiController extends pc.Script {
         // @TODO: handle reference and cleanup in destroy()
         this.inputContainer.on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
         this.refreshBtn.button.on('click', () => {
+            if (this.currentInputValue === null) return;
+
             this.currentInputValue = this.inputContainer.script['textbox-input'].inputValue
             this.refreshSeed(this.currentInputValue)
         });

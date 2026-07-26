@@ -15,66 +15,38 @@ export class RuleGridRenderer extends pc.Script {
     /** @attribute */
     public font: pc.Asset | null = null;
     public grid: Grid | null = null;
-    public poolRadius: number = 12
     
-    private gridMaterial!: pc.StandardMaterial;
-    private axisMaterial!: pc.StandardMaterial;
+    private gridMaterial!: pc.ShaderMaterial;
+    private axisMaterial!: pc.ShaderMaterial;
+    
+    public poolRadius: number = 12
     private textPool: pc.Entity[] = [];
-    private screenEntity!: pc.Entity;
-
-    private onMapRerenderBind = (e: MapGenerator) => this.onMapRerender(e)
 
     initialize(): void {
         // load assets
         this.font = this.app.assets.find('PatrickHandFont');
 
-        // grid frame rendering
         const gd: pc.GraphicsDevice = this.app.graphicsDevice;
-        const zeroColor = new Float32Array([0, 0, 0, 0]);
 
-        this.gridMaterial = this.getAxisShaderMaterial('grid_instance');
-        this.gridMaterial.setParameter('uGridColor', new Float32Array([this.gridColor.r, this.gridColor.g, this.gridColor.b, this.gridColor.a]));
-        this.gridMaterial.setParameter('uXAxisColor', zeroColor); // Ignore axis rendering
-        this.gridMaterial.setParameter('uZAxisColor', zeroColor);
-        this.gridMaterial.setParameter('uFade', 1.0);
-        this.gridMaterial.setParameter('uIsAxisPass', 0.0);
-        this.gridMaterial.update();
-        
-        this.axisMaterial = this.getAxisShaderMaterial('axis_instance')
-        this.axisMaterial.setParameter('uGridColor', zeroColor);
-        this.axisMaterial.setParameter('uXAxisColor', new Float32Array([this.xAxisColor.r, this.xAxisColor.g, this.xAxisColor.b, this.xAxisColor.a]));
-        this.axisMaterial.setParameter('uZAxisColor', new Float32Array([this.zAxisColor.r, this.zAxisColor.g, this.zAxisColor.b, this.zAxisColor.a]));
-        this.axisMaterial.setParameter('uFade', 1.0);
-        this.axisMaterial.setParameter('uIsAxisPass', 1.0);
-        this.axisMaterial.update();
-
-        // 3. Create a massive flat quad structure to prevent edge visibility limits
-        const mesh: pc.Mesh = pc.createPlane(gd, {
+        // Create a massive flat quad structure to prevent edge visibility limits
+        const mesh: pc.Mesh = pc.Mesh.fromGeometry(gd, new pc.PlaneGeometry({
             halfExtents: new pc.Vec2(5000, 5000),
             widthSegments: 1,
             lengthSegments: 1
-        });
+        }))
 
-        const gridMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.gridMaterial);
-        const axisMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.axisMaterial);
-
+        // Define grid shader & attach it to a screen
+        const gridScreen = this.createGridScreen(mesh);
+        const axisScreen = this.createAxisScreen(mesh)
+        const labelScreen = this.createLabelScreen();
         
-        // 4. Put a render entity on app root and destroy it when we finish with it.
-        this.screenEntity = new pc.Entity('GridLabelsScreen');
-        this.screenEntity.addComponent('screen', { screenSpace: false, priority: 1 });
-        this.screenEntity.addComponent('render', {
-            type: 'asset',
-            meshInstances: [axisMesh, gridMesh]
-        });
-
-        this.app.root.addChild(this.screenEntity);
-        this.app.root.on('map:rendered', this.onMapRerenderBind)// @TODO: destroy this properly
-
-        this.createLabels();
+        this.app.root.addChild(gridScreen);
+        this.app.root.addChild(axisScreen);
+        this.app.root.addChild(labelScreen);
     }
 
     update(): void {
-        const cam = this.app.root.findByName('OrthoCamera')
+        const cam = this.app.root.findByName('OrthoCamera') as pc.Entity
         if (!cam || !cam.camera) return;
 
         const camPos: pc.Vec3 = cam.getPosition();
@@ -148,11 +120,7 @@ export class RuleGridRenderer extends pc.Script {
         }
     }
 
-    destroy(): void {
-
-    }
-
-    private getAxisShaderMaterial(uniqueName?: string) {
+    private getAxisShaderMaterial(uniqueName?: string): pc.ShaderMaterial {
         const vertexShader: string = `
             attribute vec3 vertex_position;
             varying vec3 vWorldPos;
@@ -234,7 +202,54 @@ export class RuleGridRenderer extends pc.Script {
         });
     }
 
-    private createLabels() {
+    private createGridScreen(mesh: pc.Mesh): pc.Entity {
+        const zeroColor = new Float32Array([0, 0, 0, 0]);
+
+        this.gridMaterial = this.getAxisShaderMaterial('grid_instance');
+        this.gridMaterial.setParameter('uGridColor', new Float32Array([this.gridColor.r, this.gridColor.g, this.gridColor.b, this.gridColor.a]));
+        this.gridMaterial.setParameter('uXAxisColor', zeroColor); // Ignore axis rendering
+        this.gridMaterial.setParameter('uZAxisColor', zeroColor);
+        this.gridMaterial.setParameter('uFade', 1.0);
+        this.gridMaterial.setParameter('uIsAxisPass', 0.0);
+        this.gridMaterial.update();
+
+        const gridMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.gridMaterial);
+        const gridScreen = new pc.Entity('GridSquaresScreen');
+        gridScreen.addComponent('screen', { screenSpace: false, priority: 1 });
+        gridScreen.addComponent('render', {
+            type: 'asset',
+            meshInstances: [gridMesh]
+        });
+
+        return gridScreen;
+    }
+
+    private createAxisScreen(mesh: pc.Mesh): pc.Entity {
+        const zeroColor = new Float32Array([0, 0, 0, 0]);
+
+        this.axisMaterial = this.getAxisShaderMaterial('axis_instance')
+        this.axisMaterial.setParameter('uGridColor', zeroColor);
+        this.axisMaterial.setParameter('uXAxisColor', new Float32Array([this.xAxisColor.r, this.xAxisColor.g, this.xAxisColor.b, this.xAxisColor.a]));
+        this.axisMaterial.setParameter('uZAxisColor', new Float32Array([this.zAxisColor.r, this.zAxisColor.g, this.zAxisColor.b, this.zAxisColor.a]));
+        this.axisMaterial.setParameter('uFade', 1.0);
+        this.axisMaterial.setParameter('uIsAxisPass', 1.0);
+        this.axisMaterial.update();
+
+        const axisMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.axisMaterial);
+        const axisScreen = new pc.Entity('GridAxisScreen');
+        axisScreen.addComponent('screen', { screenSpace: false, priority: 3 });
+        axisScreen.addComponent('render', {
+            type: 'asset',
+            meshInstances: [axisMesh]
+        });
+
+        return axisScreen;
+    }
+
+    private createLabelScreen() {
+        const labelScreen = new pc.Entity('GridLabelsScreen');
+        labelScreen.addComponent('screen', { screenSpace: false, priority: 2 });
+
         const sideLength = (this.poolRadius * 2) + 1;
         const totalElements = sideLength * sideLength;
 
@@ -255,15 +270,10 @@ export class RuleGridRenderer extends pc.Script {
             // Adjust orientation flat onto the XZ ground plane
             labelEntity.setLocalEulerAngles(-90, 0, 0);
 
-            this.screenEntity.addChild(labelEntity);
+            labelScreen.addChild(labelEntity);
             this.textPool.push(labelEntity);
         }
-    }
 
-    private onMapRerender(e: MapGenerator) {
-        console.log(e.grid)
-        // this.textPool = [];
-        // this.createLabels();
-        this.screenEntity.screen?.syncDrawOrder()
+        return labelScreen
     }
 }
