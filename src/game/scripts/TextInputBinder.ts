@@ -57,9 +57,9 @@ export class TextInputBinder extends pc.Script {
         if (e.key === 'Backspace') {
             // Remove last character
             this.currentText = this.currentText.slice(0, -1);
-        } else if (e.key === 'Enter' || e.key === 'Escape') {
-            // Remove focus on confirmation keys -> @TODO: escape shouldn't do this but eh for now.
+        } else if (e.key === 'Enter') {
             this.blurInput()
+            this.entity.fire('ui:key:enter', this.currentText)
             return;
         } else if (e.key.length === 1) {
             // Append single character keys (letters, numbers, space)
@@ -68,7 +68,7 @@ export class TextInputBinder extends pc.Script {
 
         // Update the visible PlayCanvas UI Text element mesh
         if (this.entity && this.entity.element) {
-            this.entity.element.text = this.currentText; //
+            this.entity.element.text = this.currentText;
         }
     }
 

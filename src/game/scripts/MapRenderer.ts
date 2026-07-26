@@ -32,6 +32,7 @@ export class MapRenderer extends pc.Script {
     height: number = MapGenerator.DEFAULT_HEIGHT;
     seed ?: string;
     config: MapSettings = {} as MapSettings;
+    shouldUpdateMap: boolean = true;
 
     initialize() {
         if (!this.seed) return; // we'll be ok.
@@ -40,18 +41,23 @@ export class MapRenderer extends pc.Script {
     }
     
     update() {
-        if (!this.generation || !this.seed) return;
-
+        // We should never try to run this update unless BOTHH:
+        // - there has been a generation happen correctly in initialize
+        // - shouldUpdateMap has been set against the MapGenerator to true elsewhere prior.
+        if (!this.shouldUpdateMap || !this.generation) return;
+        
         const seedUpdated = this.generation.seed !== this.seed
         const widthUpdated = this.generation.width !== this.width
         const heightUpdated = this.generation.height !== this.height
         
-        if (seedUpdated) this.seed = this.generation?.seed;
-        if (widthUpdated) this.width = this.generation?.width;
-        if (heightUpdated) this.height = this.generation?.height;
-        
         if (seedUpdated || widthUpdated || heightUpdated) {
-            this.generation = new MapGenerator(this.seed, this.width, this.height, this.config)
+            this.generation = new MapGenerator(
+                this.seed || MapGenerator.DEFAULT_SEED, 
+                this.width || MapGenerator.DEFAULT_WIDTH, 
+                this.height || MapGenerator.DEFAULT_HEIGHT, 
+                this.config || MapGenerator.GENERATOR_DEFAULTS
+            );
+
             this.createVisualGrid()
         }
     }
@@ -88,6 +94,8 @@ export class MapRenderer extends pc.Script {
 
         this.gridEntity = gridEntity
         this.entity.addChild(gridEntity);
+
+        this.shouldUpdateMap = false; // @NOTE: this should be immediately flagged first before regenerating the map or it will never update
 
         return gridEntity;
     }

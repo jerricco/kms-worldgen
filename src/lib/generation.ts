@@ -62,7 +62,7 @@ export type MapSettings = {
     },
 }
 
-export const defaultSettings: MapSettings = {
+const GeneratorDefaults: MapSettings = {
     peakLevel: 0.91,
     treeLevel: 0.74,
     hillLevel: 0.60,
@@ -86,9 +86,11 @@ export const defaultSettings: MapSettings = {
 }
 
 export class MapGenerator {
+    static DEFAULT_SEED = 'aborio rice';
     static DEFAULT_WIDTH = 750;
     static DEFAULT_HEIGHT = 750;
     static BIOMES_MAX = 64;
+    static GENERATOR_DEFAULTS = GeneratorDefaults;
 
     public width: number;
     public height: number;
@@ -102,12 +104,12 @@ export class MapGenerator {
 
     constructor(seed: string, width?: number, height?: number, config?: MapSettings) {
         // config
-        this.settings = { ...defaultSettings, ...config };
+        this.settings = { ...GeneratorDefaults, ...config };
 
         // construction
         this.width = width || MapGenerator.DEFAULT_WIDTH
         this.height = height || MapGenerator.DEFAULT_HEIGHT
-        this.seed = seed || 'aborio rice'
+        this.seed = seed || MapGenerator.DEFAULT_SEED
         this.rng = new SeededRandom(seed);
         this.noise = new OpenSimplexNoise(this.rng);
         this.grid = MapGenerator.getGrid(this.width, this.height, this.settings.trenchLevel)

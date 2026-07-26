@@ -1,8 +1,7 @@
 import * as pc from 'playcanvas';
-import { MapGenerator, type Tile } from '../../lib/generation';
+import { type Tile } from '../../lib/generation';
 import { RuleGridRenderer } from './RuleGridRenderer';
-import { TextInputBinder } from './TextInputBinder';
-import { TextboxEntity } from '../entities/TextboxEntity';
+import { Textbox } from './Textbox';
 import type { MapRenderer } from './MapRenderer';
 
 export class DebugUiController extends pc.Script {
@@ -10,20 +9,21 @@ export class DebugUiController extends pc.Script {
 
     public font: pc.Asset | null = null;
     private screenEntity!: pc.Entity;
-    private map: MapRenderer;
+    private map: MapRenderer | null = null;
 
     // References to UI groups for toggling visibility or pulling data
-    private seedModifierInput!: pc.Entity;
     private coordinateBox!: pc.Entity;
     private tileInfoBox!: pc.Entity;
     
     // References to internal elements needed for logic updates
-    private textInputElement!: pc.Entity;
     private tileNameTextEl!: pc.Entity;
     private tileTypeTextEl!: pc.Entity;
     private tileCoordTextEl!: pc.Entity;
 
-    // Track mock value for the input box
+    private inputContainer!: pc.Entity;
+    private refreshBtn!: pc.Entity;
+
+    // Track value for the input box
     private currentInputValue: string = "Input a seed...";
 
     initialize() {
@@ -64,6 +64,7 @@ export class DebugUiController extends pc.Script {
         this.currentInputValue = this.map.generation?.seed || this.currentInputValue;
         
         // BUILD ELEMENTS
+        // group element
         const group = new pc.Entity('SeedDebugInputGroup');
         group.setLocalPosition(20, -20, 0);
         group.addComponent('element', {
@@ -76,23 +77,23 @@ export class DebugUiController extends pc.Script {
             color: new pc.Color(0.15, 0.15, 0.15, 0.6),
         });
 
-        const inputContainer = new pc.Entity('SeedDebugInputContainer')
-        inputContainer.addComponent('element', {
+        // input container - wraps Textbox entity
+        this.inputContainer = new pc.Entity('SeedDebugInputContainer')
+        this.inputContainer.addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0, 0, 0.73, 1),
             pivot: new pc.Vec2(0, 0.5),
             margin: new pc.Vec4(8, 8, 0, 8),
+            color: new pc.Color(1, 0, 0, 0)
         });
 
-        group.addChild(inputContainer)
-        const seedTextElement = TextboxEntity.create(this.app, inputContainer, this.currentInputValue);
-        seedTextElement.on('ui:blur', (text) => {
-            if (text !== this.currentInputValue) this.refreshSeed(text);
-        })
+        this.inputContainer.addComponent('script');
+        const inputScript = this.inputContainer.script?.create(Textbox);
+        inputScript.initValue = this.currentInputValue;
 
-        // Action / Refresh Button Next To Textbox
-        const refreshBtn = new pc.Entity('RefreshButton');
-        refreshBtn.addComponent('element', {
+        // seed refresh button
+        this.refreshBtn = new pc.Entity('RefreshButton');
+        this.refreshBtn.addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0.75, 0, 1, 1), // Takes right 25% of group width
             pivot: new pc.Vec2(1, 0.5),
@@ -100,32 +101,42 @@ export class DebugUiController extends pc.Script {
             color: new pc.Color(0.2, 0.6, 0.26),
             useInput: true
         });
-        // refreshBtn.addComponent('button', {
-        //     active: true,
-        //     fadeDuration: 0.1,
-        //     hoverColor: new pc.Color(0.25, 0.75, 0.33),
-        //     pressedColor: new pc.Color(0.15, 0.5, 0.2)
-        // });
-        // refreshBtn.on('click', () => {
-        //     this.refreshSeed(this.currentInputValue);
-        // });
 
-        // const btnText = new pc.Entity('BtnText');
-        // btnText.addComponent('element', {
-        //     type: pc.ELEMENTTYPE_TEXT,
-        //     anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
-        //     pivot: new pc.Vec2(0.5, 0.5),
-        //     text: "REFRESH",
-        //     fontSize: 18,
-        //     color: new pc.Color(1, 1, 1),
-        //     fontAsset: this.font,
-        //     useInput: true
-        // });
+        this.refreshBtn.addComponent('button', {
+            active: true, // @TODO: init this false, and make it only active when the input is no longer pristine
+            fadeDuration: 0.1, 
+            transitionMode: pc.BUTTON_TRANSITION_MODE_TINT,
+            imageEntity: this.refreshBtn,
+            hoverTint: new pc.Color(0.2, 0.6, 0),
+            pressedTint: new pc.Color(0.2, 0.6, 0.9),
+            inactiveTint: new pc.Color(0.3, 0.3, 0.3, 1.0),
+        });
 
+        const btnText = new pc.Entity('BtnText');
+        btnText.addComponent('element', {
+            type: pc.ELEMENTTYPE_TEXT,
+            anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
+            pivot: new pc.Vec2(0.5, 0.5),
+            text: "Regenerate",
+            fontSize: 18,
+            color: new pc.Color(1, 1, 1),
+            margin: new pc.Vec4(0, 0, 0, 0),
+            fontAsset: this.font,
+            useInput: true
+        });
+
+        // events
+        // @TODO: handle reference and cleanup in destroy()
+        this.inputContainer.on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
+        this.refreshBtn.button.on('click', () => {
+            this.currentInputValue = this.inputContainer.script['textbox-input'].inputValue
+            this.refreshSeed(this.currentInputValue)
+        });
 
         // compose elements for display
-        // refreshBtn.addChild(btnText);
-        group.addChild(refreshBtn);
+        group.addChild(this.inputContainer)
+        this.refreshBtn.addChild(btnText);
+        group.addChild(this.refreshBtn);
         this.screenEntity.addChild(group);
     }
 
@@ -194,8 +205,8 @@ export class DebugUiController extends pc.Script {
     }
 
     private refreshSeed(textValue: string) {
-        const { width, height, settings: config } = this.map.generation as MapGenerator;
-        this.map.generation = new MapGenerator(textValue, width, height, config)
+        this.map.seed = textValue;
+        this.map.shouldUpdateMap = true;
     }
 
     public showTileInfo(data: Tile) {
