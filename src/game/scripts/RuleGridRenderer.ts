@@ -1,4 +1,6 @@
 import * as pc from 'playcanvas'
+import type { Grid, MapGenerator } from '../../lib/generation';
+import type { MapRenderer } from './MapRenderer';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';
@@ -12,12 +14,15 @@ export class RuleGridRenderer extends pc.Script {
 
     /** @attribute */
     public font: pc.Asset | null = null;
+    public grid: Grid | null = null;
     public poolRadius: number = 12
     
     private gridMaterial!: pc.StandardMaterial;
     private axisMaterial!: pc.StandardMaterial;
     private textPool: pc.Entity[] = [];
     private screenEntity!: pc.Entity;
+
+    private onMapRerenderBind = (e: MapGenerator) => this.onMapRerender(e)
 
     initialize(): void {
         // load assets
@@ -53,21 +58,22 @@ export class RuleGridRenderer extends pc.Script {
         const gridMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.gridMaterial);
         const axisMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.axisMaterial);
 
-        // 4. Register the component safely via standard entity API methods
-        this.entity.addComponent('render', {
+        
+        // 4. Put a render entity on app root and destroy it when we finish with it.
+        this.screenEntity = new pc.Entity('GridLabelsScreen');
+        this.screenEntity.addComponent('screen', { screenSpace: false, priority: 1 });
+        this.screenEntity.addComponent('render', {
             type: 'asset',
             meshInstances: [axisMesh, gridMesh]
         });
 
-        // co-ordinate rendering labels
-        this.screenEntity = new pc.Entity('GridLabelsScreen');
-        this.screenEntity.addComponent('screen', { screenSpace: false });
         this.app.root.addChild(this.screenEntity);
-        
+        this.app.root.on('map:rendered', this.onMapRerenderBind)// @TODO: destroy this properly
+
         this.createLabels();
     }
 
-    public update(): void {
+    update(): void {
         const cam = this.app.root.findByName('OrthoCamera')
         if (!cam || !cam.camera) return;
 
@@ -101,6 +107,7 @@ export class RuleGridRenderer extends pc.Script {
             this.gridMaterial.update();
 
             // text rendering
+            this.grid = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer.generation.grid;
             const centerGridX = Math.round(camPos.x);
             const centerGridZ = Math.round(camPos.z);
             let poolIndex = 0;
@@ -108,18 +115,26 @@ export class RuleGridRenderer extends pc.Script {
                 for (let zOffset = -this.poolRadius; zOffset <= this.poolRadius; zOffset++) {
                     const currentLabel = this.textPool[poolIndex];
                     if (!currentLabel || !currentLabel.element) continue;
-
+                    
                     if (alphaFade <= 0.0) {
                         poolIndex++;
                         continue;
                     }
-
+                    
                     const cellWorldX = (centerGridX + xOffset + 0.035), cellWorldZ = (centerGridZ + zOffset + 0.15);
                     currentLabel.setPosition(cellWorldX, 0.01, cellWorldZ);
                     
                     // @NOTE: this is the display value, which won't be zero indexed
-                    const labelText = `X:${Math.round(cellWorldX) + 1}, Z:${Math.round(cellWorldZ) + 1}`; 
-                    if (currentLabel.element.text !== labelText) currentLabel.element.text = labelText;
+                    const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ);
+                    let labelText = `X:${gridX + 1}, Z:${gridY + 1}`; 
+                    
+                    const tile = this.grid?.[gridX]?.[gridY];
+                    labelText += `\n${tile?.region.name || 'VOID'}`
+                    labelText += `\nY:${tile?.elevation.toFixed(2) || 0.00}`
+                    
+                    if (currentLabel.element.text !== labelText) {
+                        currentLabel.element.text = labelText;
+                    }
 
                     charFade = zoom >= (this.fadeMaxZoom / 5) ? 0.0 : 1.0;
                     currentLabel.enabled = !(zoom >= this.fadeMaxZoom / 5);
@@ -131,6 +146,10 @@ export class RuleGridRenderer extends pc.Script {
                 }
             } 
         }
+    }
+
+    destroy(): void {
+
     }
 
     private getAxisShaderMaterial(uniqueName?: string) {
@@ -225,7 +244,7 @@ export class RuleGridRenderer extends pc.Script {
             labelEntity.addComponent('element', {
                 type: pc.ELEMENTTYPE_TEXT,
                 anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
-                pivot: new pc.Vec2(0, 0.5),
+                pivot: new pc.Vec2(0, 1),
                 text: '0, 0',
                 fontSize: 0.18, // Clean reading size for small grid spaces
                 color: new pc.Color(0.1, 0.1, 0.1, 1.0),
@@ -239,5 +258,12 @@ export class RuleGridRenderer extends pc.Script {
             this.screenEntity.addChild(labelEntity);
             this.textPool.push(labelEntity);
         }
+    }
+
+    private onMapRerender(e: MapGenerator) {
+        console.log(e.grid)
+        // this.textPool = [];
+        // this.createLabels();
+        this.screenEntity.screen?.syncDrawOrder()
     }
 }

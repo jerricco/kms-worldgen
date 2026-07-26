@@ -9,6 +9,7 @@ export class DebugUiController extends pc.Script {
 
     public font: pc.Asset | null = null;
     private screenEntity!: pc.Entity;
+    private ruler!: pc.Entity;
     private map: MapRenderer | null = null;
 
     // References to UI groups for toggling visibility or pulling data
@@ -35,10 +36,10 @@ export class DebugUiController extends pc.Script {
         this.hideTileInfo(); // start hidden, only show when a tile is seleted
 
         // create debug grid rulers
-        const ruler = new pc.Entity('RuleGridEntity')
-        this.entity.addChild(ruler)
-        ruler.addComponent('script')
-        ruler.script.create(RuleGridRenderer)
+        this.ruler = new pc.Entity('RuleGridEntity')
+        this.entity.addChild(this.ruler)
+        this.ruler.addComponent('script')
+        this.ruler.script.create(RuleGridRenderer)
 
         // @TODO: activate normal game scene UI elements
     }
@@ -46,11 +47,12 @@ export class DebugUiController extends pc.Script {
     // build screen canvas heirarchy
     private createUiHierarchy() {
         // Master Screen Entity
-        this.screenEntity = new pc.Entity('MainScreen');
+        this.screenEntity = new pc.Entity('DebugScreen');
         this.screenEntity.addComponent('screen', {
             screenSpace: true,
             referenceResolution: new pc.Vec2(1920, 1080),
-            scaleMode: 'blend'
+            scaleMode: 'blend',
+            priority: 101 // @Note: The debug screenspaces will always be on top and range between 100 -> 126
         });
         this.app.root.addChild(this.screenEntity);
 

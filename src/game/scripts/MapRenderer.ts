@@ -95,7 +95,9 @@ export class MapRenderer extends pc.Script {
         this.gridEntity = gridEntity
         this.entity.addChild(gridEntity);
 
-        this.shouldUpdateMap = false; // @NOTE: this should be immediately flagged first before regenerating the map or it will never update
+        // @NOTE: this should be immediately flagged first before regenerating the map or it will never update
+        this.shouldUpdateMap = false; 
+        this.app.root.fire('map:rendered', this.generation) // fire a global event that the map has re-rendered
 
         return gridEntity;
     }
