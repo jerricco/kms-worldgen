@@ -1,4 +1,4 @@
-import type { Planetoid, PlanetoidGrid } from "./generation";
+import type { Planetoid, PlanetoidGrid } from "./generation/generator";
 
 export class PlanetoidSimulator {
     static SIM_TICK_RATE = 5;

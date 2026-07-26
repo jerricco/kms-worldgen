@@ -1,5 +1,6 @@
 import * as pc from 'playcanvas';
-import { MapGenerator, type Tile } from '../../lib/generation';
+import type { Tile } from '../../lib/generation/types';
+import { MapGenerator } from '../../lib/generation/generator';
 
 export class OrthoCameraController extends pc.Script {
     static scriptName = 'ortho-camera-controller'

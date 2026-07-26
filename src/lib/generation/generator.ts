@@ -1,31 +1,8 @@
-import type { REGION_CONFIG as RegionConfig } from '../data/regions'
-import { REGIONS } from '../data/regions'
-import { BiomeType } from '../data/biomes'
+import type { REGION_CONFIG as RegionConfig } from './regions'
+import { REGIONS } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
-
-export interface Vector2D {
-    x: number;
-    y: number;
-}
-
-export type SlopeVector = {
-    gradient: Vector2D; // Points in the direction of steepest ascent
-    slope: number;      // The steepness magnitude (0.0 = flat, higher = steeper)
-}
-
-export type SlopeAspect = SlopeVector & {
-    angleDeg: number; // Angle from 0 (North) to 360 clockwise. -1 if flat.
-    cardinalDir: string; // "N", "NE", "E", "SE", "S", "SW", "W", "NW", or "FLAT"
-}
-
-export type Grid = Tile[][]
-export type Tile = {
-    id: string,
-    biome: BiomeType | null,
-    region: RegionConfig,
-    elevation: number,
-}
+import type { Grid, SlopeAspect, SlopeVector, Tile } from './types';
 
 // dynamic settings
 export type RiverSetting = {

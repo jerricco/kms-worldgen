@@ -1,7 +1,6 @@
 import * as pc from 'playcanvas'
 
-
-import { MapGenerator, type MapSettings } from '../lib/generation';
+import { MapGenerator, type MapSettings } from '../lib/generation/generator';
 import { MapRenderer } from './scripts/MapRenderer';
 import { OrthoCameraController } from './scripts/OrthoCamera';
 import { DebugUiController } from './scripts/DebugUi';
@@ -42,7 +41,8 @@ export class GameScene {
             // - 'Pooline Handson'
             // - 'Hershey Testereo'
             // - 'sanga ranga bangaranga'
-            seed: 'fuck me I wish I were dead, aye',
+            // - 'fuck me I wish I were dead, aye'
+            seed: 'Mitchell Wetperson McPherson',
             width: MapGenerator.DEFAULT_WIDTH, 
             height: MapGenerator.DEFAULT_HEIGHT,
         })     

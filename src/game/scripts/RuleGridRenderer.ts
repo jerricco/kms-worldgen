@@ -1,6 +1,5 @@
 import * as pc from 'playcanvas'
-import type { MapGenerator } from '../../lib/generation';
-import twoSidedLighting from 'playcanvas/build/playcanvas/src/scene/shader-lib/glsl/chunks/lit/frag/twoSidedLighting.js';
+import type { MapGenerator } from '../../lib/generation/generator';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';

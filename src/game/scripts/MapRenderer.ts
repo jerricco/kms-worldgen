@@ -1,5 +1,6 @@
 import * as pc from 'playcanvas'
-import { MapGenerator, type MapSettings, type Tile } from '../../lib/generation';
+import { MapGenerator, type MapSettings } from '../../lib/generation/generator';
+import type { Tile } from '../../lib/generation/types';
 import { REGION_PALETTES } from '../../data/color';
 import { hexToRgb } from '../../lib/utils';
 

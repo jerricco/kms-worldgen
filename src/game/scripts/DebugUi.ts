@@ -1,5 +1,5 @@
 import * as pc from 'playcanvas';
-import { type Tile } from '../../lib/generation';
+import type { Tile } from '../../lib/generation/types';
 import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import type { MapRenderer } from './MapRenderer';
