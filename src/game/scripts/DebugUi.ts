@@ -48,7 +48,6 @@ export class DebugUiController extends pc.Script {
             this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
             for (const name in this.inputs) {
                 const nonSettings = ['seed', 'width', 'height']
-                // @TODO: convert this to loop for all current tracked values since they should all be on the map instance
                 let fillValue = nonSettings.indexOf(name) === -1 ? this.map?.generation?.settings[name] : this.map?.generation[name]
 
                 // @TODO: number type input & switch or checkbox
@@ -176,7 +175,6 @@ export class DebugUiController extends pc.Script {
         let settingCount = 0;
         for (const name in settings) {
             const setting = settings[name];
-            // console.log(name, setting)
             // we'll handle more complex bits later
             if (!isPrimitive(setting)) continue;
 

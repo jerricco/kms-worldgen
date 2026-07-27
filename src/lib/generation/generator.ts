@@ -208,26 +208,60 @@ export class MapGenerator {
                 let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
                 if (!settings.isIsland && bridgeEdge !== "none") {
                     // Define how far the land shoulder extends inward from the edge coordinate
-                    const shoulderRadiusX = width * 0.20;
-                    const shoulderRadiusY = height * 0.20;
+                    const shoulderRadiusX = width * 0.25;
+                    const shoulderRadiusY = height * 0.25;
+
+                    const distortionStrength = 0.42; // Increase for more jagged/island-like shapes, decrease for smoother lines
+                    const shoulderWarp = noise.noise2D(sampleX * 1.2, sampleY * 1.2) * distortionStrength;
 
                     // Calculate distance to our detected crossing anchor point
                     const distToBridgeX = (x - bridgeX) / shoulderRadiusX;
                     const distToBridgeY = (y - bridgeY) / shoulderRadiusY;
-                    const distanceToBridge = Math.sqrt(distToBridgeX * distToBridgeX + distToBridgeY * distToBridgeY);
+                    const distanceToBridge = Math.sqrt(distToBridgeX * distToBridgeX + distToBridgeY * distToBridgeY) + shoulderWarp;
 
                     if (distanceToBridge < 1.0) {
-                        // Smoothly ease the shoulder weight down to 0 at its radius boundary
-                        const shoulderWeight = Math.pow(1.0 - distanceToBridge, 2.0);
+                        // Lateral falloff (0.0 at the sides of the shoulder, 1.0 along the central axis of the bridge)
+                        const lateralWeight = Math.pow(1.0 - distanceToBridge, 1.5);
 
-                        // Determine the targeted elevation minimum for our continuous land bridge
-                        const targetBridgeElevation = settings.beachLevel + 0.22;
+                        // 3. Compute how close we are to the actual map border edge (0.0 deep inland, 1.0 right on the edge line)
+                        let edgeProximity = 0.0;
+                        if (bridgeEdge === "left") edgeProximity = (shoulderRadiusX - x) / shoulderRadiusX;
+                        if (bridgeEdge === "right") edgeProximity = (x - (width - 1 - shoulderRadiusX)) / shoulderRadiusX;
+                        if (bridgeEdge === "top") edgeProximity = (shoulderRadiusY - y) / shoulderRadiusY;
+                        if (bridgeEdge === "bottom") edgeProximity = (y - (height - 1 - shoulderRadiusY)) / shoulderRadiusY;
 
-                        // Blend the elevation upward exclusively inside this localized bubble zone
-                        if (elevationMask < targetBridgeElevation) {
-                            elevationMask = elevationMask + (targetBridgeElevation - elevationMask) * shoulderWeight;
+                        // Clamp proximity safety buffer between 0.0 and 1.0
+                        edgeProximity = Math.max(0.0, Math.min(1.0, edgeProximity));
+
+                        // 4. Calculate a dynamic elevation boost that peaks right at the map border line
+                        // At the edge line, this adds up to +0.35 elevation, tapering to 0 as you move inland
+                        const baseBoost = 0.12; // Flat baseline boost across the entire shoulder area
+                        const edgeScaleBonus = 0.25 * edgeProximity; // Escalates terrain specifically near the border
+
+                        elevationMask += (baseBoost + edgeScaleBonus) * lateralWeight;
+
+                        // 5. Enforce a firm land floor at the edge so ocean never clips back through the shoulder axis
+                        const structuralFloor = settings.beachLevel + 0.10 + (0.20 * edgeProximity);
+                        const floorWeight = (1.0 - distanceToBridge); // Strongest right on the center axis line
+
+                        const enforcedFloor = structuralFloor * floorWeight;
+                        if (elevationMask < enforcedFloor) {
+                            elevationMask = enforcedFloor;
                         }
                     }
+
+                    // if (distanceToBridge < 1.0) {
+                    //     // Smoothly ease the shoulder weight down to 0 at its radius boundary
+                    //     const shoulderWeight = Math.pow(1.0 - distanceToBridge, 2.0);
+
+                    //     // Determine the targeted elevation minimum for our continuous land bridge
+                    //     const targetBridgeElevation = settings.beachLevel + 0.22;
+
+                    //     // Blend the elevation upward exclusively inside this localized bubble zone
+                    //     if (elevationMask < targetBridgeElevation) {
+                    //         elevationMask = elevationMask + (targetBridgeElevation - elevationMask) * shoulderWeight;
+                    //     }
+                    // }
                 }
 
                 // inflate and clamp the final elevation structure so that mountains form more readily
