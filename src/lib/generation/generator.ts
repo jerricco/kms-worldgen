@@ -137,25 +137,43 @@ export class MapGenerator {
 
         const stretchX = 0.7;
         const stretchY = 1.3; 
+        // @NOTE: I may be able to use settings.landlocked or something to set the clamp multiplier?
         // @NOTE: this clamp multiplier determines proportion of the map size it will try to use
-        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY) * 0.98; 
+        const oceanClamp = settings.isIsland ? 0.85 : 0.9
+        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY) * oceanClamp; 
+
+        // @NOTE: config?
+        const bufferFactor = 0.05
+        const bufferX = width * bufferFactor;
+        const bufferY = height * bufferFactor;
 
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
                 const tile = grid[x][y];
 
-                // 1. use domain warping to create sinusoidal lines for coastlines
+                // check boundary proximity
+                const distToLeft = x, distToRight = (width - 1) - x,
+                      distToTop = y, distToBottom = (height - 1) - y;
+
+                // Determine closeness multipliers (0.0 at edge, 1.0 safely inside buffer zone)
+                const edgeXFactor = Math.min(1.0, Math.min(distToLeft, distToRight) / bufferX);
+                const edgeYFactor = Math.min(1.0, Math.min(distToTop, distToBottom) / bufferY);
+
+                // Combined factor: 0.0 right on any edge, 1.0 when comfortably in the center
+                const globalEdgeFactor = edgeXFactor * edgeYFactor;
+
+                // use domain warping to create sinusoidal lines for coastlines
                 const { sampleX, sampleY } = MapGenerator.#getDomainWarpedSample(x, y, mOffsetX, mOffsetY, settings, noise)
 
-                // 2. eliptical distance gradient
+                // eliptical distance gradient
                 const dx = x - centerX, dy = y - centerY; // displacement from center
                 const rx = dx * cosA - dy * sinA, ry = dx * sinA + dy * cosA;
-                // Compress one axis to stretch the island shape out into an organic ridge/oval
 
-                // 3. macro mask warping
+                // macro mask warping
                 // Low-frequency noise deforms the boundary mask drastically, carving huge bays/gulfs
-                const maskWarpX = noise.noise2D(sampleX * 0.4, sampleY * 0.4) * 0.25;
-                const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * 0.25;
+                const maskWarpStrength = 0.25 * globalEdgeFactor;
+                const maskWarpX = noise.noise2D(sampleX * 0.4, sampleY * 0.4) * maskWarpStrength;
+                const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * maskWarpStrength;
 
                 // Recompute distance with warped input space
                 const finalMaskDist = Math.sqrt(
@@ -165,21 +183,17 @@ export class MapGenerator {
 
                 const normalizedDistance = finalMaskDist / maxRadius;
                 
-                // @TODO: Make this a config option instead of the above squeeziness? Both types?
-                // @NOTE: I may be able to use settings.landlocked or something to set the clamp multiplier outside this loop?
-                // generate distorted distance gradient from the center of the map
-                // this creates a mask shape that looks like an island.
-                // const edgeWarp = noise.noise2D(sampleX * 1.2, sampleY * 1.2) * 0.12; // warp edges of current noise
-                // const normalizedDistance = (Math.sqrt(dx * dx + dy * dy) / maxRadius) + edgeWarp; // fuzzy circular edge distance
-
-
-
                 // Create a radial boundary to force the edges toward oceans.
                 const sizeModifier = 1.0 / settings.islandRadius;
                 const maskStrength = normalizedDistance * settings.squishFactor * sizeModifier;
-                const islandMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0)); // @NOTE: was 4.0, changed for testing
 
-                // 3. ELEVATION PASSES
+                let islandMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0)); // @NOTE: was 4.0, changed for testing
+                if (!settings.isIsland) {
+                    // Smoothly blend islandMask toward 1.0 near edges so the land doesn't get forced to 0 elevation
+                    islandMask = islandMask + (1.0 - islandMask) * (1.0 - globalEdgeFactor);
+                }
+
+                // elevation passes
                 const baseLand = MapGenerator.#getStandardfBm(sampleX, sampleY, 4, noise);
                 const mountainSpines = MapGenerator.#getRidgedfBm(sampleX * 1.3, sampleY * 1.3, 6, noise);
 
@@ -195,8 +209,9 @@ export class MapGenerator {
                 }
 
                 // Apply the high-exponent perimeter cliff mask
-                const maskedElevation = settings.isIsland ? mixedElevation * islandMask : mixedElevation
-                let finalElevation = Math.max(0, Math.min(1.0, maskedElevation));
+                const finalMaskValue = settings.isIsland ? islandMask : 1.0;
+                const maskedElevation = mixedElevation * finalMaskValue;
+                let finalElevation = Math.max(0, Math.min(1.0, maskedElevation))
 
                 // Inflate and clamp the final elevation structure so that mountains form more readily
                 if (finalElevation > settings.beachLevel) {
@@ -218,9 +233,7 @@ export class MapGenerator {
 
                 tile.elevation = finalElevation;
 
-                
-
-                // 6. REGION TRANSLATION PIPELINE
+                // region determination pipeline
                 this._determineTileRegion(x, y, width, height, grid, tile, settings)
             }
         }
