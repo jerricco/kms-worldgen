@@ -3,6 +3,8 @@ import type { Tile } from '../../lib/generation/types';
 import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import type { MapRenderer } from './MapRenderer';
+import { MapGenerator } from '../../lib/generation/generator';
+import { isPrimitive } from '../../lib/utils';
 
 export class DebugUiController extends pc.Script {
     static scriptName=  'debug-ui-controller';
@@ -21,12 +23,10 @@ export class DebugUiController extends pc.Script {
     private tileTypeTextEl!: pc.Entity;
     private tileCoordTextEl!: pc.Entity;
 
-    private inputContainer!: pc.Entity;
-    private inputScript!: pc.Entity;
     private refreshBtn!: pc.Entity;
 
-    // Track value for the input box
-    private currentInputValue: string | null = null;
+    private inputs = {}; // track input containers across the screen
+    private values = {}; // track input values across the screen
 
     initialize() {
         this.font = this.app.assets.find('PatrickHandFont');
@@ -40,13 +40,25 @@ export class DebugUiController extends pc.Script {
         this.entity.addChild(this.ruler)
         this.ruler.addComponent('script')
         this.ruler.script.create(RuleGridRenderer)
-
     }
 
     update() {
-        if (this.currentInputValue === null) {
+        // fill MapSettings inputs, including seed, width and height
+        if (this.values['seed'] === undefined) {
             this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
-            this.inputScript.inputValue = this.currentInputValue = (this.map?.generation?.seed || this.currentInputValue)
+            for (const name in this.inputs) {
+                const nonSettings = ['seed', 'width', 'height']
+                // @TODO: convert this to loop for all current tracked values since they should all be on the map instance
+                let fillValue = nonSettings.indexOf(name) === -1 ? this.map?.generation?.settings[name] : this.map?.generation[name]
+
+                // @TODO: number type input & switch or checkbox
+                if (typeof fillValue === 'number') fillValue = `${fillValue}`;
+                if (typeof fillValue === 'boolean') fillValue = fillValue ? 'true' : 'false';
+                if (fillValue === undefined) fillValue = '';
+
+                this.values[name] = fillValue
+                this.inputs[name].script['textbox-input'].inputValue = fillValue
+            }
         }
     }
 
@@ -64,11 +76,12 @@ export class DebugUiController extends pc.Script {
 
         // Render sections
         this.buildSeedDebugInput();
+        this.buildMapSettingsPanel();
         this.buildHoverCornerBox();
         this.buildTileInfoBox();
     }
 
-    private buildSeedDebugInput() {        
+    private buildSeedDebugInput() {
         // BUILD ELEMENTS
         // group element
         const group = new pc.Entity('SeedDebugInputGroup');
@@ -84,8 +97,8 @@ export class DebugUiController extends pc.Script {
         });
 
         // input container - wraps Textbox entity
-        this.inputContainer = new pc.Entity('SeedDebugInputContainer')
-        this.inputContainer.addComponent('element', {
+        this.inputs['seed'] = new pc.Entity('SeedDebugInputContainer')
+        this.inputs['seed'].addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0, 0, 0.73, 1),
             pivot: new pc.Vec2(0, 0.5),
@@ -93,8 +106,8 @@ export class DebugUiController extends pc.Script {
             color: new pc.Color(1, 0, 0, 0)
         });
 
-        this.inputContainer.addComponent('script');
-        this.inputScript = this.inputContainer.script?.create(Textbox);
+        this.inputs['seed'].addComponent('script');
+        this.inputs['seed'].script?.create(Textbox);
 
         // seed refresh button
         this.refreshBtn = new pc.Entity('RefreshButton');
@@ -132,18 +145,73 @@ export class DebugUiController extends pc.Script {
 
         // events
         // @TODO: handle reference and cleanup in destroy()
-        this.inputContainer.on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
+        this.inputs['seed'].on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
         this.refreshBtn.button.on('click', () => {
-            if (this.currentInputValue === null) return;
+            // @TODO: rewrite this to account for all other settings
+            if (this.values['seed'] === null) return;
 
-            this.currentInputValue = this.inputContainer.script['textbox-input'].inputValue
-            this.refreshSeed(this.currentInputValue)
+            this.values['seed'] = this.inputs['seed'].script['textbox-input'].inputValue
+            this.refreshSeed(this.values['seed'])
         });
 
         // compose elements for display
-        group.addChild(this.inputContainer)
+        group.addChild(this.inputs['seed'])
         this.refreshBtn.addChild(btnText);
         group.addChild(this.refreshBtn);
+        this.screenEntity.addChild(group);
+    }
+
+    private buildMapSettingsPanel() {
+        const settings = {
+            width: MapGenerator.DEFAULT_WIDTH,
+            height: MapGenerator.DEFAULT_HEIGHT,
+            ...MapGenerator.GENERATOR_DEFAULTS
+        };
+
+        // initialise group
+        const group = new pc.Entity('MapSettingsDebugInputGroup');
+        group.setLocalPosition(20, -90, 0);
+
+        // fill with settings
+        let settingCount = 0;
+        for (const name in settings) {
+            const setting = settings[name];
+            // console.log(name, setting)
+            // we'll handle more complex bits later
+            if (!isPrimitive(setting)) continue;
+
+            this.inputs[name] = new pc.Entity('SeedDebugInputContainer')
+            const localPositionZ = (settingCount * 38) + 8
+            this.inputs[name].setLocalPosition(0, -localPositionZ, 0);
+
+            this.inputs[name].addComponent('element', {
+                type: pc.ELEMENTTYPE_IMAGE,
+                anchor: new pc.Vec4(0, 1, 1, 1),
+                height: 30,
+                pivot: new pc.Vec2(0, 1),
+                margin: new pc.Vec4(8, 8, 8, 8),
+                color: new pc.Color(1, 0, 0, 0)
+            });
+    
+            this.inputs[name].addComponent('script');
+            this.inputs[name].script?.create(Textbox);
+
+            group.addChild(this.inputs[name])
+            settingCount++
+        }
+
+        // create based on settings for dynamic height
+        group.addComponent('element', {
+            type: pc.ELEMENTTYPE_IMAGE,
+            anchor: new pc.Vec4(0, 1, 0, 1), // Top center
+            pivot: new pc.Vec2(0, 1),
+            width: 100,
+            height: (settingCount * 38) + 8,
+            margin: new pc.Vec4(0, 0, 0, 0),
+            color: new pc.Color(0.15, 0.15, 0.15, 0.6),
+            useInput: true,
+        });
+
         this.screenEntity.addChild(group);
     }
 

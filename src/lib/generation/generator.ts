@@ -54,8 +54,7 @@ const GeneratorDefaults: MapSettings = {
     minLakeSize: 16,
     minSnowLine: 0.61,
     mapFenceSize: 4,
-    // isIsland: true,
-    isIsland: true, // @DEBUG
+    isIsland: false, // @DEBUG
     islandRadius: 0.80,
     rivers: {
         MAJOR: { name: 'MAJOR_RIVER', count: 5, genThreshold: 1, bedWidth: 3, windiness: 0.8 },
@@ -139,13 +138,17 @@ export class MapGenerator {
         const stretchY = 1.3; 
         // @NOTE: I may be able to use settings.landlocked or something to set the clamp multiplier?
         // @NOTE: this clamp multiplier determines proportion of the map size it will try to use
-        const oceanClamp = settings.isIsland ? 0.85 : 0.9
+        const oceanClamp = settings.isIsland ? 0.85 : 1
         const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY) * oceanClamp; 
 
         // @NOTE: config?
         const bufferFactor = 0.05
         const bufferX = width * bufferFactor;
         const bufferY = height * bufferFactor;
+
+        // determine if the current elevation point is a bubble to insert at the map edge where other land noise crosses.
+        const { bridgeEdge, bridgeX, bridgeY }
+            = MapGenerator.checkNoiseNearBoundaries(width, height, mOffsetX, mOffsetY, noise, settings);
 
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
@@ -186,12 +189,7 @@ export class MapGenerator {
                 // Create a radial boundary to force the edges toward oceans.
                 const sizeModifier = 1.0 / settings.islandRadius;
                 const maskStrength = normalizedDistance * settings.squishFactor * sizeModifier;
-
-                let islandMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0)); // @NOTE: was 4.0, changed for testing
-                if (!settings.isIsland) {
-                    // Smoothly blend islandMask toward 1.0 near edges so the land doesn't get forced to 0 elevation
-                    islandMask = islandMask + (1.0 - islandMask) * (1.0 - globalEdgeFactor);
-                }
+                const landMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0)); // @NOTE: was 4.0, changed for testing
 
                 // elevation passes
                 const baseLand = MapGenerator.#getStandardfBm(sampleX, sampleY, 4, noise);
@@ -199,44 +197,93 @@ export class MapGenerator {
 
                 // Blend the foundational base land with sharp ridged tectonic spines
                 // The multiplications add up to 100 to ensure a certain fBm will take up that proportion of elevation
-                let mixedElevation = (baseLand * 0.3) + (mountainSpines * 0.85);
-
-                // Apply a non-linear steepening curve to values that push past sea/beach heights
-                if (mixedElevation > settings.seaLevel) {
+                let spineBlendMask = (baseLand * 0.3) + (mountainSpines * 0.85);
+                if (spineBlendMask > settings.seaLevel) {
                     // Isolate the height above sea level, raise it exponentially, and magnify it
-                    const relativeHeight = mixedElevation - settings.seaLevel;
-                    mixedElevation = settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4);
+                    const relativeHeight = spineBlendMask - settings.seaLevel;
+                    spineBlendMask = settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4);
                 }
 
-                // Apply the high-exponent perimeter cliff mask
-                const finalMaskValue = settings.isIsland ? islandMask : 1.0;
-                const maskedElevation = mixedElevation * finalMaskValue;
-                let finalElevation = Math.max(0, Math.min(1.0, maskedElevation))
+                
+                let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
+                if (!settings.isIsland && bridgeEdge !== "none") {
+                    // Define how far the land shoulder extends inward from the edge coordinate
+                    const shoulderRadiusX = width * 0.20;
+                    const shoulderRadiusY = height * 0.20;
 
-                // Inflate and clamp the final elevation structure so that mountains form more readily
-                if (finalElevation > settings.beachLevel) {
-                    // 1. Normalize the land height between beach level (0.0) and the maximum possible height (1.0)
-                    const t = (finalElevation - settings.beachLevel) / (1.0 - settings.beachLevel);
+                    // Calculate distance to our detected crossing anchor point
+                    const distToBridgeX = (x - bridgeX) / shoulderRadiusX;
+                    const distToBridgeY = (y - bridgeY) / shoulderRadiusY;
+                    const distanceToBridge = Math.sqrt(distToBridgeX * distToBridgeX + distToBridgeY * distToBridgeY);
 
-                    // 2. Smoothstep easing function (smoothes the transition out from the beach and into the peaks)
+                    if (distanceToBridge < 1.0) {
+                        // Smoothly ease the shoulder weight down to 0 at its radius boundary
+                        const shoulderWeight = Math.pow(1.0 - distanceToBridge, 2.0);
+
+                        // Determine the targeted elevation minimum for our continuous land bridge
+                        const targetBridgeElevation = settings.beachLevel + 0.22;
+
+                        // Blend the elevation upward exclusively inside this localized bubble zone
+                        if (elevationMask < targetBridgeElevation) {
+                            elevationMask = elevationMask + (targetBridgeElevation - elevationMask) * shoulderWeight;
+                        }
+                    }
+                }
+
+                // inflate and clamp the final elevation structure so that mountains form more readily
+                if (elevationMask > settings.beachLevel) {
+                    const t = (elevationMask - settings.beachLevel) / (1.0 - settings.beachLevel);
                     const smoothT = t * t * (3.0 - 2.0 * t);
+                    const inflatedTarget = elevationMask * 1.15;
 
-                    // 3. Linearly interpolate between the original height and a slightly inflated target height (e.g., boosted by 15%)
-                    const inflatedTarget = finalElevation * 1.15;
-
-                    // 4. Blend smoothly: uses more of the original height near beaches, and blends toward the inflated target near peaks
-                    finalElevation = finalElevation + (inflatedTarget - finalElevation) * smoothT;
-
-                    // 5. Soft safety clamp (should never hit a hard flat edge due to the easing curve)
-                    if (finalElevation > 1.0) finalElevation = 1.0;
+                    elevationMask = elevationMask + (inflatedTarget - elevationMask) * smoothT;
+                    if (elevationMask > 1.0) elevationMask = 1.0;
                 }
 
-                tile.elevation = finalElevation;
+                tile.elevation = elevationMask;
 
                 // region determination pipeline
                 this._determineTileRegion(x, y, width, height, grid, tile, settings)
             }
         }
+    }
+
+    static checkNoiseNearBoundaries(
+        width: number, height: number, 
+        mOffsetX: number, mOffsetY: number, 
+        noise: OpenSimplexNoise, 
+        settings: MapSettings
+    ): { bridgeX: number, bridgeY: number, bridgeEdge: string } {
+        let maxEdgeNoise = -1;
+        let bridgeX = 0;
+        let bridgeY = 0;
+        let bridgeEdge = "none"; // "left", "right", "top", "bottom"
+
+        if (!settings.isIsland) {
+            // top-bottom scan
+            for (let x = 0; x < width; x++) {
+                const { sampleX: tx, sampleY: ty } = MapGenerator.#getDomainWarpedSample(x, 0, mOffsetX, mOffsetY, settings, noise);
+                const nTop = MapGenerator.#getStandardfBm(tx, ty, 4, noise);
+                if (nTop > maxEdgeNoise) { maxEdgeNoise = nTop; bridgeX = x; bridgeY = 0; bridgeEdge = "top"; }
+
+                const { sampleX: bx, sampleY: by } = MapGenerator.#getDomainWarpedSample(x, height - 1, mOffsetX, mOffsetY, settings, noise);
+                const nBottom = MapGenerator.#getStandardfBm(bx, by, 4, noise);
+                if (nBottom > maxEdgeNoise) { maxEdgeNoise = nBottom; bridgeX = x; bridgeY = height - 1; bridgeEdge = "bottom"; }
+            }
+
+            // left-right scan
+            for (let y = 0; y < height; y++) {
+                const { sampleX: lx, sampleY: ly } = MapGenerator.#getDomainWarpedSample(0, y, mOffsetX, mOffsetY, settings, noise);
+                const nLeft = MapGenerator.#getStandardfBm(lx, ly, 4, noise);
+                if (nLeft > maxEdgeNoise) { maxEdgeNoise = nLeft; bridgeX = 0; bridgeY = y; bridgeEdge = "left"; }
+
+                const { sampleX: rx, sampleY: ry } = MapGenerator.#getDomainWarpedSample(width - 1, y, mOffsetX, mOffsetY, settings, noise);
+                const nRight = MapGenerator.#getStandardfBm(rx, ry, 4, noise);
+                if (nRight > maxEdgeNoise) { maxEdgeNoise = nRight; bridgeX = width - 1; bridgeY = y; bridgeEdge = "right"; }
+            }
+        }
+
+        return { bridgeX, bridgeY, bridgeEdge }
     }
 
     static _determineTileRegion(

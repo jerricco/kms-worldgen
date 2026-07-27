@@ -9,3 +9,8 @@ export function hexToRgb(hex: string) {
         b: parseInt(hex.substring(4, 6), 16) / 255
     };
 }
+
+type Primitive = string | number | boolean | bigint | symbol | null | undefined;
+export function isPrimitive(value: unknown): value is Primitive {
+    return value !== Object(value);
+}
