@@ -1,6 +1,56 @@
 /////////////////////
 //     REGIONS     //
 /////////////////////
+// geographic - requires land shape + elevation
+// climatic - climatic (wetness, wind) + elevation + land shape
+
+export const RegionID = {
+    // SPECIAL
+    VOID        : 0,
+    UNASSIGNED  : 1,
+    // AQUATIC REGIONS
+    // elevation
+    ABYSSAL     : 2,
+    DEEP_OCEAN  : 3,
+    OCEAN       : 4,
+    // geographic
+    SEA         : 5,
+    // climatic
+    FRESH_LAKE  : 6,
+    SALINE_LAKE : 7,
+    REEF        : 8,
+    // TRANSITIONAL REGIONS
+    // geographic
+    BEACH       : 9,
+    CLIFF       : 10,
+    ISLAND      : 11,
+    // climatic
+    WETLAND     : 12,
+    ESTUARY     : 13,
+    // climatic + rivers
+    RIVER       : 14,
+    RIVER_DELTA : 15,
+    // TERRESTRIAL REGIONS
+    // elevation regions
+    HILL        : 16,
+    MOUNTAIN    : 17,
+    PEAK        : 18,
+    // climatic
+    PLAIN       : 19,
+    // geographic
+    FOOTHILL    : 20,
+    PLATEAU     : 21,
+    VALLEY      : 22,
+    // climatic
+    DESERT      : 23,
+    FOREST      : 24,
+    TUNDRA      : 25,
+    // lithogaphic
+    KARST       : 26,
+
+}
+
+export type RegionID = typeof RegionID[keyof typeof RegionID]
 
 // config shape
 export type REGION_CONFIG = {

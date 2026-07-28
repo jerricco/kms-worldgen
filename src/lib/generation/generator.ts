@@ -4,6 +4,7 @@ import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
 import type { Grid, SlopeAspect, SlopeVector, Tile } from './types';
 import { random } from 'playcanvas/build/playcanvas/src/core/math/random.js';
+import { Chunk } from './chunk';
 
 // dynamic settings
 export type RiverSetting = {
@@ -62,6 +63,13 @@ const GeneratorDefaults: MapSettings = {
     }
 }
 
+interface GlobalGenerationMeta {
+    mOffsetX: number;
+    mOffsetY: number;
+    cosA: number;
+    sinA: number;
+}
+
 export class MapGenerator {
     static DEFAULT_SEED = 'aborio rice';
     static DEFAULT_WIDTH = 750;
@@ -105,22 +113,104 @@ export class MapGenerator {
         );
     }
 
-    static #getDomainWarpedSample(
-        x: number, 
-        y: number, 
-        mOffsetX: number, 
-        mOffsetY: number, 
-        settings: MapSettings, 
-        noise: OpenSimplexNoise,
-    ): { sampleX: number, sampleY: number } {
-        const warpX = noise.noise2D((x + 200) * 0.018, (y + 200) * 0.018) * 45;
-        const warpY = noise.noise2D((x - 200) * 0.018, (y - 200) * 0.018) * 45;
+    //// START CHUNKING REFACTOR ////
+    // @TODO: adjust it so that the world size is by default 256*256 chunks (12800*12800)
+    static WORLD_WIDTH = 1000; // 12800;
+    static WORLD_HEIGHT = 1000; // 12800;
 
-        const sampleX = (x + mOffsetX + warpX) * settings.macroScale;
-        const sampleY = (y + mOffsetY + warpY) * settings.macroScale;
-
-        return { sampleX, sampleY };
+    static generateGlobalMetadata(rng: SeededRandom): GlobalGenerationMeta {
+        const randomAngle = rng.nextRange(0, Math.PI * 2);
+        return {
+            mOffsetX: rng.nextRange(10000, 90000),
+            mOffsetY: rng.nextRange(10000, 90000),
+            cosA: Math.cos(randomAngle),
+            sinA: Math.sin(randomAngle),
+        }
     }
+
+    static generateChunk(chunkX: number, chunkY: number, settings: MapSettings, meta: GlobalGenerationMeta, noise: OpenSimplexNoise) {
+        const chunk = new Chunk(Chunk.SIZE, Chunk.SIZE);
+        const centerX = this.WORLD_WIDTH / 2;
+        const centerY = this.WORLD_HEIGHT / 2;
+
+        const stretchX = 0.7;
+        const stretchY = 1.3;
+        const oceanClamp = 0.85; // @TODO: remove settings.isIsland
+        const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY) * oceanClamp;
+
+        const bufferFactor = 0.05;
+        const bufferX = this.WORLD_WIDTH * bufferFactor;
+        const bufferY = this.WORLD_HEIGHT * bufferFactor;
+
+        for (let x = 0; x < Chunk.SIZE; x++) {
+            for (let y = 0; y < Chunk.SIZE; y++) {
+                const globalX = chunkX * Chunk.SIZE + x;
+                const globalY = chunkY * Chunk.SIZE + y;
+
+                // NO OUT OF BOUND - BACK TIGER
+                if (globalX >= this.WORLD_WIDTH || globalY >= this.WORLD_HEIGHT || globalX < 0 || globalY < 0)
+                    continue;
+
+                // worldwide ocean boundary proximity
+                const distToLeft = globalX;
+                const distToRight = (this.WORLD_WIDTH - 1) - globalX;
+                const distToTop = globalY;
+                const distToBottom = (this.WORLD_HEIGHT - 1) - globalY;
+
+                const edgeXFactor = Math.min(1.0, Math.min(distToLeft, distToRight) / bufferX);
+                const edgeYFactor = Math.min(1.0, Math.min(distToTop, distToBottom) / bufferY);
+                const globalEdgeFactor = edgeXFactor * edgeYFactor;
+
+                const { sampleX, sampleY } 
+                    = this.#getDomainWarpedSample(globalX, globalY, meta.mOffsetX, meta.mOffsetY, settings, noise);
+
+                const dx = globalX - centerX;
+                const dy = globalY - centerY;
+                const rx = dx * meta.cosA - dy * meta.sinA;
+                const ry = dx * meta.sinA + dy * meta.cosA;
+
+                // macro mask for bays and gulfs.
+                const maskWarpStrength = 0.25 * globalEdgeFactor;
+                const maskWarpX = noise.noise2D(sampleX * 0.4, sampleY * 0.4) * maskWarpStrength;
+                const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * maskWarpStrength;
+
+                const finalMaskDist = Math.sqrt(
+                    Math.pow((rx + maskWarpX * centerX) * stretchX, 2) + 
+                    Math.pow((ry + maskWarpY * centerY) * stretchY, 2) 
+                );
+
+                const normalisedDistance = finalMaskDist / maxRadius;
+                const sizeModifier = 1.0 / settings.islandRadius // @DEPRECATED: replace with continentSize;
+                const maskStrength = normalisedDistance * settings.squishFactor * sizeModifier;
+                const landMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0));
+
+                // pass for elevation
+                const baseLand = this.#getStandardfBm(sampleX, sampleY, 4, noise);
+                const mountainSpines = this.#getRidgedfBm(sampleX * 1.3, sampleY * 1.3, 6, noise);
+
+                // blend spines to specific elevations
+                let spineBlendMask = (baseLand * 0.3) + (mountainSpines * 0.85);
+                if (spineBlendMask > settings.seaLevel) {
+                    const relativeHeight = spineBlendMask - settings.seaLevel;
+                    spineBlendMask = settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4)
+                }
+
+                let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
+                if (spineBlendMask > settings.beachLevel) {
+                    const t = (elevationMask - settings.beachLevel) / (1.0 - settings.beachLevel);
+                    const smoothT = t * t * (3.0 - 2.0 * t);
+                    const inflatedTarget = elevationMask * 1.15;
+
+                    elevationMask = elevationMask + (inflatedTarget - elevationMask) * smoothT;
+                    if (elevationMask > 1.0) elevationMask = 1.0; // clamp to max elevation
+                }
+
+                chunk.elevations[Chunk.getLocalIndex(x, y)] = elevationMask
+                this._determineTileRegion(globalX, globalY, this.WORLD_WIDTH, this.WORLD_HEIGHT, chunk, tile, settings);
+            }
+        }
+    }
+    //// -END- CHUNKING REFACTOR ////
 
     static generate(width: number, height: number, settings: MapSettings, grid: Grid, noise: OpenSimplexNoise, rng: SeededRandom) {
         const centerX = width / 2;
@@ -145,10 +235,6 @@ export class MapGenerator {
         const bufferFactor = 0.05
         const bufferX = width * bufferFactor;
         const bufferY = height * bufferFactor;
-
-        // determine if the current elevation point is a bubble to insert at the map edge where other land noise crosses.
-        const { bridgeEdge, bridgeX, bridgeY }
-            = MapGenerator.checkNoiseNearBoundaries(width, height, mOffsetX, mOffsetY, noise, settings);
 
         for (let x = 0; x < width; x++) {
             for (let y = 0; y < height; y++) {
@@ -204,67 +290,8 @@ export class MapGenerator {
                     spineBlendMask = settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4);
                 }
 
-                
-                let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
-                if (!settings.isIsland && bridgeEdge !== "none") {
-                    // Define how far the land shoulder extends inward from the edge coordinate
-                    const shoulderRadiusX = width * 0.25;
-                    const shoulderRadiusY = height * 0.25;
-
-                    const distortionStrength = 0.42; // Increase for more jagged/island-like shapes, decrease for smoother lines
-                    const shoulderWarp = noise.noise2D(sampleX * 1.2, sampleY * 1.2) * distortionStrength;
-
-                    // Calculate distance to our detected crossing anchor point
-                    const distToBridgeX = (x - bridgeX) / shoulderRadiusX;
-                    const distToBridgeY = (y - bridgeY) / shoulderRadiusY;
-                    const distanceToBridge = Math.sqrt(distToBridgeX * distToBridgeX + distToBridgeY * distToBridgeY) + shoulderWarp;
-
-                    if (distanceToBridge < 1.0) {
-                        // Lateral falloff (0.0 at the sides of the shoulder, 1.0 along the central axis of the bridge)
-                        const lateralWeight = Math.pow(1.0 - distanceToBridge, 1.5);
-
-                        // 3. Compute how close we are to the actual map border edge (0.0 deep inland, 1.0 right on the edge line)
-                        let edgeProximity = 0.0;
-                        if (bridgeEdge === "left") edgeProximity = (shoulderRadiusX - x) / shoulderRadiusX;
-                        if (bridgeEdge === "right") edgeProximity = (x - (width - 1 - shoulderRadiusX)) / shoulderRadiusX;
-                        if (bridgeEdge === "top") edgeProximity = (shoulderRadiusY - y) / shoulderRadiusY;
-                        if (bridgeEdge === "bottom") edgeProximity = (y - (height - 1 - shoulderRadiusY)) / shoulderRadiusY;
-
-                        // Clamp proximity safety buffer between 0.0 and 1.0
-                        edgeProximity = Math.max(0.0, Math.min(1.0, edgeProximity));
-
-                        // 4. Calculate a dynamic elevation boost that peaks right at the map border line
-                        // At the edge line, this adds up to +0.35 elevation, tapering to 0 as you move inland
-                        const baseBoost = 0.12; // Flat baseline boost across the entire shoulder area
-                        const edgeScaleBonus = 0.25 * edgeProximity; // Escalates terrain specifically near the border
-
-                        elevationMask += (baseBoost + edgeScaleBonus) * lateralWeight;
-
-                        // 5. Enforce a firm land floor at the edge so ocean never clips back through the shoulder axis
-                        const structuralFloor = settings.beachLevel + 0.10 + (0.20 * edgeProximity);
-                        const floorWeight = (1.0 - distanceToBridge); // Strongest right on the center axis line
-
-                        const enforcedFloor = structuralFloor * floorWeight;
-                        if (elevationMask < enforcedFloor) {
-                            elevationMask = enforcedFloor;
-                        }
-                    }
-
-                    // if (distanceToBridge < 1.0) {
-                    //     // Smoothly ease the shoulder weight down to 0 at its radius boundary
-                    //     const shoulderWeight = Math.pow(1.0 - distanceToBridge, 2.0);
-
-                    //     // Determine the targeted elevation minimum for our continuous land bridge
-                    //     const targetBridgeElevation = settings.beachLevel + 0.22;
-
-                    //     // Blend the elevation upward exclusively inside this localized bubble zone
-                    //     if (elevationMask < targetBridgeElevation) {
-                    //         elevationMask = elevationMask + (targetBridgeElevation - elevationMask) * shoulderWeight;
-                    //     }
-                    // }
-                }
-
                 // inflate and clamp the final elevation structure so that mountains form more readily
+                let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
                 if (elevationMask > settings.beachLevel) {
                     const t = (elevationMask - settings.beachLevel) / (1.0 - settings.beachLevel);
                     const smoothT = t * t * (3.0 - 2.0 * t);
@@ -282,6 +309,7 @@ export class MapGenerator {
         }
     }
 
+    // @DEPRECATED: Won't remove until I'm sure I don't need it later.
     static checkNoiseNearBoundaries(
         width: number, height: number, 
         mOffsetX: number, mOffsetY: number, 
@@ -432,6 +460,23 @@ export class MapGenerator {
     }
 
     // NOISE GENERATION
+    static #getDomainWarpedSample(
+        x: number,
+        y: number,
+        mOffsetX: number,
+        mOffsetY: number,
+        settings: MapSettings,
+        noise: OpenSimplexNoise,
+    ): { sampleX: number, sampleY: number } {
+        const warpX = noise.noise2D((x + 200) * 0.018, (y + 200) * 0.018) * 45;
+        const warpY = noise.noise2D((x - 200) * 0.018, (y - 200) * 0.018) * 45;
+
+        const sampleX = (x + mOffsetX + warpX) * settings.macroScale;
+        const sampleY = (y + mOffsetY + warpY) * settings.macroScale;
+
+        return { sampleX, sampleY };
+    }
+
     // Fractional Brownian Motion for ridged multi-fractal noise structures
     // This is scienceish for forked mountain range structures.
     static #getRidgedfBm(nx: number, ny: number, octaves: number, noise: OpenSimplexNoise): number {

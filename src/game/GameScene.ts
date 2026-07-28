@@ -42,7 +42,7 @@ export class GameScene {
             // - 'Hershey Testereo'
             // - 'sanga ranga bangaranga'
             // - 'fuck me I wish I were dead, aye'
-            seed: 'Donaldo Ronaldo Trumpino',
+            seed: 'helpmeimdrowning',
             width: MapGenerator.DEFAULT_WIDTH, 
             height: MapGenerator.DEFAULT_HEIGHT,
         })     
