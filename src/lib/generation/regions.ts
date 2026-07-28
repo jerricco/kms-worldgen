@@ -38,7 +38,6 @@ export const RegionID = {
     // climatic
     PLAIN       : 19,
     // geographic
-    FOOTHILL    : 20,
     PLATEAU     : 21,
     VALLEY      : 22,
     // climatic
@@ -47,7 +46,13 @@ export const RegionID = {
     TUNDRA      : 25,
     // lithogaphic
     KARST       : 26,
-
+    // subterrene
+    LITHOSPHERE : 27,
+    CAVE        : 28,
+    SUBTERRANEAN_AQUIFER: 29,
+    // special
+    DEEP_BIOSPHERE: 30,
+    HYDROTHERMAL_SYSTEM: 31,
 }
 
 export type RegionID = typeof RegionID[keyof typeof RegionID]
