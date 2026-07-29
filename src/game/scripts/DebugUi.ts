@@ -1,5 +1,4 @@
 import * as pc from 'playcanvas';
-import type { Tile } from '../../lib/generation/types';
 import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
@@ -12,15 +11,6 @@ export class DebugUiController extends pc.Script {
     private screenEntity!: pc.Entity;
     private ruler!: pc.Entity;
     private settings!: GameSettings;
-
-    // References to UI groups for toggling visibility or pulling data
-    private coordinateBox!: pc.Entity;
-    private tileInfoBox!: pc.Entity;
-    
-    // References to internal elements needed for logic updates
-    private tileNameTextEl!: pc.Entity;
-    private tileTypeTextEl!: pc.Entity;
-    private tileCoordTextEl!: pc.Entity;
 
     private refreshBtn!: pc.Entity;
 
@@ -36,7 +26,6 @@ export class DebugUiController extends pc.Script {
         
         // create debug UI
         this.createUiHierarchy();
-        // this.hideTileInfo(); // start hidden, only show when a tile is seleted
 
         // create debug grid rulers
         this.ruler = new pc.Entity('RuleGridEntity')
@@ -79,8 +68,6 @@ export class DebugUiController extends pc.Script {
         // Render sections
         this.buildSeedDebugInput();
         this.buildMapSettingsPanel();
-        // this.buildHoverCornerBox();
-        // this.buildTileInfoBox();
     }
 
     private buildSeedDebugInput() {
@@ -209,80 +196,5 @@ export class DebugUiController extends pc.Script {
         });
 
         this.screenEntity.addChild(group);
-    }
-
-    private buildHoverCornerBox() {
-        this.coordinateBox = new pc.Entity('HoverCornerBox');
-        this.coordinateBox.addComponent('element', {
-            type: pc.ELEMENTTYPE_IMAGE,
-            anchor: new pc.Vec4(1, 0, 1, 0), // Bottom Right Corner
-            pivot: new pc.Vec2(1, 0),
-            width: 120,
-            height: 120,
-            margin: new pc.Vec4(0, 30, 30, 0), // Pushed away from borders
-            color: new pc.Color(0.6, 0.15, 0.15),
-            useInput: true
-        });
-
-        const hoverText = new pc.Entity('HoverText');
-        hoverText.addComponent('element', {
-            type: pc.ELEMENTTYPE_TEXT,
-            anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
-            pivot: new pc.Vec2(0.5, 0.5),
-            text: "No tile\nselected",
-            fontSize: 16,
-            alignment: new pc.Vec2(0.5, 0.5),
-            color: new pc.Color(1, 1, 1),
-            fontAsset: this.font
-        });
-
-        this.coordinateBox.addChild(hoverText);
-        this.screenEntity.addChild(this.coordinateBox);
-    }
-
-    private buildTileInfoBox() {
-        this.tileInfoBox = new pc.Entity('TileInfoBox');
-        this.tileInfoBox.addComponent('element', {
-            type: pc.ELEMENTTYPE_IMAGE,
-            anchor: new pc.Vec4(0, 0.5, 0, 0.5), // Mid Left Alignment
-            pivot: new pc.Vec2(0, 0.5),
-            width: 320,
-            height: 250,
-            margin: new pc.Vec4(40, 0, 0, 0),
-            color: new pc.Color(0.1, 0.1, 0.13, 0.95)
-        });
-
-        // Shared baseline text configurations
-        const createTextRow = (yOffset: number, label: string) => {
-            const row = new pc.Entity();
-            row.addComponent('element', {
-                type: pc.ELEMENTTYPE_TEXT,
-                anchor: new pc.Vec4(0, 1, 1, 1),
-                pivot: new pc.Vec2(0, 1),
-                margin: new pc.Vec4(20, yOffset, 20, 0),
-                text: label,
-                fontSize: 20,
-                color: new pc.Color(0.9, 0.9, 0.9)
-            });
-            this.tileInfoBox.addChild(row);
-            return row.element!;
-        };
-
-        this.tileNameTextEl = createTextRow(30, "Name: None");
-        this.tileTypeTextEl = createTextRow(80, "Type: None");
-        this.tileCoordTextEl = createTextRow(130, "Coords: 0,0");
-
-        this.screenEntity.addChild(this.tileInfoBox);
-    }
-
-    public showTileInfo(data: Tile) {
-        this.tileInfoBox.enabled = true;
-        this.tileNameTextEl.text = `Name: ${data.name}`;
-        this.tileTypeTextEl.text = `Type: ${data.type}`;
-        this.tileCoordTextEl.text = `Coords: ${data.coordinates}`;
-    }
-
-    public hideTileInfo() {
-        this.tileInfoBox.enabled = false;
     }
 }

@@ -59,7 +59,7 @@ export const RegionID: Record<string, number> = {
 
 export type RegionID = typeof RegionID[keyof typeof RegionID]
 
-export const StatusName = Object.fromEntries(
+export const RegionName = Object.fromEntries(
     Object.entries(RegionID).map(([key, value]) => [value, key])
 ) as { [K in RegionID]: keyof typeof RegionID }
 

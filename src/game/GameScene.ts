@@ -1,13 +1,16 @@
 import * as pc from 'playcanvas'
 
-import { MapGenerator, type GlobalGenerationMeta } from '../lib/generation/generator';
-import { OrthoCameraController } from './scripts/OrthoCamera';
-import { DebugUiController } from './scripts/DebugUi';
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
-import type { ChunkSettings } from '../lib/generation/chunk';
-import { ChunkManager } from './scripts/ChunkManager';
-import { SeededRandom } from '../lib/generation/seed';
-import { OpenSimplexNoise } from '../lib/generation/noise';
+
+import type { ChunkSettings }        from '../lib/generation/chunk';
+import type { GlobalGenerationMeta } from '../lib/generation/generator';
+
+import { MapGenerator }              from '../lib/generation/generator';
+import { OrthoCameraController }     from './scripts/OrthoCamera';
+import { DebugUiController }         from './scripts/DebugUi';
+import { ChunkManager }              from './scripts/ChunkManager';
+import { SeededRandom }              from '../lib/generation/seed';
+import { OpenSimplexNoise }          from '../lib/generation/noise';
 
 // Merges all the settings which will later split 
 export type GameSettings = 
@@ -41,7 +44,7 @@ export class GameScene {
 
     constructor() {
         console.time('Initialising...')
-        this.preload(); // @TODO: loading screen
+        this.#preload(); // @TODO: loading screen
 
         // @TODO: main menu & game creation screen.
         
@@ -58,11 +61,14 @@ export class GameScene {
         console.timeEnd('Initialising...')
     }
 
-    preload() {
+    ////////////////
+    // PRELOADING //
+    ////////////////
+    #preload() {
         this.canvas = document.getElementById("canvas") as HTMLCanvasElement
         if (!this.canvas) throw new Error("Canvas element not found");
 
-        this.app = this.getGameApp();
+        this.app = this.#getGameApp();
 
         // preload relevant assets
         this.font = new pc.Asset('PatrickHandFont', 'font', { url: fontJsonUrl })
@@ -75,6 +81,27 @@ export class GameScene {
         this.app.start();
     }
 
+    #getGameApp(): pc.Application {
+        const elementInput = new pc.ElementInput(this.canvas, { useMouse: true, useTouch: true });
+
+        const app = new pc.Application(this.canvas, {
+            elementInput,
+            mouse: new pc.Mouse(this.canvas),
+            keyboard: new pc.Keyboard(this.canvas),
+            touch: new pc.TouchDevice(this.canvas),
+        });
+
+        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
+        app.setCanvasResolution(pc.RESOLUTION_AUTO);
+
+        window.addEventListener('resize', () => app.resizeCanvas());
+
+        return app;
+    }
+
+    ///////////////////
+    // CONFIGURATION //
+    ///////////////////
     configureLevel(): GameSettings {
         return {
             // seed: playerSeed || MapGenerator.DEFAULT_SEED
@@ -87,8 +114,8 @@ export class GameScene {
             // seed: 'Hershey Testereo',
             // seed: 'sanga ranga bangaranga',
             // seed: 'fuck me I wish I were dead, aye',
-            // seed: 'helpmeimdrowning',
-            seed: 'aborio rice',
+            seed: 'helpmeimdrowning',
+            // seed: 'aborio rice',
             maxX: 800, // 12800
             maxY: 800, // 12800
             stretchX: 0.7,
@@ -108,35 +135,21 @@ export class GameScene {
         }
     }
 
+    /////////////////
+    // START LEVEL //
+    /////////////////
     startLevel() {
         this.camera = this.getOrthoCamera();
-
         this.chunkManager = this.getChunkManager();
+
+        // generate starting chunks at the loaded camera location
+        // for a new game, this should be 0,0
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
-        // generate starting chunks at that location for a new game
-        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 15, this.config, this.meta, this.noise)
+        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16, this.config, this.meta, this.noise)
         // @TODO reveal all loaded chunks when save data is present.
 
         // finally load the UI
         this.ui = this.getUI();
-    }
-
-    getGameApp(): pc.Application {
-        const elementInput = new pc.ElementInput(this.canvas, { useMouse: true, useTouch: true });
-
-        const app = new pc.Application(this.canvas, {
-            elementInput,
-            mouse: new pc.Mouse(this.canvas),
-            keyboard: new pc.Keyboard(this.canvas),
-            touch: new pc.TouchDevice(this.canvas),
-        });
-
-        app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
-        app.setCanvasResolution(pc.RESOLUTION_AUTO);
-
-        window.addEventListener('resize', () => app.resizeCanvas());
-
-        return app;
     }
 
     getOrthoCamera(): pc.Entity {
@@ -163,16 +176,6 @@ export class GameScene {
         return cam;
     }
 
-    getUI() {
-        const ui = new pc.Entity('UIContainerEntity');
-        ui.addComponent('script')
-        const debugUIScript = ui.script?.create(DebugUiController) as DebugUiController;
-        debugUIScript.settings = { ...this.config }
-        
-        this.app.root.addChild(ui);
-        return ui;
-    }
-
     getChunkManager(): pc.Entity {
         const chunkManager = new pc.Entity('ChunkManagerEntity')
         chunkManager.addComponent('script')
@@ -183,5 +186,15 @@ export class GameScene {
 
         this.app.root.addChild(chunkManager)
         return chunkManager
+    }
+
+    getUI() {
+        const ui = new pc.Entity('UIContainerEntity');
+        ui.addComponent('script')
+        const debugUIScript = ui.script?.create(DebugUiController) as DebugUiController;
+        debugUIScript.settings = { ...this.config }
+        
+        this.app.root.addChild(ui);
+        return ui;
     }
 }

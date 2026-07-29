@@ -2,7 +2,7 @@ import * as pc from 'playcanvas'
 import type { ChunkManager } from './ChunkManager';
 import { Chunk } from '../../lib/generation/chunk';
 import type { GameSettings } from '../GameScene';
-import { StatusName, type RegionID } from '../../lib/generation/regions';
+import { RegionName, type RegionID } from '../../lib/generation/regions';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';
@@ -48,6 +48,7 @@ export class RuleGridRenderer extends pc.Script {
     private gridMaterial!: pc.ShaderMaterial;
     private axisMaterial!: pc.ShaderMaterial;
     private labelScreen!: pc.Entity;
+    private layer!: pc.Layer;
     
     // @TODO: Make poolRadius 2D and have it calculate the poolRadiusZ to be by the
     // screen device's aspect ratio
@@ -64,20 +65,27 @@ export class RuleGridRenderer extends pc.Script {
         this.font = this.app.assets.find('PatrickHandFont');
         this.chunkManager = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
 
-        const gd: pc.GraphicsDevice = this.app.graphicsDevice;
+        // compose a rendering layer for this entity since it's supposed to overlay everything in the world
+        // we will place it just below the UI.
+        const layerComp = this.app.scene.layers;
+        const uiLayer = layerComp.getLayerByName('UI');
+        const uiIndex = layerComp.getTransparentIndex(uiLayer);
+        this.layer = new pc.Layer({ name: "DebugGrid" });
+
+        layerComp.insert(this.layer, uiIndex);
 
         // Create a massive flat quad structure to prevent edge visibility limits
-        const mesh: pc.Mesh = pc.Mesh.fromGeometry(gd, new pc.PlaneGeometry({
+        const mesh: pc.Mesh = pc.Mesh.fromGeometry(this.app.graphicsDevice, new pc.PlaneGeometry({
             halfExtents: new pc.Vec2(12800, 12800),
             widthSegments: 1,
             lengthSegments: 1
-        }))
+        }));
 
         // Define grid shader & attach it to a screen
         const gridScreen = this.createGridScreen(mesh);
         const axisScreen = this.createAxisScreen(mesh)
         this.labelScreen = this.createLabelScreen();
-        
+
         this.app.root.addChild(gridScreen);
         this.app.root.addChild(axisScreen);
         this.app.root.addChild(this.labelScreen);
@@ -88,6 +96,10 @@ export class RuleGridRenderer extends pc.Script {
         if (!cam || !cam.camera) return;
         
         const camera: pc.CameraComponent = cam?.camera;
+
+        // track the current layer in the camera if not already
+        const layerId = camera.layers.find((l) => l === this.layer.id);
+        if (!layerId) camera.layers = camera.layers.concat([this.layer.id]);
         
         // ensure the drawn entity stays stationary as the map is traversed.
         const camPos: pc.Vec3 = cam.getPosition();
@@ -204,10 +216,11 @@ export class RuleGridRenderer extends pc.Script {
 
         const gridMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.gridMaterial);
         const gridScreen = new pc.Entity('GridSquaresScreen');
-        gridScreen.addComponent('screen', { screenSpace: false, priority: 1 });
+        gridScreen.addComponent('screen', { priority: 1 });
         gridScreen.addComponent('render', {
             type: 'asset',
-            meshInstances: [gridMesh]
+            meshInstances: [gridMesh],
+            layers: [this.layer.id]
         });
 
         return gridScreen;
@@ -226,10 +239,11 @@ export class RuleGridRenderer extends pc.Script {
 
         const axisMesh: pc.MeshInstance = new pc.MeshInstance(mesh, this.axisMaterial);
         const axisScreen = new pc.Entity('GridAxisScreen');
-        axisScreen.addComponent('screen', { screenSpace: false, priority: 3 });
+        axisScreen.addComponent('screen', { priority: 3 });
         axisScreen.addComponent('render', {
             type: 'asset',
-            meshInstances: [axisMesh]
+            meshInstances: [axisMesh],
+            layers: [this.layer.id]
         });
 
         return axisScreen;
@@ -237,7 +251,7 @@ export class RuleGridRenderer extends pc.Script {
 
     private createLabelScreen() {
         const labelScreen = new pc.Entity('GridLabelsScreen');
-        labelScreen.addComponent('screen', { screenSpace: false, priority: 2 });
+        labelScreen.addComponent('screen', { screenSpace: false });
         labelScreen['uFade'] = 0; // store the uFade arbitrarily so we can track it for lerping
 
         const sideLength = (this.poolRadius * 2) + 1;
@@ -323,15 +337,6 @@ export class RuleGridRenderer extends pc.Script {
             }
         }
 
-        // const screenCenterX = Math.round(camPos.x);
-        // const screenCenterY = Math.round(camPos.y);
-
-        // // We're only going to update a few chunks around us. For now, we get one.
-        // const chunkX = Math.floor(screenCenterX / Chunk.DEFAULT_SIZE);
-        // const chunkY = Math.floor(screenCenterX / Chunk.DEFAULT_SIZE);
-
-        // const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
-
         // lerp render labels
         const centerGridX = Math.round(camPos.x);
         const centerGridZ = Math.round(camPos.z);
@@ -361,6 +366,12 @@ export class RuleGridRenderer extends pc.Script {
                 // find the tile information to build the label with
                 const worldX = Math.floor(centerGridX + xOffset);
                 const worldZ = Math.floor(centerGridZ + zOffset);
+
+                //@NOTE: reajdust this next bit when coords are sorted
+                if (worldX < 0 || worldZ < 0 ||
+                    worldX >= this.settings.maxX || worldZ >= this.settings.maxY
+                ) continue; // skip for anything outside bounds
+
                 const chunkX = Math.floor(worldX / this.settings.chunkSize);
                 const chunkY = Math.floor(worldZ / this.settings.chunkSize);
                 const tileX = worldX - (chunkX * this.settings.chunkSize);
@@ -390,7 +401,7 @@ export class RuleGridRenderer extends pc.Script {
         elevation: number = 0
     ): string {
         return `X:${gridX + 1}, Z:${gridY + 1}`
-            + `\n${StatusName[regionID] || 'VOID'}`
+            + `\n${RegionName[regionID] || 'VOID'}`
             + `\nY:${elevation.toFixed(2) || 0.00}`;
     }
 }

@@ -1,19 +1,8 @@
 import type { REGION_CONFIG as RegionConfig } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
-import type { Grid } from './types';
 import type { GameSettings } from '../../game/GameScene';
 import type { ChunkSettings } from './chunk';
-
-// dynamic settings
-export type RiverSetting = {
-    name: string,
-    count: number,
-    bedWidth: number, // in tiles
-    windiness: number, // 0 straight -> 2.5 extroime
-    genThreshold: number, // The amount to randomly vary the river cout with
-};
-
 
 export interface GlobalGenerationMeta {
     maxX: number,
@@ -97,56 +86,6 @@ export class MapGenerator {
     ///////////////////////////////
     //     UTILITY FUNCTIONS     //
     ///////////////////////////////
-    // POSSIBLY DEPRECATED
-    // find the vector from a tile to the nearest tile of a type of REGION
-    static findNearestTileVector(sx: number, sy: number, width: number, height: number, grid: Grid, findingRegion: RegionConfig): { x: number, y: number } | null {
-        const queue: { x: number, y: number }[] = [{ x: sx, y: sy }];
-        const visited = new Set<string>([`${sx},${sy}`]);
-        const scanDirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
-        let head = 0;
-
-        while (head < queue.length && queue.length < 1500) {
-            const curr = queue[head++];
-            if (grid[curr.x][curr.y].region.name === findingRegion.name) return curr;
-
-            for (const d of scanDirs) {
-                const nx = curr.x + d.dx, ny = curr.y + d.dy;
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                    const key = `${nx},${ny}`;
-                    if (!visited.has(key)) { visited.add(key); queue.push({ x: nx, y: ny }); }
-                }
-            }
-        }
-        return null;
-    }
-
-    // Attempt to detect whether the current selected tile is within a basin.
-    static detectBasin(sx: number, sy: number, width: number, height: number, grid: Grid): { x: number, y: number }[] | null {
-        const queue: { x: number, y: number }[] = [{ x: sx, y: sy }];
-        const visited = new Set<string>([`${sx},${sy}`]);
-        const startElevation = grid[sx][sy].elevation;
-        const scanDirs = [{ dx: 0, dy: -1 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }];
-
-        let head = 0;
-        while (head < queue.length) {
-            const curr = queue[head++];
-            if (queue.length > 200) return null;
-
-            for (const d of scanDirs) {
-                const nx = curr.x + d.dx, ny = curr.y + d.dy;
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) return null;
-
-                const key = `${nx},${ny}`;
-                if (visited.has(key)) continue;
-                visited.add(key);
-
-                if (grid[nx][ny].elevation < startElevation - 0.01) return null;
-                if (grid[nx][ny].elevation <= startElevation + 0.02) { queue.push({ x: nx, y: ny }); }
-            }
-        }
-        return queue;
-    }
-
     // NOISE GENERATION
     static getDomainWarpedSample(
         x: number,

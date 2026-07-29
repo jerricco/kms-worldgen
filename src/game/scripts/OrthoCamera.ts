@@ -1,6 +1,7 @@
 import * as pc from 'playcanvas';
-import type { Tile } from '../../lib/generation/types';
-import { MapGenerator } from '../../lib/generation/generator';
+import type { ChunkManager } from './ChunkManager';
+import { Chunk } from '../../lib/generation/chunk';
+import { RegionName } from '../../lib/generation/regions';
 
 export class OrthoCameraController extends pc.Script {
     static scriptName = 'ortho-camera-controller'
@@ -25,6 +26,7 @@ export class OrthoCameraController extends pc.Script {
     private lastTouchPos = new pc.Vec2();
     private lastPosHovered = new pc.Vec2();
     private mouseScreenPos = new pc.Vec2();
+    private chunkManager!: ChunkManager;
 
     private _boundWindowBlur!: () => void;
     private _boundWindowMouseOut!: (e: MouseEvent) => void;
@@ -52,9 +54,8 @@ export class OrthoCameraController extends pc.Script {
 
         // Handle mouse window
         this._boundWindowBlur = () => { this.isPanning = false; };
+        // Fired if the mouse crosses past the browser content window edge completely
         this._boundWindowMouseOut = (e: MouseEvent) => {
-
-            // Fired if the mouse crosses past the browser content window edge completely
             if (!e.relatedTarget && (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight)) {
                 this.isPanning = false;
             }
@@ -84,6 +85,11 @@ export class OrthoCameraController extends pc.Script {
     }
 
     update(dt: number) {
+        // get when available
+        if (!this.chunkManager) {
+            this.chunkManager = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
+        }
+
         const t = 1 - Math.pow(this.smoothFactor, dt * 60);
 
         this.currentPosition.lerp(this.entity.getPosition(), this.targetPosition, t);
@@ -161,38 +167,39 @@ export class OrthoCameraController extends pc.Script {
         this.isPanning = false;
     }
 
-    private findTileInformation(x: number, y: number): Tile | null {
-        return null;
+    private findTileInformation(x: number, y: number): void {
+        if (!this.chunkManager) return; // don't bother getting tile information if we haven't generated any yet
 
-        // const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
-        // const intersectX = rayStart.x;
-        // const intersectZ = rayStart.z;
-        // const gridX = Math.floor(intersectX / map.tileSize);
-        // const gridY = Math.floor(intersectZ / map.tileSize);
+        const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
+        const gridX = Math.floor(rayStart.x / this.chunkManager.tileSize);
+        const gridY = Math.floor(rayStart.z / this.chunkManager.tileSize);
+        const maxX = this.chunkManager.settings.maxX;
+        const maxY = this.chunkManager.settings.maxY;
+        const isInsideGrid = gridX >= 0 && gridX < maxX && gridY >= 0 && gridY < maxY;
+        const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
+        
+        if (!isInsideGrid || !isDifferentTile) return;
+        this.lastPosHovered.x = gridX;
+        this.lastPosHovered.y = gridY;
 
-        // const isInsideGrid = gridX >= 0 && gridX < map.generation.width && gridY >= 0 && gridY < map.generation.height;
-        // const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
+        const chunkSize = this.chunkManager.settings.chunkSize;
+        const chunkX = Math.floor(gridX / chunkSize);
+        const chunkY = Math.floor(gridY / chunkSize);
+        const tileX = gridX - (chunkX * chunkSize);
+        const tileY = gridY - (chunkY * chunkSize);
+        const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
+        const tileIndex = Chunk.getLocalIndex(Math.floor(tileX), Math.floor(tileY));
 
-        // if (!isInsideGrid || !isDifferentTile) return null;
-
-        // this.lastPosHovered.x = gridX;
-        // this.lastPosHovered.y = gridY;
-
-        // const tile: Tile = map.generation.grid[gridX][gridY] || null;
-        // if (tile) {
-        //     console.log(`${tile.region.name} Tile (@${gridX},${gridY}) - elevation: ${tile.elevation.toFixed(2)}`);
-        // } else {
-        //     console.log(`[Tile Hovered] Empty space or boundary edge at: (${gridX}, ${gridY})`);
-        // }
-
-        // return {} as Tile; //tile;
+        const region = RegionName[chunk?.regionIds[tileIndex]];
+        const elevation = chunk?.elevations[tileIndex];
+        console.log(`${region} Tile (@${gridX},${gridY}) - elevation: ${elevation?.toFixed(2)}`);
     }
 
     private panByDelta(dx: number, dy: number) {
-        const currentHeight = this.entity.camera!.orthoHeight;
-        const screenScale = (currentHeight * 2) / this.app.graphicsDevice.height;
-        const worldDx = -dx * screenScale * this.panSpeed;
-        const worldDz = -dy * screenScale * this.panSpeed;
+        const screenScale = (this.entity.camera!.orthoHeight * 2) / this.app.graphicsDevice.height;
+        const worldDx = -dx * screenScale * this.panSpeed, worldDz = -dy * screenScale * this.panSpeed;
+
+        console.log(worldDx, worldDz)
 
         this.targetPosition.x += worldDx;
         this.targetPosition.z += worldDz;
@@ -200,6 +207,7 @@ export class OrthoCameraController extends pc.Script {
         this.clampCameraToWorld();
     }
 
+    // @TODO: account for screen aspect ratios so that the map always can pan into VOID.
     private clampCameraToWorld() {
         const map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
         if (!map) {
@@ -208,20 +216,18 @@ export class OrthoCameraController extends pc.Script {
             return;
         }
 
-        const mapLimitX = map.settings.maxX;
-        const mapLimitY = map.settings.maxY;
-
+        // horizontal clamp
         const targetX = this.targetPosition.x
-        const targetZ = this.targetPosition.z
-        const minX = -(mapLimitX / 2) + 100;
-        const maxX = (mapLimitX * 1.5) - 100;
-        const minZ = -(mapLimitY / 2) + 100;
-        const maxZ = (mapLimitY * 1.5) - 100;
+        const leftBound = -(map.settings.maxX / 2) - 100, rightBound = (map.settings.maxX / 2) + 100;
+        if (targetX < leftBound ||targetX > rightBound) {
+            this.targetPosition.x = pc.math.clamp(this.targetPosition.x, leftBound, rightBound);
+        }
 
-        if (targetX > maxX || targetX < minX) 
-            this.targetPosition.x = pc.math.clamp(this.targetPosition.x, minX, maxX);
-        
-        if (targetZ > maxZ || targetZ < minZ) 
-            this.targetPosition.z = pc.math.clamp(this.targetPosition.z, minZ, maxZ);
+        // vertical clamp
+        const targetZ = this.targetPosition.z
+        const topBound = -(map.settings.maxY / 2) - 100, bottomBound = (map.settings.maxY / 2) + 100;
+        if (targetZ < topBound || targetZ > bottomBound) {
+            this.targetPosition.z = pc.math.clamp(this.targetPosition.z, topBound, bottomBound);
+        }
     }
 }

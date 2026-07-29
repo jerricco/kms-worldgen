@@ -51,7 +51,8 @@ export class ChunkManager extends pc.Script {
                 const targetY = centerChunkY + yOffset;
 
                 // clamp to stop from generating chunks out of bounds.
-                if (targetX < 0 || targetX >= this.maxChunksX || targetY < 0 || targetY >= this.maxChunksY)
+                // clamp by the reveal radius because it should generate circularly around the given Point<x,y>
+                if (targetX < -revealRadius || targetX > revealRadius || targetY < -revealRadius || targetY > revealRadius)
                     continue;
 
                 const chunkKey = `${targetX},${targetY}`;
