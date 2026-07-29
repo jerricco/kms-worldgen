@@ -3,6 +3,7 @@ import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
 import type { Grid } from './types';
 import { Chunk } from './chunk';
+import type { GameSettings } from '../../game/GameScene';
 
 // dynamic settings
 export type RiverSetting = {
@@ -82,45 +83,16 @@ export interface GlobalGenerationMeta {
 export class MapGenerator {
     static DEFAULT_SEED = 'aborio rice';
 
-    public seed: string;
-    public rng: SeededRandom;
-    public noise: OpenSimplexNoise;
-
-    public meta: GlobalGenerationMeta;
-    public settings: MapSettings;
-
-    public chunks: Chunk[] = [];
-
-    constructor(seed: string, config?: MapSettings) {
-        this.settings = { ...GeneratorDefaults, ...config };
-        
-        // construction
-        this.seed = seed || MapGenerator.DEFAULT_SEED
-        this.rng = new SeededRandom(seed);
-        this.meta = MapGenerator.generateGlobalMetadata(this.rng);
-        this.noise = new OpenSimplexNoise(this.rng);
-        
-        // @DEBUG
-        // generate the first 15 chunks each way to simulate 750x750
-        // @TODO: check this shit, because idk if I'm storing chunks properly for later
-        for (let x = 0; x < 15; x++) {
-            for (let y = 0; y < 15; y++) {
-                const localIndex = Chunk.getLocalIndex(x, y);
-                this.chunks[localIndex] = new Chunk(x, y, this.settings, this.meta, this.noise)
-            }
-        }
-    }
-
     // @TODO: adjust it so that the world size is by default 256*256 chunks (12800*12800)
-    static generateGlobalMetadata(rng: SeededRandom): GlobalGenerationMeta {
+    static generateGlobalMetadata(config: GameSettings, rng: SeededRandom): GlobalGenerationMeta {
         if (!rng) {
             throw new Error('We need an rng instance!')
         }
 
         const randomAngle = rng.nextRange(0, Math.PI * 2);
         // @NOTE this is where the GenerationSettings should overwrite & split between this & ChunkSettings 
-        const maxX = 750;
-        const maxY = 750;
+        const maxX = config.maxX || 750;
+        const maxY = config.maxY || 750;
         const centerX = maxX / 2;
         const centerY = maxY / 2;
         const bufferFactor = 0.05;

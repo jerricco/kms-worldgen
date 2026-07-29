@@ -8,7 +8,6 @@ export class ChunkManager extends pc.Script {
     static scriptName = 'ChunkManager';
     static maxInitialChunks = 15;
 
-    worldEntity!: pc.Entity;
     settings!: GameSettings;
     chunks: Map<string, Chunk> = new Map();
 
@@ -18,8 +17,8 @@ export class ChunkManager extends pc.Script {
     maxChunksY!: number;
     
     initialise() {
-        if (!this.worldEntity || !this.settings)
-            throw new Error('ChunkManager: Cannot find worldentity or config! There\'s nothing to attach chunks to!');
+        if (!this.settings)
+            throw new Error('ChunkManager: Cannot find config! There\'s nothing to configure chunks with!');
 
         this.maxChunksX = this.settings.maxX / this.settings.chunkSize;
         this.maxChunksY = this.settings.maxX / this.settings.chunkSize;
@@ -39,7 +38,7 @@ export class ChunkManager extends pc.Script {
         settings: GameSettings,
         meta: GlobalGenerationMeta,
         noise: OpenSimplexNoise,
-    ): void {
+    ): void { 
         const units = this.settings.chunkSize * this.tileSize;
         const centerChunkX = Math.floor(cameraGlobalX / units);
         const centerChunkY = Math.floor(cameraGlobalY / units);
@@ -68,7 +67,7 @@ export class ChunkManager extends pc.Script {
 
                 if (!chunk.visualEntity) {
                     chunk.visualEntity = chunk.buildMesh(this.app.graphicsDevice);
-                    this.worldEntity.addChild(chunk.visualEntity);
+                    this.entity.addChild(chunk.visualEntity);
                 }
 
                 chunk.visualEntity.enabled = true;

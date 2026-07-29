@@ -97,7 +97,7 @@ export class Chunk {
                 // Fetch colors
                 const regionId = this.regionIds[localIndex];
                 const regionStr = Object.keys(RegionID).find((r) => RegionID[r] === regionId) || 'VOID';
-                const tileColor = hexToRgb(palette[regionStr]) || new pc.Color(0.5, 0.5, 0.5);
+                const tileColor = palette[regionStr] ? hexToRgb(palette[regionStr]) : new pc.Color(0.5, 0.5, 0.5);
 
                 // Local positional offsets relative to the chunk's global space positioning
                 const xPos = chunkBaseX + (x * tileSize);

@@ -1,5 +1,4 @@
 import * as pc from 'playcanvas'
-import type { MapGenerator } from '../../lib/generation/generator';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';
@@ -42,7 +41,6 @@ export class RuleGridRenderer extends pc.Script {
 
     /** @attribute */
     public font: pc.Asset | null = null;
-    public gen: MapGenerator | null = null;
     
     private gridMaterial!: pc.ShaderMaterial;
     private axisMaterial!: pc.ShaderMaterial;
@@ -87,9 +85,7 @@ export class RuleGridRenderer extends pc.Script {
         const camPos: pc.Vec3 = cam.getPosition();
         this.entity.setPosition(camPos.x, 0, camPos.z);
 
-        // update grid object to ensure it gets any level generation updates.
-        const gen = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer.generation;
-        if (!this.gen || gen.seed !== this.gen.seed) this.gen = gen;
+        // @TODO: update grid object to ensure it gets any level generation updates.
         
         // update the entitie's elements
         this.updateGridRender(dt, camera);
@@ -348,20 +344,20 @@ export class RuleGridRenderer extends pc.Script {
                 const cellWorldZ = (centerGridZ + zOffset + 0.15);
                 currentLabel.setPosition(cellWorldX, 0.01, cellWorldZ);
                     
-                let labelText = this.getLabelText(cellWorldX, cellWorldZ)
-                if (currentLabel.element.text !== labelText) {
-                    currentLabel.element.text = labelText;
-                }
+                // let labelText = this.getLabelText(cellWorldX, cellWorldZ)
+                // if (currentLabel.element.text !== labelText) {
+                //     currentLabel.element.text = labelText;
+                // }
             }
         }
     }
 
-    private getLabelText(cellWorldX: number, cellWorldZ: number): string {
-        const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ); // @NOTE: this is the display value, which won't be zero indexed
-        const tile = this.gen?.grid?.[gridX]?.[gridY];
-        return `X:${gridX + 1}, Z:${gridY + 1}`
-            + `\n${tile?.region.name || 'VOID'}`
-            + `\nY:${tile?.elevation.toFixed(2) || 0.00}`;
-    }
+    // private getLabelText(cellWorldX: number, cellWorldZ: number): string {
+    //     const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ); // @NOTE: this is the display value, which won't be zero indexed
+    //     const tile = this.gen?.grid?.[gridX]?.[gridY];
+    //     return `X:${gridX + 1}, Z:${gridY + 1}`
+    //         + `\n${tile?.region.name || 'VOID'}`
+    //         + `\nY:${tile?.elevation.toFixed(2) || 0.00}`;
+    // }
 }
 

@@ -141,7 +141,7 @@ export class OrthoCameraController extends pc.Script {
 
         this.targetPosition.x += toMouseX * zoomRatioChange;
         this.targetPosition.z += toMouseZ * zoomRatioChange;
-        this.clampCameraToMap();
+        this.clampCameraToWorld();
         this.lastMousePos.set(event.x, event.y)
     }
 
@@ -206,24 +206,27 @@ export class OrthoCameraController extends pc.Script {
         this.targetPosition.x += worldDx;
         this.targetPosition.z += worldDz;
 
-        this.clampCameraToMap();
+        this.clampCameraToWorld();
     }
 
-    private clampCameraToMap() {
-        const map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer;
-        
+    private clampCameraToWorld() {
+        const map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
+        console.log(map)
         if (!map) {
             this.targetPosition.x = 0;
             this.targetPosition.z = 0;
             return;
         }
 
+        const mapLimitX = map.settings.maxX;
+        const mapLimitY = map.settings.maxY;
+
         const targetX = this.targetPosition.x
         const targetZ = this.targetPosition.z
-        const minX = -(map.generation.width / 2) + 100;
-        const maxX = (map.generation.width * 1.5) - 100;
-        const minZ = -(map.generation.height / 2) + 100;
-        const maxZ = (map.generation.height * 1.5) - 100;
+        const minX = -(mapLimitX / 2) + 100;
+        const maxX = (mapLimitX * 1.5) - 100;
+        const minZ = -(mapLimitY / 2) + 100;
+        const maxZ = (mapLimitY * 1.5) - 100;
 
         if (targetX > maxX || targetX < minX) 
             this.targetPosition.x = pc.math.clamp(this.targetPosition.x, minX, maxX);

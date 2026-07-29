@@ -1,10 +1,13 @@
 import * as pc from 'playcanvas'
 
-import { type GlobalGenerationMeta } from '../lib/generation/generator';
+import { MapGenerator, type GlobalGenerationMeta } from '../lib/generation/generator';
 import { OrthoCameraController } from './scripts/OrthoCamera';
 import { DebugUiController } from './scripts/DebugUi';
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 import type { ChunkSettings } from '../lib/generation/chunk';
+import { ChunkManager } from './scripts/ChunkManager';
+import { SeededRandom } from '../lib/generation/seed';
+import { OpenSimplexNoise } from '../lib/generation/noise';
 
 // Merges all the settings which will later split 
 export type GameSettings = 
@@ -26,17 +29,27 @@ export class GameScene {
     // interface screens
     public ui!: pc.Entity;
 
-    // settings
+    // behaviour
+    public chunkManager!: pc.Entity;
+    public chunker!: ChunkManager;
+
+    // settings & services
     public config!: GameSettings
+    public rng: SeededRandom;
+    public meta: GlobalGenerationMeta;
+    public noise: OpenSimplexNoise;
 
     constructor() {
         console.time('Initialising...')
         this.preload(); // @TODO: loading screen
 
-        // @TODO: replace this with a main menu & game creation screen.
-        // That will later provide the game settings to startLevel.
-        // This function is trash and will need to instead properly assign these props
+        // @TODO: main menu & game creation screen.
+        
+        // configure the game level
         this.config = this.configureLevel();
+        this.rng = new SeededRandom(this.config.seed);
+        this.noise = new OpenSimplexNoise(this.rng);
+        this.meta = MapGenerator.generateGlobalMetadata(this.config, this.rng);
         
         // start the currently configured level.
         // @TODO: load this in from disk if needed.
@@ -93,10 +106,12 @@ export class GameScene {
 
     startLevel() {
         this.camera = this.getOrthoCamera();
-        this.ui = this.getUI()
+        this.ui = this.getUI();
 
-        // get current camera location
+        this.chunkManager = this.getChunkManager();
+        const globalCamPos: pc.Vec3 = this.camera.getPosition();
         // generate starting chunks at that location for a new game
+        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 15, this.config, this.meta, this.noise)
         // @TODO reveal all loaded chunks when save data is present.
     }
 
@@ -132,7 +147,7 @@ export class GameScene {
         
         this.app.root.addChild(cam)
         cam.setLocalEulerAngles(-90, 0, 0);
-        cam.setPosition(this.config.maxX / 2, 100, this.config.maxY / 2);
+        cam.setPosition(0, 100, 0);
         
         // camera control
         cam.addComponent('script')
@@ -149,5 +164,17 @@ export class GameScene {
         ui.addComponent('script')
         ui.script?.create(DebugUiController);
         return ui;
+    }
+
+    getChunkManager(): pc.Entity {
+        const chunkManager = new pc.Entity('ChunkManagerEntity')
+        chunkManager.addComponent('script')
+
+        // @ts-ignore  
+        this.chunker = chunkManager.script?.create(ChunkManager) as ChunkManager
+        this.chunker.settings = this.config;
+
+        this.app.root.addChild(chunkManager)
+        return chunkManager
     }
 }
