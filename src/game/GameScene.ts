@@ -116,8 +116,8 @@ export class GameScene {
             // seed: 'fuck me I wish I were dead, aye',
             seed: 'helpmeimdrowning',
             // seed: 'aborio rice',
-            maxX: 800, // 12800
-            maxY: 800, // 12800
+            worldWidth: 1600, // 12800,
+            worldHeight: 1600, // 12800,
             stretchX: 0.7,
             stretchY: 1.3,
             oceanClamp: 0.85,
@@ -153,24 +153,29 @@ export class GameScene {
     }
 
     getOrthoCamera(): pc.Entity {
-        const orthoHeight = (this.config.maxY / 2) * 1.1;
+        // @TODO: get current width/height (larger of the two) of generated chunks
+        // and use that to determine a new max orthoHeight. Will also need to be updated with new chunks.
+        // For now, we'll just stick it to being the original 16 chunk radius.
+        const orthoHeight = (16 * 50) * 1.1;
         // create and attach camera
         const cam = new pc.Entity('OrthoCamera');
         cam.addComponent('camera', {
             clearColor: new pc.Color(0.8, 0.8, 0.8),
             projection: pc.PROJECTION_ORTHOGRAPHIC,
-            orthoHeight: orthoHeight,
+            orthoHeight,
             nearClip: 0.1,
             farClip: 2000,
         });
         
-        this.app.root.addChild(cam)
+        this.app.root.addChild(cam);
         cam.setLocalEulerAngles(-90, 0, 0);
         cam.setPosition(0, 100, 0);
         
         // camera control
-        cam.addComponent('script')
+        cam.addComponent('script');
+        
         const camScript = cam.script!.create(OrthoCameraController) as unknown as OrthoCameraController
+
         camScript.maxOrthoHeight = orthoHeight
         camScript.zoomSpeed = 0.33
         return cam;
@@ -191,7 +196,7 @@ export class GameScene {
     getUI() {
         const ui = new pc.Entity('UIContainerEntity');
         ui.addComponent('script')
-        const debugUIScript = ui.script?.create(DebugUiController) as DebugUiController;
+        const debugUIScript = ui.script?.create(DebugUiController) as unknown as DebugUiController;
         debugUIScript.settings = { ...this.config }
         
         this.app.root.addChild(ui);

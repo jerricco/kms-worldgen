@@ -173,33 +173,33 @@ export class OrthoCameraController extends pc.Script {
         const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
         const gridX = Math.floor(rayStart.x / this.chunkManager.tileSize);
         const gridY = Math.floor(rayStart.z / this.chunkManager.tileSize);
-        const maxX = this.chunkManager.settings.maxX;
-        const maxY = this.chunkManager.settings.maxY;
-        const isInsideGrid = gridX >= 0 && gridX < maxX && gridY >= 0 && gridY < maxY;
+        
+        const xRadius = this.chunkManager.settings.worldWidth / 2;
+        const yRadius = this.chunkManager.settings.worldHeight / 2;
+        const isInsideGrid = gridX > -xRadius && gridX < xRadius && gridY > -yRadius && gridY < yRadius;
         const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
         
         if (!isInsideGrid || !isDifferentTile) return;
         this.lastPosHovered.x = gridX;
         this.lastPosHovered.y = gridY;
 
-        const chunkSize = this.chunkManager.settings.chunkSize;
-        const chunkX = Math.floor(gridX / chunkSize);
-        const chunkY = Math.floor(gridY / chunkSize);
-        const tileX = gridX - (chunkX * chunkSize);
-        const tileY = gridY - (chunkY * chunkSize);
-        const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
-        const tileIndex = Chunk.getLocalIndex(Math.floor(tileX), Math.floor(tileY));
+        // @TODO: uncomment when I can use this later
+        // const chunkSize = this.chunkManager.settings.chunkSize;
+        // const chunkX = Math.floor(gridX / chunkSize);
+        // const chunkY = Math.floor(gridY / chunkSize);
+        // const tileX = gridX - (chunkX * chunkSize);
+        // const tileY = gridY - (chunkY * chunkSize);
+        // const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
+        // const tileIndex = Chunk.getLocalIndex(Math.floor(tileX), Math.floor(tileY));
 
-        const region = RegionName[chunk?.regionIds[tileIndex]];
-        const elevation = chunk?.elevations[tileIndex];
-        console.log(`${region} Tile (@${gridX},${gridY}) - elevation: ${elevation?.toFixed(2)}`);
+        // const region = RegionName[chunk?.regionIds[tileIndex]];
+        // const elevation = chunk?.elevations[tileIndex];
+        // console.log(`${region} Tile (@${gridX},${gridY}) - elevation: ${elevation?.toFixed(2)}`);
     }
 
     private panByDelta(dx: number, dy: number) {
         const screenScale = (this.entity.camera!.orthoHeight * 2) / this.app.graphicsDevice.height;
         const worldDx = -dx * screenScale * this.panSpeed, worldDz = -dy * screenScale * this.panSpeed;
-
-        console.log(worldDx, worldDz)
 
         this.targetPosition.x += worldDx;
         this.targetPosition.z += worldDz;
@@ -218,14 +218,14 @@ export class OrthoCameraController extends pc.Script {
 
         // horizontal clamp
         const targetX = this.targetPosition.x
-        const leftBound = -(map.settings.maxX / 2) - 100, rightBound = (map.settings.maxX / 2) + 100;
+        const leftBound = -(map.settings.worldWidth / 2) - 100, rightBound = (map.settings.worldWidth / 2) + 100;
         if (targetX < leftBound ||targetX > rightBound) {
             this.targetPosition.x = pc.math.clamp(this.targetPosition.x, leftBound, rightBound);
         }
 
         // vertical clamp
         const targetZ = this.targetPosition.z
-        const topBound = -(map.settings.maxY / 2) - 100, bottomBound = (map.settings.maxY / 2) + 100;
+        const topBound = -(map.settings.worldHeight / 2) - 100, bottomBound = (map.settings.worldHeight / 2) + 100;
         if (targetZ < topBound || targetZ > bottomBound) {
             this.targetPosition.z = pc.math.clamp(this.targetPosition.z, topBound, bottomBound);
         }

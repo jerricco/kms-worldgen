@@ -20,8 +20,8 @@ export class ChunkManager extends pc.Script {
         if (!this.settings)
             throw new Error('ChunkManager: Cannot find config! There\'s nothing to configure chunks with!');
 
-        this.maxChunksX = this.settings.maxX / this.settings.chunkSize;
-        this.maxChunksY = this.settings.maxX / this.settings.chunkSize;
+        this.maxChunksX = this.settings.worldWidth / this.settings.chunkSize;
+        this.maxChunksY = this.settings.worldHeight / this.settings.chunkSize;
 
         // @TODO: throw error for an amount of max chunks that would crash the game.
 
@@ -45,8 +45,8 @@ export class ChunkManager extends pc.Script {
 
         const visibleKeys = new Set<string>();
 
-        for (let xOffset = -revealRadius; xOffset <= revealRadius; xOffset++) {
-            for (let yOffset = -revealRadius; yOffset <= revealRadius; yOffset++) {
+        for (let xOffset = -revealRadius; xOffset < revealRadius; xOffset++) {
+            for (let yOffset = -revealRadius; yOffset < revealRadius; yOffset++) {
                 const targetX = centerChunkX + xOffset;
                 const targetY = centerChunkY + yOffset;
 

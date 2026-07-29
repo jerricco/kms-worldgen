@@ -103,6 +103,8 @@ export function determineTileRegion(
     }
     else if (elevation < settings.peakLevel) {
         region = slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
+    } else if (elevation > settings.peakLevel) {
+        region = RegionID.PEAK
     }
 
     chunk.regionIds[localIndex] = region;

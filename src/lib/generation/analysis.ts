@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////
 // Functions for analysing the noise & terrain generation //
 ////////////////////////////////////////////////////////////
+import { MeshInstance } from "playcanvas";
 import type { ChunkSettings } from "./chunk";
 import { MapGenerator, type GlobalGenerationMeta } from "./generator";
 import type { OpenSimplexNoise } from "./noise";
@@ -13,14 +14,15 @@ export function getGlobalTileElevation(
     noise: OpenSimplexNoise
 ) {
     // clamp coords inside world border
-    globalX = Math.max(0, Math.min(meta.maxX - 1, globalX));
-    globalY = Math.max(0, Math.min(meta.maxY - 1, globalY));
+    const halfX = meta.worldWidth / 2, halfY = meta.worldHeight / 2;
+    globalX = Math.max(-halfX, Math.min(halfX, globalX));
+    globalY = Math.max(-halfY, Math.min(halfY, globalY));
 
     // worldwide ocean boundary proximity
-    const distToLeft = globalX;
-    const distToRight = (meta.maxX - 1) - globalX;
-    const distToTop = globalY;
-    const distToBottom = (meta.maxY - 1) - globalY;
+    const distToLeft = -halfX + globalX;
+    const distToRight = halfX - globalX;
+    const distToTop = -halfY + globalY;
+    const distToBottom = halfY - globalY;
 
     const edgeXFactor = Math.min(1.0, Math.min(distToLeft, distToRight) / meta.bufferX);
     const edgeYFactor = Math.min(1.0, Math.min(distToTop, distToBottom) / meta.bufferY);
@@ -29,10 +31,8 @@ export function getGlobalTileElevation(
     const { sampleX, sampleY }
         = MapGenerator.getDomainWarpedSample(globalX, globalY, meta.mOffsetX, meta.mOffsetY, settings, noise);
 
-    const dx = globalX - meta.centerX;
-    const dy = globalY - meta.centerY;
-    const rx = dx * meta.cosA - dy * meta.sinA;
-    const ry = dx * meta.sinA + dy * meta.cosA;
+    const rx = globalX * meta.cosA - globalY * meta.sinA;
+    const ry = globalX * meta.sinA + globalY * meta.cosA;
 
     // macro mask for bays and gulfs.
     const maskWarpStrength = 0.25 * globalEdgeFactor;
@@ -40,7 +40,7 @@ export function getGlobalTileElevation(
     const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * maskWarpStrength;
 
     const finalMaskDist = Math.sqrt(
-        Math.pow((rx + maskWarpX * meta.centerX) * meta.stretchX, 2) +
+        Math.pow((rx + maskWarpX) * meta.stretchX, 2) +
         Math.pow((ry + maskWarpY * meta.stretchY) * meta.stretchY, 2)
     );
 

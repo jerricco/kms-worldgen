@@ -7,7 +7,7 @@ import type { OpenSimplexNoise } from './noise';
 import { hexToRgb } from '../utils';
 
 export type ChunkSettings = {
-    maxX: number, maxY: number,
+    worldWidth: number, worldHeight: number,
     chunkSize: number,
     macroScale: number,
     islandRadius: number,
@@ -29,8 +29,8 @@ export class Chunk {
     public chunkX: number;
     public chunkY: number;
 
-    public maxX: number;
-    public maxY: number;
+    public worldHeight: number;
+    public worldWidth: number;
     public size = Chunk.DEFAULT_SIZE;
     public tileCount: number;
     public globalMeta: GlobalGenerationMeta;
@@ -67,8 +67,8 @@ export class Chunk {
 
         // default to 1 chunk in case of failure somehow
         this.tileCount = this.size * this.size;
-        this.maxX = settings.maxX || this.size;
-        this.maxY = settings.maxY || this.size;
+        this.worldWidth = (settings.worldWidth || this.size) / 2;
+        this.worldHeight = (settings.worldHeight || this.size) / 2;
 
         this.elevations   = new Float32Array(this.tileCount);
         this.regionIds    = new Int32Array(this.tileCount);
@@ -172,7 +172,7 @@ export class Chunk {
                 const globalY = chunkY * this.size + y;
 
                 // NO, OUT OF BOUND - BACK TIGER!
-                if (globalX >= this.maxX || globalY >= this.maxY || globalX < 0 || globalY < 0)
+                if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
                 const elevation = getGlobalTileElevation(globalX, globalY, settings, this.globalMeta, this.noise);

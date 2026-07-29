@@ -367,9 +367,11 @@ export class RuleGridRenderer extends pc.Script {
                 const worldX = Math.floor(centerGridX + xOffset);
                 const worldZ = Math.floor(centerGridZ + zOffset);
 
-                //@NOTE: reajdust this next bit when coords are sorted
-                if (worldX < 0 || worldZ < 0 ||
-                    worldX >= this.settings.maxX || worldZ >= this.settings.maxY
+                // @TODO: constrain this to visible bounds & not just the full map?
+                const maxX = this.settings.worldWidth / 2, maxZ = this.settings.worldHeight / 2;
+
+                if (worldX < -maxX || worldZ < -maxZ ||
+                    worldX > maxX || worldZ > maxZ
                 ) continue; // skip for anything outside bounds
 
                 const chunkX = Math.floor(worldX / this.settings.chunkSize);
@@ -400,7 +402,7 @@ export class RuleGridRenderer extends pc.Script {
         regionID: RegionID = 0, 
         elevation: number = 0
     ): string {
-        return `X:${gridX + 1}, Z:${gridY + 1}`
+        return `X:${gridX}, Z:${gridY}`
             + `\n${RegionName[regionID] || 'VOID'}`
             + `\nY:${elevation.toFixed(2) || 0.00}`;
     }

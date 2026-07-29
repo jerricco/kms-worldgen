@@ -1,18 +1,15 @@
-import type { REGION_CONFIG as RegionConfig } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
 import type { GameSettings } from '../../game/GameScene';
 import type { ChunkSettings } from './chunk';
 
 export interface GlobalGenerationMeta {
-    maxX: number,
-    maxY: number,
+    worldWidth: number,
+    worldHeight: number,
     maxRadius: number,
     bufferFactor: number,
     bufferX: number,
     bufferY: number,
-    centerX: number,
-    centerY: number,
     stretchX: number,
     stretchY: number,
     oceanClamp: number,
@@ -33,22 +30,19 @@ export class MapGenerator {
 
         const randomAngle = rng.nextRange(0, Math.PI * 2);
         // @NOTE this is where the GenerationSettings should overwrite & split between this & ChunkSettings 
-        const maxX = config.maxX || 750;
-        const maxY = config.maxY || 750;
-        const centerX = maxX / 2;
-        const centerY = maxY / 2;
+        const worldWidth = config.worldWidth || 750;
+        const worldHeight = config.worldHeight || 750;
+        const worldRadius = config.worldWidth / 2;
         const bufferFactor = 0.05;
         const oceanClamp = 0.85;
 
         return {
-            maxX,
-            maxY,
-            maxRadius: Math.sqrt(centerX * centerX) * oceanClamp,
+            worldWidth,
+            worldHeight,
+            maxRadius: Math.sqrt(worldRadius * worldRadius) * oceanClamp,
             bufferFactor,
-            bufferX: maxX * bufferFactor,
-            bufferY: maxY * bufferFactor,
-            centerX,
-            centerY,
+            bufferX: worldWidth * bufferFactor,
+            bufferY: worldHeight * bufferFactor,
             stretchX: 0.7,
             stretchY: 1.3,
             oceanClamp,
