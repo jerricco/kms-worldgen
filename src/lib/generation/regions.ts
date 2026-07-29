@@ -1,10 +1,12 @@
 /////////////////////
 //     REGIONS     //
 /////////////////////
-// geographic - requires land shape + elevation
-// climatic - climatic (wetness, wind) + elevation + land shape
+import { nearestTileSlopeAspect } from "./analysis";
+import type { Chunk, ChunkSettings } from "./chunk";
+import type { GlobalGenerationMeta } from "./generator";
+import type { OpenSimplexNoise } from "./noise";
 
-export const RegionID = {
+export const RegionID: Record<string, number> = {
     // SPECIAL
     VOID        : 0,
     UNASSIGNED  : 1,
@@ -56,6 +58,51 @@ export const RegionID = {
 }
 
 export type RegionID = typeof RegionID[keyof typeof RegionID]
+
+export function determineTileRegion(
+    globalX: number,
+    globalY: number,
+    localIndex: number,
+    chunk: Chunk, // Pass the high performance structural Chunk instance
+    elevation: number,
+    settings: ChunkSettings,
+    meta: GlobalGenerationMeta,
+    noise: OpenSimplexNoise
+) {
+    const { slope, cardinalDir } = nearestTileSlopeAspect(globalX, globalY, settings, meta, noise);
+    const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
+
+    // @TODO: replace elevation based regions with climatic regions
+    let region: RegionID = RegionID.UNASSIGNED;
+
+    // MARINE regions - first establish a seafloor
+    if (elevation < settings.seaLevel) {
+        if (elevation < settings.abyssalLevel) {
+            region = RegionID.ABYSSAL;
+        } else if (elevation < settings.trenchLevel) {
+            region = RegionID.DEEP_OCEAN;
+        } else {
+            region = RegionID.OCEAN;
+        }
+    }
+    // TRANSITIONAL regions - create terminals between land and sea
+    else if (elevation < settings.beachLevel) {
+        region = RegionID.BEACH;
+    }
+    // FLAT TERRESTRIAL regions - mainland
+    else if (elevation < settings.plainLevel) {
+        region = RegionID.PLAIN;
+    }
+    // MOUNTAINOUS TERRESTRIAL REGIONS - higher elevations
+    else if (elevation < settings.hillLevel) {
+        region = RegionID.HILL;
+    }
+    else if (elevation < settings.peakLevel) {
+        region = slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
+    }
+
+    chunk.regionIds[localIndex] = region;
+}
 
 // config shape
 export type REGION_CONFIG = {

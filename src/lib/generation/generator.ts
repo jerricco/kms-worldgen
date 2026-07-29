@@ -1,8 +1,7 @@
 import type { REGION_CONFIG as RegionConfig } from './regions'
-import { RegionID } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
-import type { Grid, SlopeAspect, SlopeVector, Tile } from './types';
+import type { Grid } from './types';
 import { Chunk } from './chunk';
 
 // dynamic settings
@@ -38,7 +37,7 @@ export type MapSettings = {
         MAJOR: RiverSetting,
         MINOR: RiverSetting,
     },
-}
+};
 
 const GeneratorDefaults: MapSettings = {
     peakLevel: 0.91,
@@ -62,7 +61,18 @@ const GeneratorDefaults: MapSettings = {
     }
 }
 
-interface GlobalGenerationMeta {
+export interface GlobalGenerationMeta {
+    maxX: number,
+    maxY: number,
+    maxRadius: number,
+    bufferFactor: number,
+    bufferX: number,
+    bufferY: number,
+    centerX: number,
+    centerY: number,
+    stretchX: number,
+    stretchY: number,
+    oceanClamp: number,
     mOffsetX: number;
     mOffsetY: number;
     cosA: number;
@@ -71,13 +81,6 @@ interface GlobalGenerationMeta {
 
 export class MapGenerator {
     static DEFAULT_SEED = 'aborio rice';
-    static DEFAULT_WIDTH = 750;
-    static DEFAULT_HEIGHT = 750;
-    static BIOMES_MAX = 64;
-    static GENERATOR_DEFAULTS = GeneratorDefaults;
-
-    public width: number;
-    public height: number;
 
     public seed: string;
     public rng: SeededRandom;
@@ -88,13 +91,10 @@ export class MapGenerator {
 
     public chunks: Chunk[] = [];
 
-    constructor(seed: string, width?: number, height?: number, config?: MapSettings) {
-        // config
+    constructor(seed: string, config?: MapSettings) {
         this.settings = { ...GeneratorDefaults, ...config };
         
         // construction
-        this.width = width || MapGenerator.DEFAULT_WIDTH
-        this.height = height || MapGenerator.DEFAULT_HEIGHT
         this.seed = seed || MapGenerator.DEFAULT_SEED
         this.rng = new SeededRandom(seed);
         this.meta = MapGenerator.generateGlobalMetadata(this.rng);
@@ -106,172 +106,43 @@ export class MapGenerator {
         for (let x = 0; x < 15; x++) {
             for (let y = 0; y < 15; y++) {
                 const localIndex = Chunk.getLocalIndex(x, y);
-                this.chunks[localIndex] = MapGenerator.generateChunk(x, y, this.settings, this.meta, this.noise)
+                this.chunks[localIndex] = new Chunk(x, y, this.settings, this.meta, this.noise)
             }
         }
     }
 
     // @TODO: adjust it so that the world size is by default 256*256 chunks (12800*12800)
-    static WORLD_WIDTH = 750; // 12800;
-    static WORLD_HEIGHT = 750; // 12800;
-
-    // @TODO: currently these sit here, I should sort them into GlobalGenerationMeta or MapSettings
-    static CENTER_X = this.WORLD_WIDTH / 2;
-    static CENTER_Y = this.WORLD_HEIGHT / 2;
-    static STRETCH_X = 0.7;
-    static STRETCH_Y = 1.3;
-    static OCEAN_CLAMP = 0.85;
-    static MAX_RADIUS = Math.sqrt(this.CENTER_X * this.CENTER_X) * this.OCEAN_CLAMP;
-    static BUFFER_FACTOR = 0.05;
-    static BUFFER_X = this.WORLD_WIDTH * this.BUFFER_FACTOR
-    static BUFFER_Y = this.WORLD_HEIGHT * this.BUFFER_FACTOR
-
     static generateGlobalMetadata(rng: SeededRandom): GlobalGenerationMeta {
         if (!rng) {
             throw new Error('We need an rng instance!')
         }
+
         const randomAngle = rng.nextRange(0, Math.PI * 2);
+        // @NOTE this is where the GenerationSettings should overwrite & split between this & ChunkSettings 
+        const maxX = 750;
+        const maxY = 750;
+        const centerX = maxX / 2;
+        const centerY = maxY / 2;
+        const bufferFactor = 0.05;
+        const oceanClamp = 0.85;
+
         return {
+            maxX,
+            maxY,
+            maxRadius: Math.sqrt(centerX * centerX) * oceanClamp,
+            bufferFactor,
+            bufferX: maxX * bufferFactor,
+            bufferY: maxY * bufferFactor,
+            centerX,
+            centerY,
+            stretchX: 0.7,
+            stretchY: 1.3,
+            oceanClamp,
             mOffsetX: rng.nextRange(10000, 90000),
             mOffsetY: rng.nextRange(10000, 90000),
             cosA: Math.cos(randomAngle),
             sinA: Math.sin(randomAngle),
         }
-    }
-
-    static generateChunk(chunkX: number, chunkY: number, settings: MapSettings, meta: GlobalGenerationMeta, noise: OpenSimplexNoise) {
-        const chunk = new Chunk(chunkX, chunkY);
-        
-        for (let x = 0; x < Chunk.SIZE; x++) {
-            for (let y = 0; y < Chunk.SIZE; y++) {
-                const globalX = chunkX * Chunk.SIZE + x;
-                const globalY = chunkY * Chunk.SIZE + y;
-
-                // NO, OUT OF BOUND - BACK TIGER!
-                if (globalX >= this.WORLD_WIDTH || globalY >= this.WORLD_HEIGHT || globalX < 0 || globalY < 0)
-                    continue;
-
-                const elevation = this.getGlobalTileElevation(globalX, globalY, settings, meta, noise);
-                const localIndex = Chunk.getLocalIndex(x, y);
-
-                chunk.elevations[localIndex] = elevation; 
-                this.#determineRegions(globalX, globalY, localIndex, chunk, elevation, settings, meta, noise);
-            }
-        }
-
-        return chunk
-    }
-
-    static getGlobalTileElevation(
-        globalX: number, globalY: number, 
-        settings: MapSettings, 
-        meta: GlobalGenerationMeta, 
-        noise: OpenSimplexNoise
-    ) {
-        // clamp coords inside world border
-        globalX = Math.max(0, Math.min(this.WORLD_WIDTH - 1, globalX));
-        globalY = Math.max(0, Math.min(this.WORLD_HEIGHT - 1, globalY));
-
-        // worldwide ocean boundary proximity
-        const distToLeft = globalX;
-        const distToRight = (this.WORLD_WIDTH - 1) - globalX;
-        const distToTop = globalY;
-        const distToBottom = (this.WORLD_HEIGHT - 1) - globalY;
-
-        const edgeXFactor = Math.min(1.0, Math.min(distToLeft, distToRight) / this.BUFFER_X);
-        const edgeYFactor = Math.min(1.0, Math.min(distToTop, distToBottom) / this.BUFFER_Y);
-        const globalEdgeFactor = edgeXFactor * edgeYFactor;
-
-        const { sampleX, sampleY }
-            = this.#getDomainWarpedSample(globalX, globalY, meta.mOffsetX, meta.mOffsetY, settings, noise);
-
-        const dx = globalX - this.CENTER_X;
-        const dy = globalY - this.CENTER_Y;
-        const rx = dx * meta.cosA - dy * meta.sinA;
-        const ry = dx * meta.sinA + dy * meta.cosA;
-
-        // macro mask for bays and gulfs.
-        const maskWarpStrength = 0.25 * globalEdgeFactor;
-        const maskWarpX = noise.noise2D(sampleX * 0.4, sampleY * 0.4) * maskWarpStrength;
-        const maskWarpY = noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * maskWarpStrength;
-
-        const finalMaskDist = Math.sqrt(
-            Math.pow((rx + maskWarpX * this.CENTER_X) * this.STRETCH_X, 2) +
-            Math.pow((ry + maskWarpY * this.CENTER_Y) * this.STRETCH_Y, 2)
-        );
-
-        const normalisedDistance = finalMaskDist / this.MAX_RADIUS;
-        const sizeModifier = 1.0 / settings.islandRadius // @DEPRECATED: replace with continentSize;
-        const maskStrength = normalisedDistance * settings.squishFactor * sizeModifier;
-        const landMask = Math.max(0, 1.0 - Math.pow(maskStrength, 3.0));
-
-        // pass for elevation
-        const baseLand = this.#getStandardfBm(sampleX, sampleY, 4, noise);
-        const mountainSpines = this.#getRidgedfBm(sampleX * 1.3, sampleY * 1.3, 6, noise);
-
-        // blend spines to specific elevations
-        let spineBlendMask = (baseLand * 0.3) + (mountainSpines * 0.85);
-        if (spineBlendMask > settings.seaLevel) {
-            const relativeHeight = spineBlendMask - settings.seaLevel;
-            spineBlendMask = settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4)
-        }
-
-        let elevationMask = Math.max(0, Math.min(1.0, spineBlendMask * landMask))
-        if (spineBlendMask > settings.beachLevel) {
-            const t = (elevationMask - settings.beachLevel) / (1.0 - settings.beachLevel);
-            const smoothT = t * t * (3.0 - 2.0 * t);
-            const inflatedTarget = elevationMask * 1.15;
-
-            elevationMask = elevationMask + (inflatedTarget - elevationMask) * smoothT;
-            if (elevationMask > 1.0) elevationMask = 1.0; // clamp to max elevation
-        }
-
-        return elevationMask;
-    }
-
-    static #determineRegions(
-        globalX: number,
-        globalY: number,
-        localIndex: number,
-        chunk: Chunk, // Pass the high performance structural Chunk instance
-        elevation: number,
-        settings: MapSettings,
-        meta: GlobalGenerationMeta,
-        noise: OpenSimplexNoise
-    ) {
-        const { slope, cardinalDir } = MapGenerator.nearestTileSlopeAspect(globalX, globalY, settings, meta, noise);
-        const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
-
-        // @TODO: replace elevation based regions with climatic regions
-        let region: RegionID = RegionID.UNASSIGNED;
-
-        // MARINE regions - first establish a seafloor
-        if (elevation < settings.seaLevel) {
-            if (elevation < settings.abyssalLevel) {
-                region = RegionID.ABYSSAL;
-            } else if (elevation < settings.trenchLevel) {
-                region = RegionID.DEEP_OCEAN;
-            } else {
-                region = RegionID.OCEAN;
-            }
-        } 
-        // TRANSITIONAL regions - create terminals between land and sea
-        else if (elevation < settings.beachLevel) {
-            region = RegionID.BEACH;
-        }
-        // FLAT TERRESTRIAL regions - mainland
-        else if (elevation < settings.plainLevel) {
-            region = RegionID.PLAIN;
-        }
-        // MOUNTAINOUS TERRESTRIAL REGIONS - higher elevations
-        else if (elevation < settings.hillLevel) {
-            region = RegionID.HILL;
-        }
-        else if (elevation < settings.peakLevel) {
-            region = slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
-        }
-
-        chunk.regionIds[localIndex] = region;
     }
 
     // CLIMATE:
@@ -352,7 +223,7 @@ export class MapGenerator {
     }
 
     // NOISE GENERATION
-    static #getDomainWarpedSample(
+    static getDomainWarpedSample(
         x: number,
         y: number,
         mOffsetX: number,
@@ -371,7 +242,7 @@ export class MapGenerator {
 
     // Fractional Brownian Motion for ridged multi-fractal noise structures
     // This is scienceish for forked mountain range structures.
-    static #getRidgedfBm(nx: number, ny: number, octaves: number, noise: OpenSimplexNoise): number {
+    static getRidgedfBm(nx: number, ny: number, octaves: number, noise: OpenSimplexNoise): number {
         let value = 0;
         let amplitude = 1.0;
         let frequency = 1.0;
@@ -396,7 +267,7 @@ export class MapGenerator {
 
     // Standard fBm for organic landmass foundational plateaus
     // More science language for when plains form outwards from mountain ridges.
-    static #getStandardfBm(nx: number, ny: number, octaves: number, noise: OpenSimplexNoise): number {
+    static getStandardfBm(nx: number, ny: number, octaves: number, noise: OpenSimplexNoise): number {
         let value = 0;
         let amplitude = 1.0;
         let frequency = 1.0;
@@ -410,49 +281,6 @@ export class MapGenerator {
             amplitude *= 0.54;
         }
         return value / maxValue;
-    }
-
-    // LOCAL TERRAIN ANALYSIS
-    // finds the direction of the steepest ascent
-    static nearestTileSlopeVector(
-        globalX: number, globalY: number,
-        settings: MapSettings,
-        meta: GlobalGenerationMeta,
-        noise: OpenSimplexNoise
-    ): SlopeVector {
-        const elevWest = this.getGlobalTileElevation(globalX - 1, globalY, settings, meta, noise);
-        const elevEast = this.getGlobalTileElevation(globalX + 1, globalY, settings, meta, noise);
-        const elevNorth = this.getGlobalTileElevation(globalX, globalY - 1, settings, meta, noise);
-        const elevSouth = this.getGlobalTileElevation(globalX, globalY + 1, settings, meta, noise);
-
-        const gx = (elevEast - elevWest) / 2.0;
-        const gy = (elevSouth - elevNorth) / 2.0;
-        const slope = Math.sqrt(gx * gx + gy * gy);
-
-        return { slope, gradient: { x: gx, y: gy } };
-    }
-
-    static nearestTileSlopeAspect(
-        globalX: number, globalY: number,
-        settings: MapSettings,
-        meta: GlobalGenerationMeta,
-        noise: OpenSimplexNoise
-    ): SlopeAspect {
-        const vect = MapGenerator.nearestTileSlopeVector(globalX, globalY, settings, meta, noise);
-        if (vect.slope < 0.01) {
-            return { ...vect, angleDeg: -1, cardinalDir: 'FLAT' };
-        }
-
-        const { x: gx, y: gy } = vect.gradient;
-        let radians = Math.atan2(-gy, gx);
-        let angleDeg = (90.0 - (radians * 180.0 / Math.PI)) % 360.0;
-        if (angleDeg < 0) angleDeg += 360.0;
-
-        const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        const index = Math.round(angleDeg / 45.0) % 8;
-        const cardinalDir = directions[index];
-
-        return { ...vect, angleDeg, cardinalDir };
     }
 
     // IMPROVEMENTS

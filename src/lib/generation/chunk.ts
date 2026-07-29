@@ -1,13 +1,37 @@
 import * as pc from 'playcanvas';
 import { REGION_PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
-import { RegionID } from '../../lib/generation/regions';
+import { determineTileRegion, RegionID } from '../../lib/generation/regions';
+import { getGlobalTileElevation } from './analysis';
+import type { GlobalGenerationMeta } from './generator';
+import type { OpenSimplexNoise } from './noise';
+import { hexToRgb } from '../utils';
+
+export type ChunkSettings = {
+    maxX: number, maxY: number,
+    chunkSize: number,
+
+    seaLevel: number,     // @TODO: defaults
+    abyssalLevel: number, // @TODO: defaults
+    trenchLevel: number,  // @TODO: defaults
+    beachLevel: number,   // @TODO: defaults
+    plainLevel: number,   // @TODO: defaults
+    hillLevel: number,    // @TODO: defaults
+    peakLevel: number,    // @TODO: defaults
+}
+
 
 export class Chunk {
-    static SIZE = 50;
-    static TILE_COUNT = this.SIZE * this.SIZE;
+    static DEFAULT_SIZE = 50;
 
     public chunkX: number;
     public chunkY: number;
+
+    public maxX: number;
+    public maxY: number;
+    public size = Chunk.DEFAULT_SIZE;
+    public tileCount: number;
+    public globalMeta: GlobalGenerationMeta;
+    public noise: OpenSimplexNoise;
 
     private _isActive: boolean = true;
     get isActive():boolean {
@@ -29,15 +53,25 @@ export class Chunk {
 
     public visualEntity: pc.Entity | null = null;
 
-    constructor(chunkX: number, chunkY: number) {
+    constructor(chunkX: number, chunkY: number, settings: ChunkSettings, meta: GlobalGenerationMeta, noise: OpenSimplexNoise) {
+        this.globalMeta = meta;
+        this.noise = noise;
+        
         this.chunkX = chunkX;
         this.chunkY = chunkY;
 
-        this.elevations   = new Float32Array(Chunk.TILE_COUNT);
-        this.regionIds    = new Int32Array(Chunk.TILE_COUNT);
-        this.moisture     = new Float32Array(Chunk.TILE_COUNT);
-        this.temperatures = new Float32Array(Chunk.TILE_COUNT);
-        this.materials    = new Float32Array(Chunk.TILE_COUNT);
+        this.size = settings.chunkSize || Chunk.DEFAULT_SIZE;
+
+        // default to 1 chunk in case of failure somehow
+        this.tileCount = this.size * this.size;
+        this.maxX = settings.maxX || this.size;
+        this.maxY = settings.maxY || this.size;
+
+        this.elevations   = new Float32Array(this.tileCount);
+        this.regionIds    = new Int32Array(this.tileCount);
+        this.moisture     = new Float32Array(this.tileCount);
+        this.temperatures = new Float32Array(this.tileCount);
+        this.materials    = new Float32Array(this.tileCount);
     }
 
     buildMesh(
@@ -47,24 +81,23 @@ export class Chunk {
         const palette = REGION_PALETTES['MAP']
 
         const positions: number[] = [];
-        const colors: number[] = [];
-        const normals: number[] = [];
-        const indices: number[] = [];
+        const colors   : number[] = [];
+        const normals  : number[] = [];
+        const indices  : number[] = [];
         let vertexIndex = 0;
 
         // Base world coordinate offset where this chunk begins on X/Z plane
-        const chunkBaseX = this.chunkX * Chunk.SIZE * tileSize;
-        const chunkBaseZ = this.chunkY * Chunk.SIZE * tileSize;
+        const chunkBaseX = this.chunkX * this.size * tileSize;
+        const chunkBaseZ = this.chunkY * this.size * tileSize;
 
-        for (let x = 0; x < Chunk.SIZE; x++) {
-            for (let z = 0; z < Chunk.SIZE; z++) {
-                const localIndex = x * Chunk.SIZE + z;
+        for (let x = 0; x < this.size; x++) {
+            for (let z = 0; z < this.size; z++) {
+                const localIndex = x * this.size + z;
 
                 // Fetch colors
                 const regionId = this.regionIds[localIndex];
-                // @TODO: make this better
                 const regionStr = Object.keys(RegionID).find((r) => RegionID[r] === regionId) || 'VOID';
-                const tileColor = palette[regionStr] || new pc.Color(0.5, 0.5, 0.5);
+                const tileColor = hexToRgb(palette[regionStr]) || new pc.Color(0.5, 0.5, 0.5);
 
                 // Local positional offsets relative to the chunk's global space positioning
                 const xPos = chunkBaseX + (x * tileSize);
@@ -73,10 +106,10 @@ export class Chunk {
 
                 // Build 4 flat corner vertices per tile
                 positions.push(
-                    xPos, yPos, zPos + tileSize, // bottom-left
+                    xPos, yPos, zPos + tileSize,            // bottom-left
                     xPos + tileSize, yPos, zPos + tileSize, // bottom-right
                     xPos + tileSize, yPos, zPos,            // top-right
-                    xPos, yPos, zPos             // top-left
+                    xPos, yPos, zPos                        // top-left
                 );
 
                 for (let i = 0; i < 4; i++) {
@@ -127,8 +160,31 @@ export class Chunk {
         }
     }
 
+    generate(chunkX: number, chunkY: number, settings: ChunkSettings) {
+        const chunk = this;
+
+        for (let x = 0; x < this.size; x++) {
+            for (let y = 0; y < this.size; y++) {
+                const globalX = chunkX * this.size + x;
+                const globalY = chunkY * this.size + y;
+
+                // NO, OUT OF BOUND - BACK TIGER!
+                if (globalX >= this.maxX || globalY >= this.maxY || globalX < 0 || globalY < 0)
+                    continue;
+
+                const elevation = getGlobalTileElevation(globalX, globalY, settings, this.globalMeta, this.noise);
+                const localIndex = Chunk.getLocalIndex(x, y, this.size);
+
+                chunk.elevations[localIndex] = elevation;
+                determineTileRegion(globalX, globalY, localIndex, chunk, elevation, settings, this.globalMeta, this.noise);
+            }
+        }
+
+        return chunk
+    }
+
     // Fast inline index helper mapping local 2D space to 1D space
-    static getLocalIndex(x: number, y: number): number {
-        return x * this.SIZE + y;
+    static getLocalIndex(x: number, y: number, size: number = Chunk.DEFAULT_SIZE): number {
+        return x * size + y;
     }
 }

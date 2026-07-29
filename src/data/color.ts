@@ -1,4 +1,4 @@
-export const REGION_PALETTES = {
+export const REGION_PALETTES: { [THEME: string] : { [COLOR: string]: string } } = {
     MUTED: {
         PEAK:        '#914137',
         CLIFF:       '#A05555',

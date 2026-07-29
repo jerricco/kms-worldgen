@@ -15,7 +15,6 @@ export class OpenSimplexNoise {
         this.perm = [...source, ...source];
     }
 
-    // Basic 2D Value/Perlin-style approximation for structured biome boundaries
     public noise2D(x: number, y: number): number {
         const X = Math.floor(x) & 255;
         const Y = Math.floor(y) & 255;

@@ -1,25 +1,55 @@
 import * as pc from 'playcanvas'
 
-import { MapGenerator, type MapSettings } from '../lib/generation/generator';
-import { MapRenderer } from './scripts/MapRenderer';
+import { type GlobalGenerationMeta } from '../lib/generation/generator';
 import { OrthoCameraController } from './scripts/OrthoCamera';
 import { DebugUiController } from './scripts/DebugUi';
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
+import type { ChunkSettings } from '../lib/generation/chunk';
+
+// Merges all the settings which will later split 
+export type GameSettings = 
+    Pick<GlobalGenerationMeta, 'stretchX' | 'stretchY' | 'oceanClamp'> & 
+    ChunkSettings & 
+    { seed: string }; 
 
 export class GameScene {
-    public app: pc.Application;
+    // playcanvas orchestrators
+    public canvas!: HTMLCanvasElement;
+    public app!: pc.Application;
+
+    // cameras
     public camera!: pc.Entity;
-    public map!: pc.Entity;
+    
+    // game resources
+    public font!: pc.Asset;
+
+    // interface screens
     public ui!: pc.Entity;
 
-    public font!: pc.Asset;
+    // settings
+    public config!: GameSettings
 
     constructor() {
         console.time('Initialising...')
-        const canvas = document.getElementById("canvas") as HTMLCanvasElement
-        if (!canvas) throw new Error("Canvas element not found");
+        this.preload(); // @TODO: loading screen
 
-        this.app = GameScene.getGameApp(canvas);
+        // @TODO: replace this with a main menu & game creation screen.
+        // That will later provide the game settings to startLevel.
+        // This function is trash and will need to instead properly assign these props
+        this.config = this.configureLevel();
+        
+        // start the currently configured level.
+        // @TODO: load this in from disk if needed.
+        this.startLevel()     
+
+        console.timeEnd('Initialising...')
+    }
+
+    preload() {
+        this.canvas = document.getElementById("canvas") as HTMLCanvasElement
+        if (!this.canvas) throw new Error("Canvas element not found");
+
+        this.app = this.getGameApp();
 
         // preload relevant assets
         this.font = new pc.Asset('PatrickHandFont', 'font', { url: fontJsonUrl })
@@ -30,49 +60,54 @@ export class GameScene {
         // @DEBUG START
         this.app.scene.ambientLight = new pc.Color(0.98, 0.98, 0.98);
         this.app.start();
+    }
 
-        
-        // @DEBUG - this will need a lot more orchestration logic once we have menu/ui
-        this.startLevel({ 
+    configureLevel(): GameSettings {
+        return {
+            // seed: playerSeed || MapGenerator.DEFAULT_SEED
+            //////////////////////////////////////////////////
             // Good seeds (so far):
-            // - 'Donaldo Ronaldo Trumpino'
-            // - 'poo'
-            // - 'strange bedfellows by stephen king'
-            // - 'Pooline Handson'
-            // - 'Hershey Testereo'
-            // - 'sanga ranga bangaranga'
-            // - 'fuck me I wish I were dead, aye'
+            // seed: 'Donaldo Ronaldo Trumpino',
+            // seed: 'poo',
+            // seed: 'strange bedfellows by stephen king',
+            // seed: 'Pooline Handson',
+            // seed: 'Hershey Testereo',
+            // seed: 'sanga ranga bangaranga',
+            // seed: 'fuck me I wish I were dead, aye',
             seed: 'helpmeimdrowning',
-            width: MapGenerator.DEFAULT_WIDTH, 
-            height: MapGenerator.DEFAULT_HEIGHT,
-        })     
-
-        console.timeEnd('Initialising...')
+            maxX: 800, // 12800
+            maxY: 800, // 12800
+            stretchX: 0.7,
+            stretchY: 1.3,
+            oceanClamp: 0.85,
+            chunkSize: 50,
+            seaLevel: 0.32,
+            abyssalLevel: 0.1,
+            trenchLevel: 0.16,
+            beachLevel: 0.34,
+            plainLevel: 0.48,
+            hillLevel: 0.60,
+            peakLevel: 0.60,
+        }
     }
 
-    startLevel(game_settings: any = {
-        seed: 'Donaldo Ronaldo Trumpino',
-        width: MapGenerator.DEFAULT_WIDTH,
-        height: MapGenerator.DEFAULT_HEIGHT,
-        config: {}
-    }) {
-        const { seed, width, height, config } = game_settings
-        this.camera = this.getOrthoCamera(width, height);
+    startLevel() {
+        this.camera = this.getOrthoCamera();
         this.ui = this.getUI()
-        this.map = this.getMapRenderer(seed, width, height, config);
+
+        // get current camera location
+        // generate starting chunks at that location for a new game
+        // @TODO reveal all loaded chunks when save data is present.
     }
 
-    static getGameApp(canvas: HTMLCanvasElement): pc.Application {
-        const elementInput = new pc.ElementInput(canvas, {
-            useMouse: true,
-            useTouch: true,
-        });
+    getGameApp(): pc.Application {
+        const elementInput = new pc.ElementInput(this.canvas, { useMouse: true, useTouch: true });
 
-        const app = new pc.Application(canvas, {
+        const app = new pc.Application(this.canvas, {
             elementInput,
-            mouse: new pc.Mouse(canvas),
-            keyboard: new pc.Keyboard(window),
-            touch: new pc.TouchDevice(canvas),
+            mouse: new pc.Mouse(this.canvas),
+            keyboard: new pc.Keyboard(this.canvas),
+            touch: new pc.TouchDevice(this.canvas),
         });
 
         app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
@@ -83,8 +118,8 @@ export class GameScene {
         return app;
     }
 
-    getOrthoCamera(width: number, height: number): pc.Entity {
-        const orthoHeight = (height / 2) * 1.1;
+    getOrthoCamera(): pc.Entity {
+        const orthoHeight = (this.config.maxY / 2) * 1.1;
         // create and attach camera
         const cam = new pc.Entity('OrthoCamera');
         cam.addComponent('camera', {
@@ -97,30 +132,14 @@ export class GameScene {
         
         this.app.root.addChild(cam)
         cam.setLocalEulerAngles(-90, 0, 0);
-        cam.setPosition(width / 2, 100, height / 2);
+        cam.setPosition(this.config.maxX / 2, 100, this.config.maxY / 2);
         
         // camera control
         cam.addComponent('script')
-        cam.script!.create(OrthoCameraController)
-        cam.script!.get('ortho-camera-controller')!.maxOrthoHeight = orthoHeight
-        cam.script!.get('ortho-camera-controller')!.zoomSpeed = 0.33
+        const camScript = cam.script!.create(OrthoCameraController) as unknown as OrthoCameraController
+        camScript.maxOrthoHeight = orthoHeight
+        camScript.zoomSpeed = 0.33
         return cam;
-    }
-
-    getMapRenderer(seed:string , width: number, height: number, config: MapSettings): pc.Entity {
-        // create script to use
-        const map = new pc.Entity('MapRenderEntity')
-        
-        map.addComponent('script')      
-        // @ts-ignore  
-        const script = map.script?.create(MapRenderer) as MapRenderer
-        script.seed = seed;
-        script.width = width;
-        script.height = height;
-        script.config = config;        
-        
-        this.app.root.addChild(map)
-        return map
     }
 
     getUI() {
@@ -128,7 +147,7 @@ export class GameScene {
         this.app.root.addChild(ui);
 
         ui.addComponent('script')
-        ui.script.create(DebugUiController);
+        ui.script?.create(DebugUiController);
         return ui;
     }
 }
