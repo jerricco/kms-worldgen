@@ -40,9 +40,10 @@ export class DebugUiController extends pc.Script {
 
         // create debug grid rulers
         this.ruler = new pc.Entity('RuleGridEntity')
-        this.entity.addChild(this.ruler)
         this.ruler.addComponent('script')
-        this.ruler?.script?.create(RuleGridRenderer);
+        const ruleGridScript = this.ruler?.script?.create(RuleGridRenderer) as unknown as RuleGridRenderer;
+        ruleGridScript.settings = this.settings;
+        this.entity.addChild(this.ruler)
     }
 
     update() {

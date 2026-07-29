@@ -183,7 +183,6 @@ export class Chunk {
             }
         }
 
-        console.log(chunk)
         return chunk
     }
 

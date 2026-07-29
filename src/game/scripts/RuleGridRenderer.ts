@@ -1,10 +1,13 @@
 import * as pc from 'playcanvas'
+import type { ChunkManager } from './ChunkManager';
+import { Chunk } from '../../lib/generation/chunk';
+import type { GameSettings } from '../GameScene';
+import { StatusName, type RegionID } from '../../lib/generation/regions';
 
 export class RuleGridRenderer extends pc.Script {
     static scriptName = 'rule-grid-renderer';
-    
-    public fadeMinZoom = 30;
-    public fadeMaxZoom = 50;
+
+    public settings!: GameSettings;
 
     // grid LOD lerp fade
     public zoomLODFadeGrid = 48;
@@ -40,6 +43,7 @@ export class RuleGridRenderer extends pc.Script {
 
     /** @attribute */
     public font: pc.Asset | null = null;
+    public chunkManager!: ChunkManager
     
     private gridMaterial!: pc.ShaderMaterial;
     private axisMaterial!: pc.ShaderMaterial;
@@ -52,14 +56,19 @@ export class RuleGridRenderer extends pc.Script {
     private _workingColor: pc.Color = new pc.Color();
 
     initialize(): void {
+        if (!this.settings) {
+            throw new Error('RuleGridRenderer: The grid renderer needs settings!');
+        }
+
         // load assets
         this.font = this.app.assets.find('PatrickHandFont');
+        this.chunkManager = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
 
         const gd: pc.GraphicsDevice = this.app.graphicsDevice;
 
         // Create a massive flat quad structure to prevent edge visibility limits
         const mesh: pc.Mesh = pc.Mesh.fromGeometry(gd, new pc.PlaneGeometry({
-            halfExtents: new pc.Vec2(5000, 5000),
+            halfExtents: new pc.Vec2(12800, 12800),
             widthSegments: 1,
             lengthSegments: 1
         }))
@@ -314,6 +323,15 @@ export class RuleGridRenderer extends pc.Script {
             }
         }
 
+        // const screenCenterX = Math.round(camPos.x);
+        // const screenCenterY = Math.round(camPos.y);
+
+        // // We're only going to update a few chunks around us. For now, we get one.
+        // const chunkX = Math.floor(screenCenterX / Chunk.DEFAULT_SIZE);
+        // const chunkY = Math.floor(screenCenterX / Chunk.DEFAULT_SIZE);
+
+        // const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
+
         // lerp render labels
         const centerGridX = Math.round(camPos.x);
         const centerGridZ = Math.round(camPos.z);
@@ -334,29 +352,46 @@ export class RuleGridRenderer extends pc.Script {
                 // Ensure element is visible
                 if (!currentLabel.enabled) currentLabel.enabled = true;
 
+                // handle color
                 const element = currentLabel.element;
                 this._workingColor.copy(element.color);
                 this._workingColor.a = lerpAlpha;
                 element.color = this._workingColor;
 
-                const cellWorldX = (centerGridX + xOffset + 0.035);
-                const cellWorldZ = (centerGridZ + zOffset + 0.15);
-                currentLabel.setPosition(cellWorldX, 0.01, cellWorldZ);
-                    
-                // let labelText = this.getLabelText(cellWorldX, cellWorldZ)
-                // if (currentLabel.element.text !== labelText) {
-                //     currentLabel.element.text = labelText;
-                // }
+                // find the tile information to build the label with
+                const worldX = Math.floor(centerGridX + xOffset);
+                const worldZ = Math.floor(centerGridZ + zOffset);
+                const chunkX = Math.floor(worldX / this.settings.chunkSize);
+                const chunkY = Math.floor(worldZ / this.settings.chunkSize);
+                const tileX = worldX - (chunkX * this.settings.chunkSize);
+                const tileY = worldZ - (chunkY * this.settings.chunkSize);
+                                    
+                const chunk = this.chunkManager.chunks.get(`${chunkX},${chunkY}`);
+                const tileIndex = Chunk.getLocalIndex(Math.floor(tileX), Math.floor(tileY));
+                let labelText = this.getLabelText(
+                    worldX, worldZ, 
+                    chunk?.regionIds[tileIndex],
+                    chunk?.elevations[tileIndex]
+                );
+
+                if (currentLabel.element.text !== labelText) {
+                    currentLabel.element.text = labelText;
+                }
+
+                // position the label
+                currentLabel.setPosition(worldX + 0.04, 0.01, worldZ + 0.04);
             }
         }
     }
 
-    // private getLabelText(cellWorldX: number, cellWorldZ: number): string {
-    //     const gridX = Math.round(cellWorldX), gridY = Math.round(cellWorldZ); // @NOTE: this is the display value, which won't be zero indexed
-    //     const tile = this.gen?.grid?.[gridX]?.[gridY];
-    //     return `X:${gridX + 1}, Z:${gridY + 1}`
-    //         + `\n${tile?.region.name || 'VOID'}`
-    //         + `\nY:${tile?.elevation.toFixed(2) || 0.00}`;
-    // }
+    private getLabelText(
+        gridX: number, gridY: number, 
+        regionID: RegionID = 0, 
+        elevation: number = 0
+    ): string {
+        return `X:${gridX + 1}, Z:${gridY + 1}`
+            + `\n${StatusName[regionID] || 'VOID'}`
+            + `\nY:${elevation.toFixed(2) || 0.00}`;
+    }
 }
 

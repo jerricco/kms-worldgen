@@ -110,13 +110,15 @@ export class GameScene {
 
     startLevel() {
         this.camera = this.getOrthoCamera();
-        this.ui = this.getUI();
 
         this.chunkManager = this.getChunkManager();
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
         // generate starting chunks at that location for a new game
         this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 15, this.config, this.meta, this.noise)
         // @TODO reveal all loaded chunks when save data is present.
+
+        // finally load the UI
+        this.ui = this.getUI();
     }
 
     getGameApp(): pc.Application {
