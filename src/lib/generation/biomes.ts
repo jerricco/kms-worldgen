@@ -24,122 +24,122 @@ export const BiomeID = {
     // Aquatic biomes
     // ABYSSAL
     HADAL_TRENCH       : 0, // subterrene
-    ABYSSAL_PLAIN      : 0, // subterrene
-    HYDROTHERMAL_VENT  : 0, // subterrene
-    BATHYPELAGIC       : 0,
+    ABYSSAL_PLAIN      : 1, // subterrene
+    HYDROTHERMAL_VENT  : 2, // subterrene
+    BATHYPELAGIC       : 3,
     // DEEP_OCEAN
-    PELAGIC            : 0, 
-    BENTHIC            : 0, // subterrene
+    PELAGIC            : 4, 
+    BENTHIC            : 5, // subterrene
     // OCEAN
-    SUNLIT_OCEAN       : 0,
-    CONTINENTAL_SHELF  : 0, // subterrene
-    SHORELINE          : 0,
+    SUNLIT_OCEAN       : 6,
+    CONTINENTAL_SHELF  : 7, // subterrene
+    SHORELINE          : 8,
     // SEA
-    MARGINAL_SEA       : 0,
-    MEDITERRANEAN_SEA  : 0,
-    BAY                : 0,
-    GULF               : 0,
+    MARGINAL_SEA       : 9,
+    MEDITERRANEAN_SEA  : 10,
+    BAY                : 11,
+    GULF               : 12,
     // FRESH_LAKE
-    CLEAR_LAKE         : 0,
-    RICH_LAKE          : 0,
-    BILLABONG          : 0,
+    CLEAR_LAKE         : 13,
+    RICH_LAKE          : 14,
+    BILLABONG          : 15,
     // SALINE_LAKE
-    SALT_FLAT          : 0,
-    ALKALINE_LAKE      : 0,
-    HYPERSALINE_BASIN  : 0,
+    SALT_FLAT          : 16,
+    ALKALINE_LAKE      : 17,
+    HYPERSALINE_BASIN  : 18,
     // REEF
-    FRINGE_REEF        : 0,
-    BARRIER_REEF       : 0,
-    ATOL               : 0,
+    FRINGE_REEF        : 19,
+    BARRIER_REEF       : 20,
+    ATOL               : 21,
     //BEACH
-    SAND_BEACH         : 0,
-    ROCK_BEACH         : 0,
-    MUDFLAT            : 0,
+    SAND_BEACH         : 22,
+    ROCK_BEACH         : 23,
+    MUDFLAT            : 24,
     // CLIFF 
-    SEA_CLIFF          : 0,
-    ESCARPMENT         : 0,
-    GORGE              : 0,
+    SEA_CLIFF          : 25,
+    ESCARPMENT         : 26,
+    GORGE              : 27,
     // ISLAND 
-    VOLCANIC_ISLAND    : 0,
-    CORAL_CAY          : 0,
-    ARCHIPELAGO        : 0,
+    VOLCANIC_ISLAND    : 28,
+    CORAL_CAY          : 29,
+    ARCHIPELAGO        : 30,
     // WETLAND 
-    SWAMP              : 0,
-    MARSH              : 0,
-    BOG                : 0,
+    SWAMP              : 31,
+    MARSH              : 32,
+    BOG                : 33,
     // ESTUARY 
-    FJORD              : 0,
-    SALT_MARSH_ESTUARY : 0,
-    LAGOON             : 0,
+    FJORD              : 34,
+    SALT_MARSH_ESTUARY : 35,
+    LAGOON             : 36,
     // RIVER 
-    TORRENTIAL_RIVER   : 0,
-    MEANDERING_RIVER   : 0,
-    LOW_COURSE_RIVER   : 0,
+    TORRENTIAL_RIVER   : 37,
+    MEANDERING_RIVER   : 38,
+    LOW_COURSE_RIVER   : 39,
     // RIVER DELTA 
-    BIRD_FOOT_DELTA    : 0,
-    WAVE_DELTA         : 0,
-    TIDE_DELTA         : 0,
+    BIRD_FOOT_DELTA    : 40,
+    WAVE_DELTA         : 41,
+    TIDE_DELTA         : 42,
     // HILL
-    ROLLING_HILL       : 0,
-    MOUND              : 0,
-    BUTTE              : 0,
-    FOOTHILL           : 0,
+    ROLLING_HILL       : 43,
+    MOUND              : 44,
+    BUTTE              : 45,
+    FOOTHILL           : 46,
     // MOUNTAIN
-    FOLD_MOUNTAIN      : 0,
-    FAULT_MOUNTAIN     : 0,
-    VOLCANO            : 0,
+    FOLD_MOUNTAIN      : 47,
+    FAULT_MOUNTAIN     : 48,
+    VOLCANO            : 49,
     //PEAK
-    SUMMIT             : 0,
-    CALDERA            : 0,
-    RIDGE              : 0,
+    SUMMIT             : 50,
+    CALDERA            : 51,
+    RIDGE              : 52,
     //PLAIN
-    PRARIE             : 0,
-    STEPPE             : 0,
-    SAVANNA            : 0,
-    COASTAL_PLAIN      : 0,
+    PRARIE             : 53,
+    STEPPE             : 54,
+    SAVANNA            : 55,
+    COASTAL_PLAIN      : 56,
     // PLATEAU
-    MESA               : 0,
-    TABLELAND          : 0,
+    MESA               : 57,
+    TABLELAND          : 58,
     // VALLEY
-    FLUVIAL_VALLEY     : 0,
-    GLACIAL_VALLEY     : 0,
-    RIFT_VALLEY        : 0,
+    FLUVIAL_VALLEY     : 59,
+    GLACIAL_VALLEY     : 60,
+    RIFT_VALLEY        : 61,
     // DESERT
-    SANDY_DESERT       : 0,
-    STONY_DESERT       : 0,
-    POLAR_DESERT       : 0,
-    SEMI_ARID_SCRUBLAND: 0,
+    SANDY_DESERT       : 62,
+    STONY_DESERT       : 63,
+    POLAR_DESERT       : 64,
+    SEMI_ARID_SCRUBLAND: 65,
     // FOREST
-    TROPICAL_RAINFOREST: 0,
-    DECIDUOUS_FOREST   : 0,
-    TAIGA              : 0,
+    TROPICAL_RAINFOREST: 66,
+    DECIDUOUS_FOREST   : 67,
+    TAIGA              : 68,
     // TUNDRA
-    ICE_SHELF          : 0,
-    ICE_TABLELANDS     : 0,
-    ALPINE_TUNDRA      : 0,
+    ICE_SHELF          : 69,
+    ICE_TABLELANDS     : 70,
+    ALPINE_TUNDRA      : 71,
     // KARST 
-    SINKHOLE           : 0,
-    TOWER_KARST        : 0,
+    SINKHOLE           : 72,
+    TOWER_KARST        : 73,
     // LITHOSPEHERE 
-    REGOLITH           : 0,
-    BEDROCK            : 0,
-    CRUSTAL_FAULT      : 0,
+    REGOLITH           : 74,
+    BEDROCK            : 75,
+    CRUSTAL_FAULT      : 76,
     // CAVE
-    SURFACE_CAVE       : 0,
-    SUBTERRENE_CAVE    : 0,
-    ICE_CAVE           : 0,
-    LAVA_TUBE          : 0,
+    SURFACE_CAVE       : 77,
+    SUBTERRENE_CAVE    : 78,
+    ICE_CAVE           : 79,
+    LAVA_TUBE          : 80,
     // SUBTERRANEAN_AQUIFIER
-    AQUIFER            : 0,
-    SUBTERRANEAN_RIVER : 0,
-    KARST_GROUNDWATER_BASIN: 0,
+    AQUIFER            : 81,
+    SUBTERRANEAN_RIVER : 82,
+    KARST_GROUNDWATER_BASIN: 83,
     // DEEP_BIOSPHERE
-    CONTINENTAL_DEEP_CRUST : 0,
-    LAVA_CHAMBER       : 0,
+    CONTINENTAL_DEEP_CRUST : 84,
+    LAVA_CHAMBER       : 85,
     // HYDROTHERMAL_SYSTEM
-    SEAFLOOR_FRACTURE: 0,
-    MAGMATIC_CHAMBER_VENT: 0,
-    GEOTHERMAL_AQUIFER: 0,
+    SEAFLOOR_FRACTURE: 86,
+    MAGMATIC_CHAMBER_VENT: 87,
+    GEOTHERMAL_AQUIFER: 88,
 
     // SPECIAL
     //EXOTIC

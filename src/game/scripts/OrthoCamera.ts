@@ -187,14 +187,14 @@ export class OrthoCameraController extends pc.Script {
         this.lastPosHovered.x = gridX;
         this.lastPosHovered.y = gridY;
 
-        const tile: Tile = map.generation.grid[gridX][gridY] || null;
+        // const tile: Tile = map.generation.grid[gridX][gridY] || null;
         // if (tile) {
         //     console.log(`${tile.region.name} Tile (@${gridX},${gridY}) - elevation: ${tile.elevation.toFixed(2)}`);
         // } else {
         //     console.log(`[Tile Hovered] Empty space or boundary edge at: (${gridX}, ${gridY})`);
         // }
 
-        return tile;
+        return {} as Tile; //tile;
     }
 
     private panByDelta(dx: number, dy: number) {

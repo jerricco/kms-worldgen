@@ -111,8 +111,9 @@ export class GameScene {
         // create script to use
         const map = new pc.Entity('MapRenderEntity')
         
-        map.addComponent('script')        
-        const script = map.script?.create(MapRenderer)
+        map.addComponent('script')      
+        // @ts-ignore  
+        const script = map.script?.create(MapRenderer) as MapRenderer
         script.seed = seed;
         script.width = width;
         script.height = height;
