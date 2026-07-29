@@ -6,7 +6,6 @@ export class RuleGridRenderer extends pc.Script {
     public fadeMinZoom = 30;
     public fadeMaxZoom = 50;
 
-
     // grid LOD lerp fade
     public zoomLODFadeGrid = 48;
     private startGridAlpha!: number;

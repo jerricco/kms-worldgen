@@ -15,14 +15,6 @@ export class OrthoCameraController extends pc.Script {
     minOrthoHeight: number = 5;
     /** @attribute */
     maxOrthoHeight: number = 150;
-    /** @attribute */
-    minXBoundary: number = 20 - MapGenerator.DEFAULT_WIDTH;
-    /** @attribute */
-    minZBoundary: number = 20 - MapGenerator.DEFAULT_HEIGHT;
-    /** @attribute */
-    maxXBoundary: number = 20 + MapGenerator.DEFAULT_WIDTH;
-    /** @attribute */
-    maxZBoundary: number = 20 + MapGenerator.DEFAULT_HEIGHT;
 
     private targetPosition = new pc.Vec3();
     private currentPosition = new pc.Vec3();
@@ -170,22 +162,21 @@ export class OrthoCameraController extends pc.Script {
     }
 
     private findTileInformation(x: number, y: number): Tile | null {
-        const map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer;
-        if (!map || !map.generation) return null;
+        return null;
 
-        const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
-        const intersectX = rayStart.x;
-        const intersectZ = rayStart.z;
-        const gridX = Math.floor(intersectX / map.tileSize);
-        const gridY = Math.floor(intersectZ / map.tileSize);
+        // const rayStart = this.entity!.camera.screenToWorld(x, y, this.entity!.camera.nearClip);
+        // const intersectX = rayStart.x;
+        // const intersectZ = rayStart.z;
+        // const gridX = Math.floor(intersectX / map.tileSize);
+        // const gridY = Math.floor(intersectZ / map.tileSize);
 
-        const isInsideGrid = gridX >= 0 && gridX < map.generation.width && gridY >= 0 && gridY < map.generation.height;
-        const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
+        // const isInsideGrid = gridX >= 0 && gridX < map.generation.width && gridY >= 0 && gridY < map.generation.height;
+        // const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
 
-        if (!isInsideGrid || !isDifferentTile) return null;
+        // if (!isInsideGrid || !isDifferentTile) return null;
 
-        this.lastPosHovered.x = gridX;
-        this.lastPosHovered.y = gridY;
+        // this.lastPosHovered.x = gridX;
+        // this.lastPosHovered.y = gridY;
 
         // const tile: Tile = map.generation.grid[gridX][gridY] || null;
         // if (tile) {
@@ -194,7 +185,7 @@ export class OrthoCameraController extends pc.Script {
         //     console.log(`[Tile Hovered] Empty space or boundary edge at: (${gridX}, ${gridY})`);
         // }
 
-        return {} as Tile; //tile;
+        // return {} as Tile; //tile;
     }
 
     private panByDelta(dx: number, dy: number) {
@@ -211,7 +202,6 @@ export class OrthoCameraController extends pc.Script {
 
     private clampCameraToWorld() {
         const map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
-        console.log(map)
         if (!map) {
             this.targetPosition.x = 0;
             this.targetPosition.z = 0;

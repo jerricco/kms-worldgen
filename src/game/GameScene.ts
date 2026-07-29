@@ -87,7 +87,8 @@ export class GameScene {
             // seed: 'Hershey Testereo',
             // seed: 'sanga ranga bangaranga',
             // seed: 'fuck me I wish I were dead, aye',
-            seed: 'helpmeimdrowning',
+            // seed: 'helpmeimdrowning',
+            seed: 'aborio rice',
             maxX: 800, // 12800
             maxY: 800, // 12800
             stretchX: 0.7,
@@ -101,6 +102,9 @@ export class GameScene {
             plainLevel: 0.48,
             hillLevel: 0.60,
             peakLevel: 0.60,
+            macroScale: 0.0045,
+            islandRadius: 0.80,
+            squishFactor: 1.0,
         }
     }
 
@@ -159,10 +163,11 @@ export class GameScene {
 
     getUI() {
         const ui = new pc.Entity('UIContainerEntity');
-        this.app.root.addChild(ui);
-
         ui.addComponent('script')
-        ui.script?.create(DebugUiController);
+        const debugUIScript = ui.script?.create(DebugUiController) as DebugUiController;
+        debugUIScript.settings = { ...this.config }
+        
+        this.app.root.addChild(ui);
         return ui;
     }
 

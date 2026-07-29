@@ -2,9 +2,8 @@ import * as pc from 'playcanvas';
 import type { Tile } from '../../lib/generation/types';
 import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
-import type { MapRenderer } from './MapRenderer';
-import { MapGenerator } from '../../lib/generation/generator';
 import { isPrimitive } from '../../lib/utils';
+import type { GameSettings } from '../GameScene';
 
 export class DebugUiController extends pc.Script {
     static scriptName=  'debug-ui-controller';
@@ -12,7 +11,7 @@ export class DebugUiController extends pc.Script {
     public font: pc.Asset | null = null;
     private screenEntity!: pc.Entity;
     private ruler!: pc.Entity;
-    private map: MapRenderer | null = null;
+    private settings!: GameSettings;
 
     // References to UI groups for toggling visibility or pulling data
     private coordinateBox!: pc.Entity;
@@ -29,26 +28,29 @@ export class DebugUiController extends pc.Script {
     private values = {}; // track input values across the screen
 
     initialize() {
+        if (!this.settings) {
+            throw new Error('DebugUI: There needs to be game settings to debug!')
+        }
+
         this.font = this.app.assets.find('PatrickHandFont');
         
         // create debug UI
         this.createUiHierarchy();
-        this.hideTileInfo(); // start hidden, only show when a tile is seleted
+        // this.hideTileInfo(); // start hidden, only show when a tile is seleted
 
         // create debug grid rulers
         this.ruler = new pc.Entity('RuleGridEntity')
         this.entity.addChild(this.ruler)
         this.ruler.addComponent('script')
-        this.ruler.script.create(RuleGridRenderer)
+        this.ruler?.script?.create(RuleGridRenderer);
     }
 
     update() {
-        // fill MapSettings inputs, including seed, width and height
+        // fill GameSettings inputs
         if (this.values['seed'] === undefined) {
-            this.map = this.app.root.findByName('MapRenderEntity')?.script.MapRenderer
+            this.map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager
             for (const name in this.inputs) {
-                const nonSettings = ['seed', 'width', 'height']
-                let fillValue = nonSettings.indexOf(name) === -1 ? this.map?.generation?.settings[name] : this.map?.generation[name]
+                let fillValue = this.map?.settings[name];
 
                 // @TODO: number type input & switch or checkbox
                 if (typeof fillValue === 'number') fillValue = `${fillValue}`;
@@ -76,8 +78,8 @@ export class DebugUiController extends pc.Script {
         // Render sections
         this.buildSeedDebugInput();
         this.buildMapSettingsPanel();
-        this.buildHoverCornerBox();
-        this.buildTileInfoBox();
+        // this.buildHoverCornerBox();
+        // this.buildTileInfoBox();
     }
 
     private buildSeedDebugInput() {
@@ -150,7 +152,7 @@ export class DebugUiController extends pc.Script {
             if (this.values['seed'] === null) return;
 
             this.values['seed'] = this.inputs['seed'].script['textbox-input'].inputValue
-            this.refreshSeed(this.values['seed'])
+            // this.refreshSeed(this.values['seed']) // @TODO
         });
 
         // compose elements for display
@@ -161,20 +163,15 @@ export class DebugUiController extends pc.Script {
     }
 
     private buildMapSettingsPanel() {
-        const settings = {
-            width: MapGenerator.DEFAULT_WIDTH,
-            height: MapGenerator.DEFAULT_HEIGHT,
-            ...MapGenerator.GENERATOR_DEFAULTS
-        };
-
         // initialise group
         const group = new pc.Entity('MapSettingsDebugInputGroup');
         group.setLocalPosition(20, -90, 0);
 
         // fill with settings
         let settingCount = 0;
-        for (const name in settings) {
-            const setting = settings[name];
+        for (const name in this.settings) {
+            if (name === 'seed') continue; // we already have seedbox
+            const setting = this.settings[name];
             // we'll handle more complex bits later
             if (!isPrimitive(setting)) continue;
 
@@ -275,11 +272,6 @@ export class DebugUiController extends pc.Script {
         this.tileCoordTextEl = createTextRow(130, "Coords: 0,0");
 
         this.screenEntity.addChild(this.tileInfoBox);
-    }
-
-    private refreshSeed(textValue: string) {
-        this.map.seed = textValue;
-        this.map.shouldUpdateMap = true;
     }
 
     public showTileInfo(data: Tile) {

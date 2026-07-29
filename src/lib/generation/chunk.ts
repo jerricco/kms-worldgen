@@ -9,6 +9,9 @@ import { hexToRgb } from '../utils';
 export type ChunkSettings = {
     maxX: number, maxY: number,
     chunkSize: number,
+    macroScale: number,
+    islandRadius: number,
+    squishFactor: number,
 
     seaLevel: number,     // @TODO: defaults
     abyssalLevel: number, // @TODO: defaults
@@ -180,6 +183,7 @@ export class Chunk {
             }
         }
 
+        console.log(chunk)
         return chunk
     }
 

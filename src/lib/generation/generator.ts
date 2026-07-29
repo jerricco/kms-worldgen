@@ -2,8 +2,8 @@ import type { REGION_CONFIG as RegionConfig } from './regions'
 import { SeededRandom } from './seed'
 import { OpenSimplexNoise } from './noise'
 import type { Grid } from './types';
-import { Chunk } from './chunk';
 import type { GameSettings } from '../../game/GameScene';
+import type { ChunkSettings } from './chunk';
 
 // dynamic settings
 export type RiverSetting = {
@@ -14,53 +14,6 @@ export type RiverSetting = {
     genThreshold: number, // The amount to randomly vary the river cout with
 };
 
-export type MapSettings = {
-    // altitude settings
-    peakLevel: number,
-    treeLevel: number,
-    hillLevel: number,
-    plainLevel: number,
-    beachLevel: number,
-    seaLevel: number,
-    trenchLevel: number,
-    abyssalLevel: number,
-    // generation levers
-    macroScale: number, 
-    squishFactor: number, 
-    mapFenceSize: number,
-    isIsland: boolean,
-    islandRadius: number,
-    // allocation settings
-    minLakeSize: number,
-    // altitude climatic settings
-    minSnowLine: number, 
-    rivers: {
-        MAJOR: RiverSetting,
-        MINOR: RiverSetting,
-    },
-};
-
-const GeneratorDefaults: MapSettings = {
-    peakLevel: 0.91,
-    treeLevel: 0.74,
-    hillLevel: 0.60,
-    plainLevel: 0.48,
-    beachLevel: 0.34,
-    seaLevel: 0.32,
-    trenchLevel: 0.16,
-    abyssalLevel: 0.1,
-    macroScale: 0.0045,
-    squishFactor: 1.0,
-    minLakeSize: 16,
-    minSnowLine: 0.61,
-    mapFenceSize: 4,
-    isIsland: false, // @DEBUG
-    islandRadius: 0.80,
-    rivers: {
-        MAJOR: { name: 'MAJOR_RIVER', count: 5, genThreshold: 1, bedWidth: 3, windiness: 0.8 },
-        MINOR: { name: 'RIVER', count: 10, genThreshold: 1, bedWidth: 1, windiness: 1.6 },
-    }
-}
 
 export interface GlobalGenerationMeta {
     maxX: number,
@@ -200,7 +153,7 @@ export class MapGenerator {
         y: number,
         mOffsetX: number,
         mOffsetY: number,
-        settings: MapSettings,
+        settings: ChunkSettings,
         noise: OpenSimplexNoise,
     ): { sampleX: number, sampleY: number } {
         const warpX = noise.noise2D((x + 200) * 0.018, (y + 200) * 0.018) * 45;
