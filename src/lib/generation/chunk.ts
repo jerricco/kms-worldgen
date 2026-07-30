@@ -1,9 +1,9 @@
 import * as pc from 'playcanvas';
 import { REGION_PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
-import { determineTileRegion, RegionID } from '../../lib/generation/regions';
-import { MapGenerator, type GlobalGenerationMeta } from './generator';
-import type { OpenSimplexNoise } from './noise';
+import { RegionID } from './regions';
+import { MapGenerator } from './MapGenerator';
 import { hexToRgb } from '../utils';
+import type { SlopeAspect, SlopeVector } from "./types";
 
 export type ChunkSettings = {
     worldWidth: number, worldHeight: number,
@@ -18,10 +18,9 @@ export type ChunkSettings = {
     beachLevel: number,   // @TODO: defaults
     plainLevel: number,   // @TODO: defaults
     hillLevel: number,    // @TODO: defaults
-    mountainLevel: number,    // @TODO: defaults
+    mountainLevel: number,// @TODO: defaults
     peakLevel: number,    // @TODO: defaults
 }
-
 
 export class Chunk {
     static DEFAULT_SIZE = 50;
@@ -33,8 +32,9 @@ export class Chunk {
     public worldWidth: number;
     public size = Chunk.DEFAULT_SIZE;
     public tileCount: number;
-    public globalMeta: GlobalGenerationMeta;
-    public noise: OpenSimplexNoise;
+
+    public generator: MapGenerator;
+    public settings: ChunkSettings;
 
     private _isActive: boolean = true;
     get isActive():boolean {
@@ -56,9 +56,9 @@ export class Chunk {
 
     public visualEntity: pc.Entity | null = null;
 
-    constructor(chunkX: number, chunkY: number, settings: ChunkSettings, meta: GlobalGenerationMeta, noise: OpenSimplexNoise) {
-        this.globalMeta = meta;
-        this.noise = noise;
+    constructor(chunkX: number, chunkY: number, generator: MapGenerator, settings: ChunkSettings) {
+        this.generator = generator;
+        this.settings = settings;
         
         this.chunkX = chunkX;
         this.chunkY = chunkY;
@@ -69,6 +69,7 @@ export class Chunk {
         this.tileCount = this.size * this.size;
         this.worldWidth = (settings.worldWidth || this.size) / 2;
         this.worldHeight = (settings.worldHeight || this.size) / 2;
+
 
         this.elevations   = new Float32Array(this.tileCount);
         this.regionIds    = new Int32Array(this.tileCount);
@@ -163,7 +164,7 @@ export class Chunk {
         }
     }
 
-    generate(chunkX: number, chunkY: number, settings: ChunkSettings) {
+    generate(chunkX: number, chunkY: number) {
         const chunk = this;
 
         for (let x = 0; x < this.size; x++) {
@@ -175,15 +176,91 @@ export class Chunk {
                 if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
-                const tile = MapGenerator.getGlobalTileComposition(globalX, globalY, settings, this.globalMeta, this.noise);
+                const tile = this.generator.generateTileComposition(globalX, globalY);
                 const localIndex = Chunk.getLocalIndex(x, y, this.size);
 
+                // determine tile properties
                 chunk.elevations[localIndex] = tile.elevation;
-                determineTileRegion(globalX, globalY, localIndex, chunk, tile.elevation, settings, this.globalMeta, this.noise);
+                this.determineTileRegion(globalX, globalY, localIndex, tile.elevation);
             }
         }
 
         return chunk
+    }
+
+    determineTileRegion(
+        globalX: number,
+        globalY: number,
+        localIndex: number,
+        elevation: number,
+    ) {
+        const { slope, cardinalDir } = this.nearestTileSlopeAspect(globalX, globalY);
+        const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
+
+        // @TODO: replace elevation based regions with climatic regions
+        let region: RegionID = RegionID.UNASSIGNED;
+
+        // MARINE regions - first establish a seafloor
+        if (elevation < this.settings.seaLevel) {
+            if (elevation < this.settings.abyssalLevel) {
+                region = RegionID.ABYSSAL;
+            } else if (elevation < this.settings.trenchLevel) {
+                region = RegionID.DEEP_OCEAN;
+            } else {
+                region = RegionID.OCEAN;
+            }
+        }
+        // TRANSITIONAL regions - create terminals between land and sea
+        else if (elevation < this.settings.beachLevel) {
+            region = RegionID.BEACH;
+        }
+        // FLAT TERRESTRIAL regions - mainland
+        else if (elevation < this.settings.plainLevel) {
+            region = RegionID.PLAIN;
+        }
+        // MOUNTAINOUS TERRESTRIAL REGIONS - higher elevations
+        else if (elevation < this.settings.hillLevel) {
+            region = RegionID.HILL;
+        }
+        else if (elevation < this.settings.peakLevel) {
+            region = slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
+        } else if (elevation > this.settings.peakLevel) {
+            region = RegionID.PEAK
+        }
+
+        this.regionIds[localIndex] = region;
+    }
+
+    // finds the direction of the steepest ascent
+    nearestTileSlopeVector(globalX: number, globalY: number): SlopeVector {
+        const elevWest = this.generator.generateTileComposition(globalX - 1, globalY).elevation;
+        const elevEast = this.generator.generateTileComposition(globalX + 1, globalY).elevation;
+        const elevNorth = this.generator.generateTileComposition(globalX, globalY - 1).elevation;
+        const elevSouth = this.generator.generateTileComposition(globalX, globalY + 1).elevation;
+
+        const gx = (elevEast - elevWest) / 2.0;
+        const gy = (elevSouth - elevNorth) / 2.0;
+        const slope = Math.sqrt(gx * gx + gy * gy);
+
+        return { slope, gradient: { x: gx, y: gy } };
+    }
+
+    nearestTileSlopeAspect(globalX: number, globalY: number): SlopeAspect {
+        const vect = this.nearestTileSlopeVector(globalX, globalY);
+        if (vect.slope < 0.01) {
+            return { ...vect, angleDeg: -1, cardinalDir: 'FLAT' };
+        }
+
+        const { x: gx, y: gy } = vect.gradient;
+        let radians = Math.atan2(-gy, gx);
+        let angleDeg = (90.0 - (radians * 180.0 / Math.PI)) % 360.0;
+        if (angleDeg < 0) angleDeg += 360.0;
+
+        const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+        const index = Math.round(angleDeg / 45.0) % 8;
+        const cardinalDir = directions[index];
+
+        return { ...vect, angleDeg, cardinalDir };
     }
 
     // Fast inline index helper mapping local 2D space to 1D space

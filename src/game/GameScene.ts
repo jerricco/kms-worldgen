@@ -3,14 +3,11 @@ import * as pc from 'playcanvas'
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 
 import type { ChunkSettings }        from '../lib/generation/chunk';
-import type { GlobalGenerationMeta } from '../lib/generation/generator';
+import { MapGenerator, type GlobalGenerationMeta } from '../lib/generation/MapGenerator';
 
-import { MapGenerator }              from '../lib/generation/generator';
 import { OrthoCameraController }     from './scripts/OrthoCamera';
 import { DebugUiController }         from './scripts/DebugUi';
 import { ChunkManager }              from './scripts/ChunkManager';
-import { SeededRandom }              from '../lib/generation/seed';
-import { OpenSimplexNoise }          from '../lib/generation/noise';
 
 // Merges all the settings which will later split 
 export type GameSettings = 
@@ -38,9 +35,6 @@ export class GameScene {
 
     // settings & services
     public config!: GameSettings
-    public rng: SeededRandom;
-    public meta: GlobalGenerationMeta;
-    public noise: OpenSimplexNoise;
 
     constructor() {
         console.time('Initialising...')
@@ -50,9 +44,6 @@ export class GameScene {
         
         // configure the game level
         this.config = this.configureLevel();
-        this.rng = new SeededRandom(this.config.seed);
-        this.noise = new OpenSimplexNoise(this.rng);
-        this.meta = MapGenerator.generateGlobalMetadata(this.config, this.rng);
         
         // start the currently configured level.
         // @TODO: load this in from disk if needed.
@@ -146,7 +137,7 @@ export class GameScene {
         // generate starting chunks at the loaded camera location
         // for a new game, this should be 0,0
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
-        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16, this.config, this.meta, this.noise)
+        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16)
         // @TODO reveal all loaded chunks when save data is present.
 
         // finally load the UI
@@ -189,6 +180,7 @@ export class GameScene {
         // @ts-ignore  
         this.chunker = chunkManager.script?.create(ChunkManager) as ChunkManager
         this.chunker.settings = this.config;
+        this.chunker.generator = new MapGenerator(this.config);
 
         this.app.root.addChild(chunkManager)
         return chunkManager

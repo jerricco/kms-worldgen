@@ -1,8 +1,7 @@
 import * as pc from 'playcanvas';
 import { Chunk } from '../../lib/generation/chunk';
 import { type GameSettings } from '../GameScene';
-import type { GlobalGenerationMeta, MapGenerator } from '../../lib/generation/generator';
-import type { OpenSimplexNoise } from '../../lib/generation/noise';
+import { MapGenerator } from '../../lib/generation/MapGenerator';
 
 export class ChunkManager extends pc.Script {
     static scriptName = 'ChunkManager';
@@ -25,9 +24,6 @@ export class ChunkManager extends pc.Script {
         this.maxChunksY = this.settings.worldHeight / this.settings.chunkSize;
 
         // @TODO: throw error for an amount of max chunks that would crash the game.
-
-        // create generator instance
-        this.generator = new MapGenerator();
     }
 
     // @TODO: This needs to detect if a relevant entity has triggered a chunk to update its neighors.
@@ -36,15 +32,11 @@ export class ChunkManager extends pc.Script {
     update() {}
 
     public updateChunkRadius(
-        cameraGlobalX: number, cameraGlobalY: number,
-        revealRadius: number = 4, // @TODO handle this better?
-        settings: GameSettings,
-        meta: GlobalGenerationMeta,
-        noise: OpenSimplexNoise,
+        camGlobalX: number, camGlobalY: number, revealRadius: number = 4, // @TODO handle this better?
     ): void { 
         const units = this.settings.chunkSize * this.tileSize;
-        const centerChunkX = Math.floor(cameraGlobalX / units);
-        const centerChunkY = Math.floor(cameraGlobalY / units);
+        const centerChunkX = Math.floor(camGlobalX / units);
+        const centerChunkY = Math.floor(camGlobalY / units);
 
         const visibleKeys = new Set<string>();
 
@@ -64,8 +56,9 @@ export class ChunkManager extends pc.Script {
                 let chunk = this.chunks.get(chunkKey);
 
                 if (!chunk) {
-                    chunk = new Chunk(targetX, targetY, settings, meta, noise);
-                    chunk.generate(targetX, targetY, settings);
+                    // @TODO: split out GameSettings into ChunkSettings here.
+                    chunk = new Chunk(targetX, targetY, this.generator, this.settings);
+                    chunk.generate(targetX, targetY);
                     this.chunks.set(chunkKey, chunk);
                 }
 
