@@ -1,5 +1,5 @@
 import * as pc from 'playcanvas';
-import { REGION_PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
+import { PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
 import { RegionID } from './regions';
 import { MapGenerator } from './MapGenerator';
 import { hexToRgb } from '../utils';
@@ -82,7 +82,7 @@ export class Chunk {
         graphicsDevice: pc.GraphicsDevice,
         tileSize: number = 1,
     ): pc.Entity {
-        const palette = REGION_PALETTES['MAP']
+        const palette = PALETTES['MAP']
 
         const positions: number[] = [];
         const colors   : number[] = [];
@@ -181,23 +181,15 @@ export class Chunk {
 
                 // determine tile properties
                 chunk.elevations[localIndex] = tile.elevation;
-                this.determineTileRegion(globalX, globalY, localIndex, tile.elevation);
+                this.determineTileRegion(localIndex, tile.elevation);
             }
         }
 
         return chunk
     }
 
-    determineTileRegion(
-        globalX: number,
-        globalY: number,
-        localIndex: number,
-        elevation: number,
-    ) {
-        // const { slope, cardinalDir } = this.nearestTileSlopeAspect(globalX, globalY);
-        // const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
-
-        // @TODO: replace elevation based regions with climatic regions
+    determineTileRegion(localIndex: number, elevation: number) {
+        // @TODO: replace elevation based regions with dynamic climatic regions
         let region: RegionID = RegionID.UNASSIGNED;
 
         // MARINE regions - first establish a seafloor
@@ -223,7 +215,7 @@ export class Chunk {
             region = RegionID.HILL;
         }
         else if (elevation < this.settings.peakLevel) {
-            region = RegionID.MOUNTAIN // slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
+            region = RegionID.MOUNTAIN
         } else if (elevation > this.settings.peakLevel) {
             region = RegionID.PEAK
         }

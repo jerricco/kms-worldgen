@@ -1,4 +1,4 @@
-export const REGION_PALETTES: { [THEME: string] : { [COLOR: string]: string } } = {
+export const PALETTES: { [THEME: string] : { [COLOR: string]: string } } = {
     MAP: {
         VOID:        '#6a3887',
         UNASSIGNED:  '#e5e5e5',

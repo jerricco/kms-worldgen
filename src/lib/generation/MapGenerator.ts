@@ -74,7 +74,7 @@ export class MapGenerator {
         return {
             worldWidth,
             worldHeight,
-            cellGridSize: 400, // @TEST
+            cellGridSize: 600, // @TEST
             bufferFactor,
             oceanClamp,
             randomAngle,
@@ -91,19 +91,26 @@ export class MapGenerator {
     }
 
     generateSuperstructureElevation(globalX: number, globalY: number): number {
-        // generate cell data
-        // a Cell represents a voroni cell to place tectonic zones.
-        const cellSize = this.meta.cellGridSize;;
+        // In dense land zones, cells shrink to 250 tiles for tight clustering.
+        // In ocean zones, cells expand up to 600 tiles to prevent fragmenting.
+        const cellSize = this.meta.cellGridSize;
 
+        // rotate the continent spine
+        const rotX = globalX * this.meta.cosA - globalY * this.meta.sinA;
+        const rotY = globalX * this.meta.sinA + globalY * this.meta.cosA;
         // grid coord translation to 0,0 to avoid negative coordinate space
-        const shiftedGridX = globalX + this.halfW
-        const shiftedGridY = globalY + this.halfH;
-
+        const shiftedGridX = rotX + this.halfW
+        const shiftedGridY = rotY + this.halfH;
         const rawCellX = Math.floor(shiftedGridX / cellSize);
         const rawCellY = Math.floor(shiftedGridY / cellSize);
 
         let totalLandWeight = 0.0;
-        const searchRadius = 1; // for sampling surrounding cells (up to 9)
+        const searchRadius = 2; // for sampling surrounding cells
+
+        const macroFreq = 1.0 /this.meta.worldWidth;
+        const detailFreq = 3.5 /this.meta.worldWidth;
+        const seedOffsetX = this.meta.mOffsetX || 0;
+        const seedOffsetY = this.meta.mOffsetY || 0;
 
         // find nearby tectonic nodes
         for (let cx = -searchRadius; cx <= searchRadius; cx++) {
@@ -116,44 +123,71 @@ export class MapGenerator {
                 const cellMinX = (targetCellX * cellSize) - this.halfW;
                 const cellMinY = (targetCellY * cellSize) - this.halfH;
 
-                // Fetch the unique node offset position for this cell
-                const seedX = Math.sin(targetCellX * 12.9898 + targetCellY * 78.233) * 43758.5453;
-                const seedY = Math.sin(targetCellX * 39.3464 + targetCellY * 11.135) * 76351.9814;
-                const offsetX = seedX - Math.floor(seedX);
-                const offsetY = seedY - Math.floor(seedY);
+                const cellCenterX = cellMinX + cellSize / 2;
+                const cellCenterY = cellMinY + cellSize / 2;
 
-                // Establish the final, shifted global position of this cell's land node
-                const nodeGlobalX = cellMinX + (offsetX * cellSize);
-                const nodeGlobalY = cellMinY + (offsetY * cellSize);
+                const sampleX = cellCenterX + seedOffsetX;
+                const sampleY = cellCenterY + seedOffsetY;
 
-                // Calculate the distance from our current tile to this neighbor cell node
-                const dx = globalX - nodeGlobalX;
-                const dy = globalY - nodeGlobalY;
-                const distToNode = Math.sqrt(dx * dx + dy * dy);
+                const macroNoise = (this.noise.noise2D(sampleX * macroFreq, sampleY * macroFreq) + 1.0) * 0.5;
 
-                // Vary node sizes dynamically based on their cell seeds
-                const nodeRadius = cellSize * (0.6 + offsetX * 0.7);
+                // Pass B: High-frequency erosion wave to fracture uniform edges
+                const detailNoise = (this.noise.noise2D((sampleX + 5000) * detailFreq, (sampleY + 5000) * detailFreq) + 1.0) * 0.5;
 
-                // Smooth step falloff curve (1.0 at center, 0.0 at radius edge)
-                if (distToNode < nodeRadius) {
-                    const linearT = 1.0 - (distToNode / nodeRadius);
-                    const smoothWeight = linearT * linearT * (3.0 - 2.0 * linearT);
+                // Combine passes to determine the final tectonic density profile
+                const cellDensity = Math.max(0.0, Math.min(1.0, (macroNoise * 0.7) + (detailNoise * 0.3)));
 
-                    totalLandWeight += smoothWeight;
+
+
+
+                
+                // Define how many sub-nodes spawn in this cell based on tectonic density
+                let subNodeCount = 1;
+                if (cellDensity > 0.65) subNodeCount = 3;      // High density = Core mainland cluster
+                else if (cellDensity > 0.40) subNodeCount = 2; // Mid density = Connecting land bridges
+                else if (cellDensity < 0.20) continue;         // Deep ocean basin = Deactivate cell completely
+
+                // Generate deterministic sub-nodes inside the locked cell frame
+                for (let sub = 0; sub < subNodeCount; sub++) {
+                    // @TODO: use rng here
+                    const seedX = Math.sin(targetCellX * 12.9898 + targetCellY * 78.233 + sub * 45.12) * 43758.5453;
+                    const seedY = Math.sin(targetCellX * 39.3464 + targetCellY * 11.135 + sub * 87.93) * 76351.9814;
+                    
+                    const offsetX = seedX - Math.floor(seedX);
+                    const offsetY = seedY - Math.floor(seedY);
+                    const nodeGlobalX = cellMinX + (offsetX * cellSize);
+                    const nodeGlobalY = cellMinY + (offsetY * cellSize);
+
+                    // Calculate the distance from our current tile to this neighbor cell node
+                    const dx = globalX - nodeGlobalX;
+                    const dy = globalY - nodeGlobalY;
+                    const distToNode = Math.sqrt(dx * dx + dy * dy);
+
+                    // Nodes in dense zones grow larger to blend into a unified continent mass,
+                    // while isolated nodes shrink into small barrier islands.
+                    const baseRadius = cellSize * (0.55 + offsetX * 0.45);
+                    const nodeRadius = baseRadius * (0.35 + cellDensity * 0.85);
+                    
+                    if (distToNode < nodeRadius) {
+                        const linearT = 1.0 - (distToNode / nodeRadius);
+                        const smoothWeight = linearT * linearT * (3.0 - 2.0 * linearT); // Smoothstep
+                        totalLandWeight += smoothWeight;
+                    }
                 }
             }
         }
 
-        // Clamp our fused landmass base structure cleanly between 0.0 and 1.0
+        // clamp our fused landmass base structure cleanly between 0.0 and 1.0
         let macroSuperstructure = Math.min(1.0, totalLandWeight);
+
+        // global ocean mask
         const trueDistanceToCenter = Math.sqrt(globalX * globalX + globalY * globalY);
         const maxAllowedRadius = this.halfW * this.meta.oceanClamp;
-
         const edgeT = Math.max(0.0, Math.min(1.0, trueDistanceToCenter / maxAllowedRadius));
-        const globalOceanMask = 1.0 - Math.pow(edgeT, 3.0); // Cubic ocean falloff
+        const globalOceanMask = 1.0 - Math.pow(edgeT, 3.0);
 
         // Merge our organic multi-node landmass layout with the map boundary protection
-        let continentMask = macroSuperstructure * globalOceanMask;
+        let continentMask = Math.sqrt(macroSuperstructure * globalOceanMask);
 
         let elevation = continentMask;
         if (elevation < 0.6) {
@@ -164,93 +198,7 @@ export class MapGenerator {
         return Math.max(0, Math.min(1.0, elevation));
     }
 
-    generateTileComposition(globalX: number, globalY: number): TileComposition {
-        //////////////////////////////
-        // ARGUMENTATION VALIDATION //
-        //////////////////////////////
-        // clamp coords inside world border
-        globalX = Math.max(-this.halfW, Math.min(this.halfW, globalX));
-        globalY = Math.max(-this.halfH, Math.min(this.halfH, globalY));
-
-        // @TODO: validate meta & transform it so that configuration for calculated meta
-        // is easier for the player to handle.
-
-        // First create superstructure Voroni cells to push basic topography into.
-        let elevation = this.generateSuperstructureElevation(globalX, globalY);
-
-        ///////////////// 
-        // INIT VALUES //
-        /////////////////
-        // Sample a warped perlin landscape.
-        // Uses random offsets provided in meta (offsetX, offsetY), which are random large numbers to scramble
-        // the noise provided. There is also a configurable macroScale settings item which will
-        // define the overall macro-variance of the generated landscape.
-        const { sampleX, sampleY } = this.getDomainWarpedSample(globalX, globalY);
-
-        // // proximity to edge of map
-        // const distToLeft = -this.halfW + globalX;
-        // const distToRight = this.halfW - globalX;
-        // const distToTop = -this.halfH + globalY;
-        // const distToBottom = this.halfH - globalY;
-
-        // // express edge proximity as how far the current tile is inside the defined bufferzone around the edge of the grid.
-        // // this ensures there is always a falloff to 0 elevation as the noise approaches the edge of the max grid.
-        // const edgeXFactor = Math.min(1.0, Math.min(distToLeft, distToRight) / this.meta.bufferX);
-        // const edgeYFactor = Math.min(1.0, Math.min(distToTop, distToBottom) / this.meta.bufferY);
-        // const globalEdgeFactor = edgeXFactor * edgeYFactor; // 0.0 (world edge) -> 1.0 (buffer inner edge) of how far into the buffer zone I am.
-
-        // // configure warping strength, multiplied by the edge factor so that
-        // // warping drops to 0 inside the outer buffer zone.
-        // const maskWarpStrength = 0.25 * globalEdgeFactor; 
-        // // Using the previously sampled x,y, create eliptical noise in each x,y direction
-        // // multiplied by the warp strength. Note that Y values are buffered by +50 to skew
-        // // the landscape elevation along one axis more than another.
-        // const maskWarpX = this.noise.noise2D(sampleX * 0.4, sampleY * 0.4) * maskWarpStrength;
-        // const maskWarpY = this.noise.noise2D(sampleX * 0.4 + 50, sampleY * 0.4 + 50) * maskWarpStrength;
-
-        // // simulate tectonics with Voronoi noise. This warps and shifts 0,0 itself
-        // // so that the landscape shears in an approximation of plate tectonics.
-        // const tectonicFreq = 0.5 / this.meta.worldWidth // very low frequencey for a large scale noise landscape
-        // // generate tectonic noise, multiplied by a small proportion so the voronoi cells are large (15% of the map size)
-        // const tectonicShiftX = this.noise.noise2D(globalX * tectonicFreq, globalY * tectonicFreq) * (this.meta.worldWidth * 0.15)
-        // const tectonicShiftY = this.noise.noise2D((globalX + 2000) * tectonicFreq, (globalY + 2000) * tectonicFreq) * (this.meta.worldHeight * 0.15);
-
-        // // rotation factor
-        // // create a new set of x,y coordinates, rotated by sinA,cosA.
-        // // these values are given a randomAngle at configuration time.
-        // // this should spin the x,y skewed landmas in a random direction.
-        // // here we supply our tectonic coordinates so that the rotation respects the
-        // // tectonic voroni cells.
-        // const rx = (globalX + tectonicShiftX) * this.meta.cosA - (globalY + tectonicShiftY) * this.meta.sinA;
-        // const ry = (globalX + tectonicShiftX) * this.meta.sinA + (globalY + tectonicShiftY) * this.meta.cosA;
-
-        // // multiplying by stretchX/Y here will force the circularness of the 
-        // // resulting landscape into more of an ovaloid shape.
-        // // giving it the rotation and warped masked coordinates will
-        // // break up the ovaloid into jagged coast-like edges 
-        // // (via distortion of the noise in general).
-        // const distanceToEdgeMask = Math.sqrt(
-        //     Math.pow((rx + maskWarpX) * this.meta.stretchX, 2) +
-        //     Math.pow((ry + maskWarpY * this.meta.stretchY) * this.meta.stretchY, 2)
-        // );
-
-        // // directional shelf variation
-        // // this should break up the low frequency tectonic noise
-        // const angleFromCenter = Math.atan2(ry + maskWarpY, rx + maskWarpX);
-        // const shelfVariation = this.noise.noise2D(Math.cos(angleFromCenter) * 1.2, Math.sin(angleFromCenter) * 1.2);
-        // const dynamicRadiusModifier = 1.0 + (shelfVariation * 0.45);
-
-        // const normalisedDistance = distanceToEdgeMask / (this.halfW * dynamicRadiusModifier);
-        // const sizeModifier = 1.0 / this.settings.islandRadius // player config
-        // const maskStrength = normalisedDistance * this.settings.squishFactor * sizeModifier;
-
-        // // stepped edge drop-off curve
-        // elevation = Math.max(0, 1.0 - Math.pow(maskStrength, 2.5))
-        // if (elevation < 0.6) {
-        //     const shelfT = elevation / 0.6;
-        //     elevation = (shelfT * shelfT * (3.0 - 2.0 * shelfT)) * 0.6
-        // }
-        
+    generateFBMElevation(sampleX: number, sampleY: number, elevation: number) {
         // Create two noise landscapes using brownian-motion analysis
         // baseLand -> a flatter noise landscape to define the gentle rise of plains upward to mountainous biomes
         // mountainSpines -> generates a sharp ridge-peaked noise which can be used to define mountain ranges.
@@ -265,15 +213,53 @@ export class MapGenerator {
             spineBlendMask = this.settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4)
         }
 
-        // blend the current elevation with the brownian motion masks.
-        elevation *= spineBlendMask
+        const terrainDetail = spineBlendMask * elevation;
+        const plateauBase = elevation * 0.35;
+
+        elevation = Math.max(plateauBase, terrainDetail);
+
+        return Math.max(0.0, Math.min(1.0, elevation));
+    }
+
+    generateTileComposition(globalX: number, globalY: number): TileComposition {
+        //////////////////////////////
+        // ARGUMENTATION VALIDATION //
+        //////////////////////////////
+        // clamp coords inside world border
+        globalX = Math.max(-this.halfW, Math.min(this.halfW, globalX));
+        globalY = Math.max(-this.halfH, Math.min(this.halfH, globalY));
+
+        // @TODO: validate meta & transform it so that configuration for calculated meta
+        // is easier for the player to handle.
+
+        //////////////////////////
+        // value initialization //
+        //////////////////////////
+        // use random offsets provided in meta (offsetX/offsetY), to scramble the noise provided.
+        const { sampleX, sampleY } = this.getDomainWarpedSample(globalX, globalY);
+        
+        ////////////////////////
+        // generate elevation //
+        ////////////////////////
+        // 1. create superstructure Voroni cells to push basic topography into.
+        // coordinate warping for smooth edges - this removes any sharp artifacts from the
+        // rigid (globalX, globalY) coordiantes.
+        // @TEMP
+        const artifactFreq = 1.0 / this.meta.worldWidth;
+        const artifactAmp = 45.0
+        const smoothCellX = globalX + this.noise.noise2D(globalX * artifactFreq, globalY * artifactFreq) * artifactAmp;
+        const smoothCellY = globalY + this.noise.noise2D((globalX + 1000) * artifactFreq, (globalY + 1000) * artifactFreq) * artifactAmp;
+        let elevation = this.generateSuperstructureElevation(smoothCellX, smoothCellY);
+        
+        // 2. mess about with brownian noise to create coastal
+        elevation = this.generateFBMElevation(sampleX, sampleY, elevation);
 
         // clamp elevation to max (@TODO: I might make this a larger proportion)
         elevation = Math.max(0, Math.min(1.0, elevation))
 
-        /////////////////////////////
-        //   subterranean layers   //
-        /////////////////////////////
+        //////////////////////////
+        //   generate geology   //
+        //////////////////////////
         // Generates internal geological metadata to drive mechanics and visuals
         const geoFreq = 5.0 / this.meta.worldWidth;
         const geoNoise = (this.noise.noise2D(globalX * geoFreq, globalY * geoFreq) + 1.0) * 0.5;
