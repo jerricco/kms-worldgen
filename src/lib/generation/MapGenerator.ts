@@ -175,16 +175,17 @@ export class MapGenerator {
         // @TODO: validate meta & transform it so that configuration for calculated meta
         // is easier for the player to handle.
 
+        // First create superstructure Voroni cells to push basic topography into.
         let elevation = this.generateSuperstructureElevation(globalX, globalY);
 
-        // ///////////////// 
-        // // INIT VALUES //
-        // /////////////////
-        // // Sample a warped perlin landscape.
-        // // Uses random offsets provided in meta (offsetX, offsetY), which are random large numbers to scramble
-        // // the noise provided. There is also a configurable macroScale settings item which will
-        // // define the overall macro-variance of the generated landscape.
-        // const { sampleX, sampleY } = this.getDomainWarpedSample(globalX, globalY);
+        ///////////////// 
+        // INIT VALUES //
+        /////////////////
+        // Sample a warped perlin landscape.
+        // Uses random offsets provided in meta (offsetX, offsetY), which are random large numbers to scramble
+        // the noise provided. There is also a configurable macroScale settings item which will
+        // define the overall macro-variance of the generated landscape.
+        const { sampleX, sampleY } = this.getDomainWarpedSample(globalX, globalY);
 
         // // proximity to edge of map
         // const distToLeft = -this.halfW + globalX;
@@ -250,25 +251,25 @@ export class MapGenerator {
         //     elevation = (shelfT * shelfT * (3.0 - 2.0 * shelfT)) * 0.6
         // }
         
-        // // Create two noise landscapes using brownian-motion analysis
-        // // baseLand -> a flatter noise landscape to define the gentle rise of plains upward to mountainous biomes
-        // // mountainSpines -> generates a sharp ridge-peaked noise which can be used to define mountain ranges.
-        // const baseLand = this.getStandardfBm(sampleX, sampleY, 4);
-        // const mountainSpines = this.getRidgedfBm(sampleX * 1.3, sampleY * 1.3, 6);
+        // Create two noise landscapes using brownian-motion analysis
+        // baseLand -> a flatter noise landscape to define the gentle rise of plains upward to mountainous biomes
+        // mountainSpines -> generates a sharp ridge-peaked noise which can be used to define mountain ranges.
+        const baseLand = this.getStandardfBm(sampleX, sampleY, 4);
+        const mountainSpines = this.getRidgedfBm(sampleX * 1.3, sampleY * 1.3, 6);
 
-        // // blend the two noises together, ensuring that each is proprotionally scaled to 
-        // // take a proportion of the landscape's elevation values.
-        // let spineBlendMask = (baseLand * 0.3) + (mountainSpines * 0.85);
-        // if (spineBlendMask > this.settings.seaLevel) {
-        //     const relativeHeight = spineBlendMask - this.settings.seaLevel;
-        //     spineBlendMask = this.settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4)
-        // }
+        // blend the two noises together, ensuring that each is proprotionally scaled to 
+        // take a proportion of the landscape's elevation values.
+        let spineBlendMask = (baseLand * 0.3) + (mountainSpines * 0.85);
+        if (spineBlendMask > this.settings.seaLevel) {
+            const relativeHeight = spineBlendMask - this.settings.seaLevel;
+            spineBlendMask = this.settings.seaLevel + Math.pow(relativeHeight * 1.65, 1.4)
+        }
 
         // blend the current elevation with the brownian motion masks.
-        // elevation *= spineBlendMask
+        elevation *= spineBlendMask
 
         // clamp elevation to max (@TODO: I might make this a larger proportion)
-        // elevation = Math.max(0, Math.min(1.0, elevation))
+        elevation = Math.max(0, Math.min(1.0, elevation))
 
         /////////////////////////////
         //   subterranean layers   //

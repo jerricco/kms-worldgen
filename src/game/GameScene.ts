@@ -37,6 +37,7 @@ export class GameScene {
     public config!: GameSettings
 
     constructor() {
+        // @TODO: Handle more gracefully if webGL is disabled or not around
         console.time('Initialising...')
         this.#preload(); // @TODO: loading screen
 

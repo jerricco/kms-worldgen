@@ -194,8 +194,8 @@ export class Chunk {
         localIndex: number,
         elevation: number,
     ) {
-        const { slope, cardinalDir } = this.nearestTileSlopeAspect(globalX, globalY);
-        const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
+        // const { slope, cardinalDir } = this.nearestTileSlopeAspect(globalX, globalY);
+        // const tectonicallyShoved = ["W", "NW", "SW"].includes(cardinalDir);
 
         // @TODO: replace elevation based regions with climatic regions
         let region: RegionID = RegionID.UNASSIGNED;
@@ -223,7 +223,7 @@ export class Chunk {
             region = RegionID.HILL;
         }
         else if (elevation < this.settings.peakLevel) {
-            region = slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
+            region = RegionID.MOUNTAIN // slope > 0.5 && tectonicallyShoved ? RegionID.CLIFF : RegionID.MOUNTAIN;
         } else if (elevation > this.settings.peakLevel) {
             region = RegionID.PEAK
         }
