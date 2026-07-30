@@ -1,3 +1,7 @@
+interface Math {
+    smoothStep(edge0: number, edge1: number, x: number): number;
+}
+
 declare global {
     type Merge<T, U> = {
         [K in keyof (T & U)]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never;

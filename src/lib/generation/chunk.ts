@@ -1,7 +1,7 @@
 import * as pc from 'playcanvas';
 import { REGION_PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
 import { determineTileRegion, RegionID } from '../../lib/generation/regions';
-import { getGlobalTileElevation } from './analysis';
+import { getGlobalTileComposition } from './analysis';
 import type { GlobalGenerationMeta } from './generator';
 import type { OpenSimplexNoise } from './noise';
 import { hexToRgb } from '../utils';
@@ -19,6 +19,7 @@ export type ChunkSettings = {
     beachLevel: number,   // @TODO: defaults
     plainLevel: number,   // @TODO: defaults
     hillLevel: number,    // @TODO: defaults
+    mountainLevel: number,    // @TODO: defaults
     peakLevel: number,    // @TODO: defaults
 }
 
@@ -175,11 +176,11 @@ export class Chunk {
                 if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
-                const elevation = getGlobalTileElevation(globalX, globalY, settings, this.globalMeta, this.noise);
+                const tile = getGlobalTileComposition(globalX, globalY, settings, this.globalMeta, this.noise);
                 const localIndex = Chunk.getLocalIndex(x, y, this.size);
 
-                chunk.elevations[localIndex] = elevation;
-                determineTileRegion(globalX, globalY, localIndex, chunk, elevation, settings, this.globalMeta, this.noise);
+                chunk.elevations[localIndex] = tile.elevation;
+                determineTileRegion(globalX, globalY, localIndex, chunk, tile.elevation, settings, this.globalMeta, this.noise);
             }
         }
 

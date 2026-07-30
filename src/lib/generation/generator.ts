@@ -141,6 +141,26 @@ export class MapGenerator {
         return value / maxValue;
     }
 
+    static getBillowfBm(
+        x: number, y: number,
+        octaves: number, baseFreq: number,
+        noise: OpenSimplexNoise
+    ) {
+        let value = 0;
+        let amplitude = 1.0;
+        let frequency = baseFreq;
+        let maxValue = 0;
+        for (let i = 0; i < octaves; i++) {
+            // Absolute value creates rolling, billowy dome structures
+            const n = Math.abs(noise.noise2D(x * frequency, y * frequency));
+            value += n * amplitude;
+            maxValue += amplitude;
+            amplitude *= 0.45;
+            frequency *= 2.0;
+        }
+        return value / maxValue;
+    }
+    
     // IMPROVEMENTS
     // DECOUPLED FEATURE MASKING
     // DYNAMIC THRESHOLDING
