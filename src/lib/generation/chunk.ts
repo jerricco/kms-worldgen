@@ -1,8 +1,7 @@
 import * as pc from 'playcanvas';
 import { REGION_PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
 import { determineTileRegion, RegionID } from '../../lib/generation/regions';
-import { getGlobalTileComposition } from './analysis';
-import type { GlobalGenerationMeta } from './generator';
+import { MapGenerator, type GlobalGenerationMeta } from './generator';
 import type { OpenSimplexNoise } from './noise';
 import { hexToRgb } from '../utils';
 
@@ -176,7 +175,7 @@ export class Chunk {
                 if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
-                const tile = getGlobalTileComposition(globalX, globalY, settings, this.globalMeta, this.noise);
+                const tile = MapGenerator.getGlobalTileComposition(globalX, globalY, settings, this.globalMeta, this.noise);
                 const localIndex = Chunk.getLocalIndex(x, y, this.size);
 
                 chunk.elevations[localIndex] = tile.elevation;

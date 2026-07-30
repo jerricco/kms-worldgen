@@ -1,7 +1,7 @@
 import * as pc from 'playcanvas';
 import { Chunk } from '../../lib/generation/chunk';
 import { type GameSettings } from '../GameScene';
-import type { GlobalGenerationMeta } from '../../lib/generation/generator';
+import type { GlobalGenerationMeta, MapGenerator } from '../../lib/generation/generator';
 import type { OpenSimplexNoise } from '../../lib/generation/noise';
 
 export class ChunkManager extends pc.Script {
@@ -9,6 +9,7 @@ export class ChunkManager extends pc.Script {
     static maxInitialChunks = 15;
 
     settings!: GameSettings;
+    generator!: MapGenerator;
     chunks: Map<string, Chunk> = new Map();
 
     tileSize = 1;
@@ -25,11 +26,13 @@ export class ChunkManager extends pc.Script {
 
         // @TODO: throw error for an amount of max chunks that would crash the game.
 
-        // generate initial chunkset
+        // create generator instance
+        this.generator = new MapGenerator();
     }
 
     // @TODO: This needs to detect if a relevant entity has triggered a chunk to update its neighors.
     // @TODO: this should cull chunk meshes if offscreen (and minimise their simulation)
+    // @TODO: update chunk manager settings & refresh current grid if need detected or an event triggered.
     update() {}
 
     public updateChunkRadius(
