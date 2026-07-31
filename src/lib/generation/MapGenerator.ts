@@ -154,24 +154,6 @@ export class MapGenerator {
         return Math.max(0, Math.min(1.0, elevation));
     }
 
-    private findSitesWithinRadius(x: number, y: number, radius: number): VoronoiSite[] {
-        const results: VoronoiSite[] = [];
-        const radiusSq = radius * radius;
-
-        // For large cell maps, swap this flat loop for a Quadtree or a Spatial Grid hash
-        for (let i = 0; i < this.voronoiCluster.sites.length; i++) {
-            const cell = this.voronoiCluster.sites[i];
-            const dx = x - cell.position.x;
-            const dy = y - cell.position.y;
-            const distSq = dx * dx + dy * dy;
-
-            if (distSq <= radiusSq) {
-                results.push(cell);
-            }
-        }
-        return results;
-    }
-
     generateFBMElevation(sampleX: number, sampleY: number, elevation: number) {
         // Create two noise landscapes using brownian-motion analysis
         // baseLand -> a flatter noise landscape to define the gentle rise of plains upward to mountainous biomes
@@ -226,7 +208,7 @@ export class MapGenerator {
         let elevation = this.generateSuperstructureElevation(smoothCellX, smoothCellY);
         
         // 2. mess about with brownian noise to create coastal
-        elevation = this.generateFBMElevation(sampleX, sampleY, elevation);
+        // elevation = this.generateFBMElevation(sampleX, sampleY, elevation);
 
         // clamp elevation to max (@TODO: I might make this a larger proportion)
         elevation = Math.max(0, Math.min(1.0, elevation))
@@ -252,26 +234,6 @@ export class MapGenerator {
         };
 
         return { elevation, geology }
-    }
-
-    #findClosestVoronoiSite(globalX: number, globalY: number): { site: VoronoiSite, distSq: number } {
-        const sites = this.voronoiCluster.sites;
-        let closestSite = sites[0];
-        let minDistanceSq = Infinity;
-
-        for (let i = 0; i < sites.length; i++) {
-            const cell = sites[i];
-            const dx = globalX - cell.position.x;
-            const dy = globalY - cell.position.y;
-            const distSq = dx * dx + dy * dy;
-
-            if (distSq < minDistanceSq) {
-                minDistanceSq = distSq;
-                closestSite = cell;
-            }
-        }
-
-        return { site: closestSite, distSq: minDistanceSq };
     }
 
     ///////////////////////////////
