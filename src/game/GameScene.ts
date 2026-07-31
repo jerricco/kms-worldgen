@@ -102,8 +102,8 @@ export class GameScene {
             // seed: 'Donaldo Ronaldo Trumpino',
             // seed: 'poo',
             // seed: 'strange bedfellows by stephen king',
-            seed: 'Pooline Handson',
-            // seed: 'Hershey Testereo',
+            // seed: 'Pooline Handson',
+            seed: 'Hershey Testereo',
             // seed: 'sanga ranga bangaranga',
             // seed: 'fuck me I wish I were dead, aye',
             // seed: 'helpmeimdrowning',
@@ -135,14 +135,28 @@ export class GameScene {
         this.camera = this.getOrthoCamera();
         this.chunkManager = this.getChunkManager();
 
+        //////////////////////
+        // LEVEL GENERATION //
+        //////////////////////
+
+        ///// STEP 1: Prepass
+        // worldwide voronoi cells
+        this.chunker.generator.generateVoronoiStructure();
+        ///// STEP 2: Initial Chunk generation at current camera location
         // generate starting chunks at the loaded camera location
-        // for a new game, this should be 0,0
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
         this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16)
         // @TODO reveal all loaded chunks when save data is present.
 
+        ///// STEP 3: Chunk generation streaming
+
+
         // finally load the UI
         this.ui = this.getUI();
+
+        // load artefacts into the UI so that they can get rendered
+        const debugUIScript = this.ui.script['debug-ui-controller'];
+        debugUIScript.voronoiCluster = this.chunker.generator.voronoiCluster;
     }
 
     getOrthoCamera(): pc.Entity {
@@ -181,7 +195,7 @@ export class GameScene {
         // @ts-ignore  
         this.chunker = chunkManager.script?.create(ChunkManager) as ChunkManager
         this.chunker.settings = this.config;
-        this.chunker.generator = new MapGenerator(this.config);
+        this.chunker.generator = new MapGenerator(this.config, this.app.graphicsDevice);
 
         this.app.root.addChild(chunkManager)
         return chunkManager

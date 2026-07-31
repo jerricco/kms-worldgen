@@ -3,19 +3,23 @@ import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
 import type { GameSettings } from '../GameScene';
+import { VoronoiCluster } from '../../lib/generation/VoronoiCluster';
 
 export class DebugUiController extends pc.Script {
     static scriptName=  'debug-ui-controller';
 
     public font: pc.Asset | null = null;
+    public voronoiCluster!: VoronoiCluster;
+
+    private voronoiSiteEntity!: pc.Entity;
     private screenEntity!: pc.Entity;
     private ruler!: pc.Entity;
     private settings!: GameSettings;
 
     private refreshBtn!: pc.Entity;
 
-    private inputs = {}; // track input containers across the screen
-    private values = {}; // track input values across the screen
+    private inputs: { [key: string]: pc.Entity } = {}; // track input containers across the screen
+    private values: { [key: string]: unknown } = {}; // track input values across the screen
 
     initialize() {
         if (!this.settings) {
@@ -51,6 +55,18 @@ export class DebugUiController extends pc.Script {
                 this.inputs[name].script['textbox-input'].inputValue = fillValue
             }
         }
+
+        // if the UI receives world generation voronoi cells, render them out
+        // @TODO: a rendering toggle UI for generative layers
+        if (this.voronoiCluster && this.voronoiCluster.sites.length > 0 && !this.voronoiSiteEntity) {
+            const { bodies, borders, dots } = this.voronoiCluster.buildVoronoiMeshes();
+            this.voronoiSiteEntity = new pc.Entity('VoronoiCellMeshContainer');
+            this.voronoiSiteEntity.addChild(bodies);
+            this.voronoiSiteEntity.addChild(borders);
+            this.voronoiSiteEntity.addChild(dots);
+
+            this.app.root.addChild(this.voronoiSiteEntity);
+        } // @TODO: restart visual entity if voronoi cells regenerate & destroy them if turned off at the UI
     }
 
     // build screen canvas heirarchy
@@ -135,7 +151,7 @@ export class DebugUiController extends pc.Script {
         // events
         // @TODO: handle reference and cleanup in destroy()
         this.inputs['seed'].on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
-        this.refreshBtn.button.on('click', () => {
+        this.refreshBtn.button?.on('click', () => {
             // @TODO: rewrite this to account for all other settings
             if (this.values['seed'] === null) return;
 

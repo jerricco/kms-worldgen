@@ -1,7 +1,5 @@
 import * as pc from 'playcanvas';
 import type { ChunkManager } from './ChunkManager';
-import { Chunk } from '../../lib/generation/chunk';
-import { RegionName } from '../../lib/generation/regions';
 
 export class OrthoCameraController extends pc.Script {
     static scriptName = 'ortho-camera-controller'
@@ -174,8 +172,10 @@ export class OrthoCameraController extends pc.Script {
         const gridX = Math.floor(rayStart.x / this.chunkManager.tileSize);
         const gridY = Math.floor(rayStart.z / this.chunkManager.tileSize);
         
-        const xRadius = this.chunkManager.settings.worldWidth / 2;
-        const yRadius = this.chunkManager.settings.worldHeight / 2;
+        const worldW = this.chunkManager.settings.worldWidth;
+        const worldH = this.chunkManager.settings.worldHeight
+        const xRadius = worldW / 2;
+        const yRadius = worldH / 2;
         const isInsideGrid = gridX > -xRadius && gridX < xRadius && gridY > -yRadius && gridY < yRadius;
         const isDifferentTile = gridX !== this.lastPosHovered.x || gridY !== this.lastPosHovered.y
         
@@ -198,8 +198,10 @@ export class OrthoCameraController extends pc.Script {
     }
 
     private panByDelta(dx: number, dy: number) {
-        const screenScale = (this.entity.camera!.orthoHeight * 2) / this.app.graphicsDevice.height;
-        const worldDx = -dx * screenScale * this.panSpeed, worldDz = -dy * screenScale * this.panSpeed;
+        const currentHeight = this.entity.camera!.orthoHeight
+        const screenScale = (currentHeight * 2) / this.app.graphicsDevice.height;
+        const worldDx = -dx * screenScale * this.panSpeed;
+        const worldDz = -dy * screenScale * this.panSpeed;
 
         this.targetPosition.x += worldDx;
         this.targetPosition.z += worldDz;
@@ -209,8 +211,8 @@ export class OrthoCameraController extends pc.Script {
 
     // @TODO: account for screen aspect ratios so that the map always can pan into VOID.
     private clampCameraToWorld() {
-        const map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
-        if (!map) {
+        const chunkManager = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager;
+        if (!chunkManager) {
             this.targetPosition.x = 0;
             this.targetPosition.z = 0;
             return;
@@ -218,14 +220,16 @@ export class OrthoCameraController extends pc.Script {
 
         // horizontal clamp
         const targetX = this.targetPosition.x
-        const leftBound = -(map.settings.worldWidth / 2) - 100, rightBound = (map.settings.worldWidth / 2) + 100;
+        const leftBound = chunkManager.chunkExtentMinX - 100;
+        const rightBound = chunkManager.chunkExtentMaxX + 100;
         if (targetX < leftBound ||targetX > rightBound) {
             this.targetPosition.x = pc.math.clamp(this.targetPosition.x, leftBound, rightBound);
         }
 
         // vertical clamp
         const targetZ = this.targetPosition.z
-        const topBound = -(map.settings.worldHeight / 2) - 100, bottomBound = (map.settings.worldHeight / 2) + 100;
+        const topBound = chunkManager.chunkExtentMinY - 100;
+        const bottomBound = chunkManager.chunkExtentMaxY + 100;
         if (targetZ < topBound || targetZ > bottomBound) {
             this.targetPosition.z = pc.math.clamp(this.targetPosition.z, topBound, bottomBound);
         }

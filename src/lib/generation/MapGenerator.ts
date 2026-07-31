@@ -3,6 +3,7 @@ import { OpenSimplexNoise } from './noise'
 import type { GameSettings } from '../../game/GameScene';
 import type { ChunkSettings } from './chunk';
 import type { BasementRockType, SubterraneanLayer } from "./geology";
+import { VoronoiCluster, type VoronoiClusterConfig } from './VoronoiCluster';
 
 // governs configuration that is semantically relevant to the entire world generation
 export interface GlobalGenerationMeta {
@@ -39,6 +40,7 @@ export class MapGenerator {
     seed: string;
     rng: SeededRandom;
     noise: OpenSimplexNoise;
+    gd: pc.GraphicsDevice;
     
     // player & engine configuration
     settings: ChunkSettings; // chunk-centered settings
@@ -53,13 +55,28 @@ export class MapGenerator {
         return (this.settings.worldWidth || 0) / 2
     }
 
-    constructor(config: GameSettings) {
+    // generation artifacts
+    voronoiCluster!: VoronoiCluster;
+
+    constructor(config: GameSettings, gd: pc.GraphicsDevice) {
         this.seed = config.seed; // expose seed so we can easily see the current one being operated on.
         this.rng = new SeededRandom(config.seed);
         this.noise = new OpenSimplexNoise(this.rng);
+        this.gd = gd;
 
         this.settings = { ...config }; // @TODO: more robustly pull the right properties for ChunkSettings
         this.meta = this.generateGlobalMetadata()
+    }
+
+    generateVoronoiStructure() {
+        const config: VoronoiClusterConfig = {
+            width: this.settings.worldWidth,
+            height: this.settings.worldHeight,
+            oceanClamp: this.meta.oceanClamp,
+            rng: this.rng
+        };
+
+        this.voronoiCluster = new VoronoiCluster(config, this.gd);
     }
 
     // @TODO: adjust it so that the world size is by default 256*256 chunks (12800*12800)
@@ -107,8 +124,8 @@ export class MapGenerator {
         let totalLandWeight = 0.0;
         const searchRadius = 2; // for sampling surrounding cells
 
-        const macroFreq = 1.0 /this.meta.worldWidth;
-        const detailFreq = 3.5 /this.meta.worldWidth;
+        const macroFreq = 1.0 / this.meta.worldWidth;
+        const detailFreq = 3.5 / this.meta.worldWidth;
         const seedOffsetX = this.meta.mOffsetX || 0;
         const seedOffsetY = this.meta.mOffsetY || 0;
 
@@ -136,10 +153,6 @@ export class MapGenerator {
 
                 // Combine passes to determine the final tectonic density profile
                 const cellDensity = Math.max(0.0, Math.min(1.0, (macroNoise * 0.7) + (detailNoise * 0.3)));
-
-
-
-
                 
                 // Define how many sub-nodes spawn in this cell based on tectonic density
                 let subNodeCount = 1;
@@ -159,8 +172,8 @@ export class MapGenerator {
                     const nodeGlobalY = cellMinY + (offsetY * cellSize);
 
                     // Calculate the distance from our current tile to this neighbor cell node
-                    const dx = globalX - nodeGlobalX;
-                    const dy = globalY - nodeGlobalY;
+                    const dx = rotX - nodeGlobalX;
+                    const dy = rotY - nodeGlobalY;
                     const distToNode = Math.sqrt(dx * dx + dy * dy);
 
                     // Nodes in dense zones grow larger to blend into a unified continent mass,
@@ -241,7 +254,7 @@ export class MapGenerator {
         ////////////////////////
         // generate elevation //
         ////////////////////////
-        // 1. create superstructure Voroni cells to push basic topography into.
+        // 1. create superstructure Voronoi cells to push basic topography into.
         // coordinate warping for smooth edges - this removes any sharp artifacts from the
         // rigid (globalX, globalY) coordiantes.
         // @TEMP

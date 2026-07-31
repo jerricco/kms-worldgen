@@ -15,6 +15,11 @@ export class ChunkManager extends pc.Script {
     maxCurrentChunks = ChunkManager.maxInitialChunks;
     maxChunksX!: number;
     maxChunksY!: number;
+
+    chunkExtentMinX: number = 0;
+    chunkExtentMaxX: number = 0;
+    chunkExtentMinY: number = 0;
+    chunkExtentMaxY: number = 0;
     
     initialise() {
         if (!this.settings)
@@ -32,11 +37,11 @@ export class ChunkManager extends pc.Script {
     update() {}
 
     public updateChunkRadius(
-        camGlobalX: number, camGlobalY: number, revealRadius: number = 4, // @TODO handle this better?
+        globalX: number, globalY: number, revealRadius: number = 4, // @TODO handle this better?
     ): void { 
         const units = this.settings.chunkSize * this.tileSize;
-        const centerChunkX = Math.floor(camGlobalX / units);
-        const centerChunkY = Math.floor(camGlobalY / units);
+        const centerChunkX = Math.floor(globalX / units);
+        const centerChunkY = Math.floor(globalY / units);
 
         const visibleKeys = new Set<string>();
 
@@ -44,6 +49,12 @@ export class ChunkManager extends pc.Script {
             for (let yOffset = -revealRadius; yOffset < revealRadius; yOffset++) {
                 const targetX = centerChunkX + xOffset;
                 const targetY = centerChunkY + yOffset;
+
+                // update chunk extents so that we can track around the current chunk bounds for navigation
+                this.chunkExtentMinX = targetX < this.chunkExtentMinX ? targetX : this.chunkExtentMinX 
+                this.chunkExtentMaxX = targetX > this.chunkExtentMaxX ? targetX : this.chunkExtentMaxX 
+                this.chunkExtentMinY = targetY < this.chunkExtentMinY ? targetY : this.chunkExtentMinY 
+                this.chunkExtentMaxY = targetY > this.chunkExtentMaxY ? targetY : this.chunkExtentMaxY 
 
                 // clamp to stop from generating chunks out of bounds.
                 // clamp by the reveal radius because it should generate circularly around the given Point<x,y>

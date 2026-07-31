@@ -140,7 +140,7 @@ export class Chunk {
         mesh.setColors(colors);
         mesh.setIndices(indices);
         mesh.update(pc.PRIMITIVE_TRIANGLES);
-        mesh.aabb.compute(positions);
+        // mesh.aabb.compute(positions); // @TODO: Determine whether I need collisions calculated
 
         const material = new pc.StandardMaterial();
         material.useLighting = true;

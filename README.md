@@ -17,6 +17,7 @@ Distribute the love and keep everything open.
 
 ## Prereqiusites
 
+- WebGL Capable Web Browser: [Firefox](https://www.firefox.com/en-US/)/[Chrome](https://www.google.com/intl/en_au/chrome/) or any you prefer
 - NodeJS
 - Probably a bunch of stuff on my system I don't remember - I'll update as needed.
 
