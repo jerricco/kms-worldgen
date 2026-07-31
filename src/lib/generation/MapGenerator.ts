@@ -3,7 +3,7 @@ import { OpenSimplexNoise } from './noise'
 import type { GameSettings } from '../../game/GameScene';
 import type { ChunkSettings } from './chunk';
 import type { BasementRockType, SubterraneanLayer } from "./geology";
-import { VoronoiCluster, type VoronoiClusterConfig } from './VoronoiCluster';
+import { VoronoiCluster, type VoronoiClusterConfig, type VoronoiSite } from './VoronoiCluster';
 
 // governs configuration that is semantically relevant to the entire world generation
 export interface GlobalGenerationMeta {
@@ -76,7 +76,7 @@ export class MapGenerator {
             rng: this.rng
         };
 
-        this.voronoiCluster = new VoronoiCluster(config, this.gd);
+        this.voronoiCluster = new VoronoiCluster(config, this.meta, this.noise, this.gd);
     }
 
     // @TODO: adjust it so that the world size is by default 256*256 chunks (12800*12800)
@@ -91,7 +91,7 @@ export class MapGenerator {
         return {
             worldWidth,
             worldHeight,
-            cellGridSize: 600, // @TEST
+            cellGridSize: 400, // @TEST
             bufferFactor,
             oceanClamp,
             randomAngle,
@@ -108,89 +108,32 @@ export class MapGenerator {
     }
 
     generateSuperstructureElevation(globalX: number, globalY: number): number {
-        // In dense land zones, cells shrink to 250 tiles for tight clustering.
-        // In ocean zones, cells expand up to 600 tiles to prevent fragmenting.
-        const cellSize = this.meta.cellGridSize;
-
         // rotate the continent spine
         const rotX = globalX * this.meta.cosA - globalY * this.meta.sinA;
         const rotY = globalX * this.meta.sinA + globalY * this.meta.cosA;
-        // grid coord translation to 0,0 to avoid negative coordinate space
-        const shiftedGridX = rotX + this.halfW
-        const shiftedGridY = rotY + this.halfH;
-        const rawCellX = Math.floor(shiftedGridX / cellSize);
-        const rawCellY = Math.floor(shiftedGridY / cellSize);
 
         let totalLandWeight = 0.0;
-        const searchRadius = 2; // for sampling surrounding cells
 
-        const macroFreq = 1.0 / this.meta.worldWidth;
-        const detailFreq = 3.5 / this.meta.worldWidth;
-        const seedOffsetX = this.meta.mOffsetX || 0;
-        const seedOffsetY = this.meta.mOffsetY || 0;
+        const maxRadiusLookahead = this.voronoiCluster.spatialGrid.cellGridSize;
+        const candidateSites = this.voronoiCluster.spatialGrid.getNearby(rotX, rotY, maxRadiusLookahead);
+        
+        for (let i = 0; i < candidateSites.length; i++) {
+            const site = candidateSites[i];
 
-        // find nearby tectonic nodes
-        for (let cx = -searchRadius; cx <= searchRadius; cx++) {
-            for (let cy = -searchRadius; cy <= searchRadius; cy++) {
-                const targetCellX = rawCellX + cx;
-                const targetCellY = rawCellY + cy;
+            // 3. Distance check to the true site point
+            const dx = rotX - site.position.x;
+            const dy = rotY - site.position.y;
+            const distToNode = Math.sqrt(dx * dx + dy * dy);
 
-                // Calculate the bounding area of this neighbor cell
-                // must be retranslated from the shifted coordinates
-                const cellMinX = (targetCellX * cellSize) - this.halfW;
-                const cellMinY = (targetCellY * cellSize) - this.halfH;
-
-                const cellCenterX = cellMinX + cellSize / 2;
-                const cellCenterY = cellMinY + cellSize / 2;
-
-                const sampleX = cellCenterX + seedOffsetX;
-                const sampleY = cellCenterY + seedOffsetY;
-
-                const macroNoise = (this.noise.noise2D(sampleX * macroFreq, sampleY * macroFreq) + 1.0) * 0.5;
-
-                // Pass B: High-frequency erosion wave to fracture uniform edges
-                const detailNoise = (this.noise.noise2D((sampleX + 5000) * detailFreq, (sampleY + 5000) * detailFreq) + 1.0) * 0.5;
-
-                // Combine passes to determine the final tectonic density profile
-                const cellDensity = Math.max(0.0, Math.min(1.0, (macroNoise * 0.7) + (detailNoise * 0.3)));
-                
-                // Define how many sub-nodes spawn in this cell based on tectonic density
-                let subNodeCount = 1;
-                if (cellDensity > 0.65) subNodeCount = 3;      // High density = Core mainland cluster
-                else if (cellDensity > 0.40) subNodeCount = 2; // Mid density = Connecting land bridges
-                else if (cellDensity < 0.20) continue;         // Deep ocean basin = Deactivate cell completely
-
-                // Generate deterministic sub-nodes inside the locked cell frame
-                for (let sub = 0; sub < subNodeCount; sub++) {
-                    // @TODO: use rng here
-                    const seedX = Math.sin(targetCellX * 12.9898 + targetCellY * 78.233 + sub * 45.12) * 43758.5453;
-                    const seedY = Math.sin(targetCellX * 39.3464 + targetCellY * 11.135 + sub * 87.93) * 76351.9814;
-                    
-                    const offsetX = seedX - Math.floor(seedX);
-                    const offsetY = seedY - Math.floor(seedY);
-                    const nodeGlobalX = cellMinX + (offsetX * cellSize);
-                    const nodeGlobalY = cellMinY + (offsetY * cellSize);
-
-                    // Calculate the distance from our current tile to this neighbor cell node
-                    const dx = rotX - nodeGlobalX;
-                    const dy = rotY - nodeGlobalY;
-                    const distToNode = Math.sqrt(dx * dx + dy * dy);
-
-                    // Nodes in dense zones grow larger to blend into a unified continent mass,
-                    // while isolated nodes shrink into small barrier islands.
-                    const baseRadius = cellSize * (0.55 + offsetX * 0.45);
-                    const nodeRadius = baseRadius * (0.35 + cellDensity * 0.85);
-                    
-                    if (distToNode < nodeRadius) {
-                        const linearT = 1.0 - (distToNode / nodeRadius);
-                        const smoothWeight = linearT * linearT * (3.0 - 2.0 * linearT); // Smoothstep
-                        totalLandWeight += smoothWeight;
-                    }
-                }
+            // Blending profiles from your original approach
+            if (distToNode < site.nodeRadius) {
+                const linearT = 1.0 - (distToNode / site.nodeRadius);
+                const smoothWeight = linearT * linearT * (3.0 - 2.0 * linearT); // Smoothstep
+                totalLandWeight += smoothWeight;
             }
         }
 
-        // clamp our fused landmass base structure cleanly between 0.0 and 1.0
+        // Clamp the fused landmass base structure cleanly between 0.0 and 1.0
         let macroSuperstructure = Math.min(1.0, totalLandWeight);
 
         // global ocean mask
@@ -209,6 +152,24 @@ export class MapGenerator {
         }
 
         return Math.max(0, Math.min(1.0, elevation));
+    }
+
+    private findSitesWithinRadius(x: number, y: number, radius: number): VoronoiSite[] {
+        const results: VoronoiSite[] = [];
+        const radiusSq = radius * radius;
+
+        // For large cell maps, swap this flat loop for a Quadtree or a Spatial Grid hash
+        for (let i = 0; i < this.voronoiCluster.sites.length; i++) {
+            const cell = this.voronoiCluster.sites[i];
+            const dx = x - cell.position.x;
+            const dy = y - cell.position.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq <= radiusSq) {
+                results.push(cell);
+            }
+        }
+        return results;
     }
 
     generateFBMElevation(sampleX: number, sampleY: number, elevation: number) {
@@ -291,6 +252,26 @@ export class MapGenerator {
         };
 
         return { elevation, geology }
+    }
+
+    #findClosestVoronoiSite(globalX: number, globalY: number): { site: VoronoiSite, distSq: number } {
+        const sites = this.voronoiCluster.sites;
+        let closestSite = sites[0];
+        let minDistanceSq = Infinity;
+
+        for (let i = 0; i < sites.length; i++) {
+            const cell = sites[i];
+            const dx = globalX - cell.position.x;
+            const dy = globalY - cell.position.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < minDistanceSq) {
+                minDistanceSq = distSq;
+                closestSite = cell;
+            }
+        }
+
+        return { site: closestSite, distSq: minDistanceSq };
     }
 
     ///////////////////////////////

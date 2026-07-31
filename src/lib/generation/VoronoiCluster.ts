@@ -1,10 +1,14 @@
 import * as pc from 'playcanvas';
 import type { SeededRandom } from './seed';
+import type { GlobalGenerationMeta } from './MapGenerator';
+import type { OpenSimplexNoise } from './noise';
 
 export interface VoronoiSite {
     id: number;
     position: pc.Vec2;
     isEdge: boolean;
+    cellDensity: number;
+    nodeRadius: number;
 }
 
 export interface VoronoiClusterConfig {
@@ -19,11 +23,15 @@ export class VoronoiCluster {
     public width: number;
     public height: number;
     public oceanClamp: number;
-    public sites: VoronoiSite[];
+    public meta: GlobalGenerationMeta;
     public gd: pc.GraphicsDevice;
+    
+    public sites: VoronoiSite[];
+    public spatialGrid!: SpatialVoronoiHashGrid;
 
     // internal stuff
     private rng: SeededRandom;
+    private noise: OpenSimplexNoise;
 
     // helper properties
     private get halfW() {
@@ -34,14 +42,17 @@ export class VoronoiCluster {
         return (this.height || 0) / 2
     } 
 
-    constructor(config: VoronoiClusterConfig, gd: pc.GraphicsDevice) {
+    constructor(config: VoronoiClusterConfig, meta: GlobalGenerationMeta, noise: OpenSimplexNoise ,gd: pc.GraphicsDevice) {
         this.width = config.width;
         this.height = config.width;
         this.oceanClamp = config.oceanClamp;
+        this.meta = meta;
+        this.noise = noise;
         this.rng = config.rng;
         this.gd = gd;
 
         this.sites = this.#generateSites();
+        this.spatialGrid = this.#generateSpatialGrid();
     }
 
     #generateSites(): VoronoiSite[] {
@@ -119,6 +130,37 @@ export class VoronoiCluster {
         }
 
         return sites;
+    }
+
+    #generateSpatialGrid() {
+        const maxSearchRadius = this.meta.cellGridSize * 1.5;
+        const spatialGrid = new SpatialVoronoiHashGrid(maxSearchRadius);
+
+        const macroFreq = 1.0 / this.meta.worldWidth;
+        const detailFreq = 3.5 / this.meta.worldWidth;
+        const seedOffsetX = this.meta.mOffsetX || 0;
+        const seedOffsetY = this.meta.mOffsetY || 0;
+
+        for (let i = 0; i < this.sites.length; i++) {
+            const site = this.sites[i];
+            const sampleX = site.position.x + seedOffsetX;
+            const sampleY = site.position.y + seedOffsetY;
+
+            // Evaluate noise fields safely at generation time
+            const macroNoise = (this.noise.noise2D(sampleX * macroFreq, sampleY * macroFreq) + 1.0) * 0.5;
+            const detailNoise = (this.noise.noise2D((sampleX + 5000) * detailFreq, (sampleY + 5000) * detailFreq) + 1.0) * 0.5;
+
+            site.cellDensity = Math.max(0.0, Math.min(1.0, (macroNoise * 0.7) + (detailNoise * 0.3)));
+
+            // Match your original radius-scaling blend intentions
+            const baseRadius = this.meta.cellGridSize * (0.55 + this.rng.next() * 0.45);
+            site.nodeRadius = baseRadius * (0.35 + site.cellDensity * 0.85);
+
+            // Shove it into the spatial optimizer
+            spatialGrid.insert(site);
+        }
+
+        return spatialGrid;
     }
 
     buildVoronoiMeshes(): { bodies: pc.Entity, borders: pc.Entity, dots: pc.Entity } {
@@ -327,5 +369,46 @@ export class VoronoiCluster {
         return polygon.sort((a, b) => {
             return Math.atan2(a.y - targetPos.y, a.x - targetPos.x) - Math.atan2(b.y - targetPos.y, b.x - targetPos.x);
         });
+    }
+}
+
+export class SpatialVoronoiHashGrid {
+    public cellGridSize: number;
+    private grid: Map<string, VoronoiSite[]> = new Map();
+
+    constructor(cellGridSize: number) {
+        this.cellGridSize = cellGridSize;
+    }
+
+    private getKey(x: number, y: number): string {
+        const gx = Math.floor(x / this.cellGridSize);
+        const gy = Math.floor(y / this.cellGridSize);
+        return `${gx},${gy}`;
+    }
+
+    public insert(site: VoronoiSite) {
+        const key = this.getKey(site.position.x, site.position.y);
+        if (!this.grid.has(key)) {
+            this.grid.set(key, []);
+        }
+        this.grid.get(key)!.push(site);
+    }
+
+    public getNearby(x: number, y: number, radius: number): VoronoiSite[] {
+        const results: VoronoiSite[] = [];
+        const startX = Math.floor((x - radius) / this.cellGridSize);
+        const endX = Math.floor((x + radius) / this.cellGridSize);
+        const startY = Math.floor((y - radius) / this.cellGridSize);
+        const endY = Math.floor((y + radius) / this.cellGridSize);
+
+        for (let gx = startX; gx <= endX; gx++) {
+            for (let gy = startY; gy <= endY; gy++) {
+                const sites = this.grid.get(`${gx},${gy}`);
+                if (sites) {
+                    results.push(...sites);
+                }
+            }
+        }
+        return results;
     }
 }
