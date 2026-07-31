@@ -199,7 +199,7 @@ export class OrthoCameraController extends pc.Script {
 
     private panByDelta(dx: number, dy: number) {
         const currentHeight = this.entity.camera!.orthoHeight
-        const screenScale = (currentHeight * 2) / this.app.graphicsDevice.height;
+        const screenScale = (currentHeight * 2) / window.innerHeight;
         const worldDx = -dx * screenScale * this.panSpeed;
         const worldDz = -dy * screenScale * this.panSpeed;
 
