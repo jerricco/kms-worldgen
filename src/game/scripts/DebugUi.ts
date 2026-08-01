@@ -3,13 +3,13 @@ import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
 import type { GameSettings } from '../GameScene';
-import { VoronoiCluster } from '../../lib/generation/VoronoiCluster';
+import { VoronoiFactory } from '../../lib/generation/VoronoiCluster';
 
 export class DebugUiController extends pc.Script {
     static scriptName=  'debug-ui-controller';
 
     public font: pc.Asset | null = null;
-    public voronoiCluster!: VoronoiCluster;
+    public voronoi!: VoronoiFactory;
 
     private voronoiSiteEntity!: pc.Entity;
     private screenEntity!: pc.Entity;
@@ -58,12 +58,15 @@ export class DebugUiController extends pc.Script {
 
         // if the UI receives world generation voronoi cells, render them out
         // @TODO: a rendering toggle UI for generative layers
-        if (this.voronoiCluster && this.voronoiCluster.sites.length > 0 && !this.voronoiSiteEntity) {
-            const { bodies, borders, dots } = this.voronoiCluster.buildVoronoiMeshes();
+        if (this.voronoi && this.voronoi.sites.length > 0 && !this.voronoiSiteEntity) {
+            const { bodies, borders, dots } = this.voronoi.getDebugMesh();
             this.voronoiSiteEntity = new pc.Entity('VoronoiCellMeshContainer');
-            this.voronoiSiteEntity.addChild(bodies);
+            // @TODO: body and dot visualisation is bugged af
+            // this.voronoiSiteEntity.addChild(bodies);
             this.voronoiSiteEntity.addChild(borders);
-            this.voronoiSiteEntity.addChild(dots);
+            // this.voronoiSiteEntity.addChild(dots);
+
+            this.voronoiSiteEntity.enabled = true; // @DEBUG turn on/off
 
             this.app.root.addChild(this.voronoiSiteEntity);
         } // @TODO: restart visual entity if voronoi cells regenerate & destroy them if turned off at the UI

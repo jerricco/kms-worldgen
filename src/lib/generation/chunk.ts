@@ -3,23 +3,21 @@ import { PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
 import { RegionID } from './regions';
 import { MapGenerator } from './MapGenerator';
 import { hexToRgb } from '../utils';
-import type { SlopeAspect, SlopeVector } from "./types";
 
 export type ChunkSettings = {
     worldWidth: number, worldHeight: number,
     chunkSize: number,
     macroScale: number,
-    islandRadius: number,
     squishFactor: number,
 
-    seaLevel: number,     // @TODO: defaults
-    abyssalLevel: number, // @TODO: defaults
-    trenchLevel: number,  // @TODO: defaults
-    beachLevel: number,   // @TODO: defaults
-    plainLevel: number,   // @TODO: defaults
-    hillLevel: number,    // @TODO: defaults
-    mountainLevel: number,// @TODO: defaults
-    peakLevel: number,    // @TODO: defaults
+    seaLevel: number,
+    abyssalLevel: number,
+    trenchLevel: number,
+    beachLevel: number,
+    plainLevel: number,
+    hillLevel: number,
+    mountainLevel: number,
+    peakLevel: number,
 }
 
 export class Chunk {
@@ -176,7 +174,7 @@ export class Chunk {
                 if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
-                const tile = this.generator.generateTileComposition(globalX, globalY);
+                const tile = this.generator.generate(globalX, globalY);
                 const localIndex = Chunk.getLocalIndex(x, y, this.size);
 
                 // determine tile properties
@@ -221,38 +219,6 @@ export class Chunk {
         }
 
         this.regionIds[localIndex] = region;
-    }
-
-    // finds the direction of the steepest ascent
-    nearestTileSlopeVector(globalX: number, globalY: number): SlopeVector {
-        const elevWest = this.generator.generateTileComposition(globalX - 1, globalY).elevation;
-        const elevEast = this.generator.generateTileComposition(globalX + 1, globalY).elevation;
-        const elevNorth = this.generator.generateTileComposition(globalX, globalY - 1).elevation;
-        const elevSouth = this.generator.generateTileComposition(globalX, globalY + 1).elevation;
-
-        const gx = (elevEast - elevWest) / 2.0;
-        const gy = (elevSouth - elevNorth) / 2.0;
-        const slope = Math.sqrt(gx * gx + gy * gy);
-
-        return { slope, gradient: { x: gx, y: gy } };
-    }
-
-    nearestTileSlopeAspect(globalX: number, globalY: number): SlopeAspect {
-        const vect = this.nearestTileSlopeVector(globalX, globalY);
-        if (vect.slope < 0.01) {
-            return { ...vect, angleDeg: -1, cardinalDir: 'FLAT' };
-        }
-
-        const { x: gx, y: gy } = vect.gradient;
-        let radians = Math.atan2(-gy, gx);
-        let angleDeg = (90.0 - (radians * 180.0 / Math.PI)) % 360.0;
-        if (angleDeg < 0) angleDeg += 360.0;
-
-        const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        const index = Math.round(angleDeg / 45.0) % 8;
-        const cardinalDir = directions[index];
-
-        return { ...vect, angleDeg, cardinalDir };
     }
 
     // Fast inline index helper mapping local 2D space to 1D space

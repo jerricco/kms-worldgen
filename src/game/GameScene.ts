@@ -3,7 +3,7 @@ import * as pc from 'playcanvas'
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 
 import type { ChunkSettings }        from '../lib/generation/chunk';
-import { MapGenerator, type GlobalGenerationMeta } from '../lib/generation/MapGenerator';
+import { MapGenerator, type GenerationSettings, type GlobalGenerationMeta } from '../lib/generation/MapGenerator';
 
 import { OrthoCameraController }     from './scripts/OrthoCamera';
 import { DebugUiController }         from './scripts/DebugUi';
@@ -94,37 +94,40 @@ export class GameScene {
     ///////////////////
     // CONFIGURATION //
     ///////////////////
-    configureLevel(): GameSettings {
+    configureLevel(): GenerationSettings {
         return {
             // seed: playerSeed || MapGenerator.DEFAULT_SEED
             //////////////////////////////////////////////////
             // Good seeds (so far):
-            // seed: 'Donaldo Ronaldo Trumpino',
+            seed: 'Donaldo Ronaldo Trumpino',
             // seed: 'poo',
             // seed: 'strange bedfellows by stephen king',
             // seed: 'Pooline Handson',
-            seed: 'Hershey Testereo',
+            // seed: 'Hershey Testereo',
             // seed: 'sanga ranga bangaranga',
             // seed: 'fuck me I wish I were dead, aye',
             // seed: 'helpmeimdrowning',
             // seed: 'aborio rice',
             worldWidth: 1600, // 12800,
             worldHeight: 1600, // 12800,
+            cellGridSize: 400,
+            oceanClamp: 0.85,
+            macroScale: 0.0045,
+            squishFactor: 1.0,
             stretchX: 0.7,
             stretchY: 1.3,
-            oceanClamp: 0.85,
             chunkSize: 50,
-            abyssalLevel: 0.1,
-            trenchLevel: 0.16,
-            seaLevel: 0.32,
-            beachLevel: 0.34,
+
+            abyssalLevel: -1.0,
+            trenchLevel: -0.85,
+            deepOceanLevel: -0.55,
+            oceanLevel: -0.25,
+            seaLevel: 0,
+            beachLevel: 0.03,
             plainLevel: 0.48,
-            hillLevel: 0.60,
-            mountainLevel: 0.80,
+            hillLevel: 0.68,
+            mountainLevel: 0.82,
             peakLevel: 0.95,
-            macroScale: 0.0045,
-            islandRadius: 0.80,
-            squishFactor: 1.0,
         }
     }
 
@@ -140,8 +143,7 @@ export class GameScene {
         //////////////////////
 
         ///// STEP 1: Prepass
-        // worldwide voronoi cells
-        this.chunker.generator.generateVoronoiStructure();
+        this.chunker.generator.pregenerate();
         ///// STEP 2: Initial Chunk generation at current camera location
         // generate starting chunks at the loaded camera location
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
@@ -156,7 +158,7 @@ export class GameScene {
 
         // load artefacts into the UI so that they can get rendered
         const debugUIScript = this.ui.script['debug-ui-controller'];
-        debugUIScript.voronoiCluster = this.chunker.generator.voronoiCluster;
+        debugUIScript.voronoi = this.chunker.generator.voronoi;
     }
 
     getOrthoCamera(): pc.Entity {
