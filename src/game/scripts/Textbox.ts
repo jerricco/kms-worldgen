@@ -5,6 +5,7 @@ export class Textbox extends pc.Script {
     static scriptName = 'textbox-input';
 
     initValue: string = '';
+    label!: string;
 
     private inputText: pc.Entity | null = null;
     private fireFocus = (e: FocusEvent) => this.entity?.fire('ui:focus', e);
@@ -23,15 +24,45 @@ export class Textbox extends pc.Script {
 
     initialize() {
         const fontAsset = this.app.assets.find('PatrickHandFont');
+        const hasLabel = this.label && this.label.length > 0;
+        
+        if (hasLabel) {
+            const labelWrapper = new pc.Entity('LabelWrapper');
+            labelWrapper.addComponent('element', {
+                type: pc.ELEMENTTYPE_IMAGE,
+                anchor: new pc.Vec4(0, 0, 0.7, 1), 
+                pivot: new pc.Vec2(0, 0),
+                margin: new pc.Vec4(0, 0, 0, 0),
+                color: new pc.Color(0.1, 0.1, 0.25, 1),
+            });
+
+            const labelElement = new pc.Entity('LabelElement');
+            labelElement.addComponent('element', {
+                type: pc.ELEMENTTYPE_TEXT,
+                anchor: new pc.Vec4(0, 0, 0.7, 1), // fill first third
+                pivot: new pc.Vec2(0, 0),
+                alignment: new pc.Vec2(0, 0.5),
+                margin: new pc.Vec4(0, 0, 0, 0),
+                text: this.label,
+                fontSize: 24,
+                color: new pc.Color(1, 1, 1),
+                useInput: true,
+                fontAsset,
+            })
+
+            labelWrapper.addChild(labelElement);
+            this.entity.addChild(labelWrapper);
+        }
 
         const inputElement = new pc.Entity('InputWrapper');
         inputElement.addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
-            anchor: new pc.Vec4(0, 0, 1, 1), // fill parent
+            anchor: new pc.Vec4(hasLabel ? 0.7 : 0, 0, 1, 1), // fill parent if no label
             pivot: new pc.Vec2(0, 0),
             margin: new pc.Vec4(0, 0, 0, 0),
             color: new pc.Color(1, 1, 1, 1),
         });
+
 
         this.inputText = new pc.Entity('InputText');
         this.inputText.addComponent('element', {

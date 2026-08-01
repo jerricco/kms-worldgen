@@ -174,6 +174,12 @@ export class Chunk {
                 if (globalX > this.worldWidth || globalY > this.worldHeight || globalX < -this.worldWidth || globalY < -this.worldHeight)
                     continue;
 
+                // @TODO: this is clumsy, have the chunk itself arrange the pre-generated grid data?
+                // The issue is that the map size is fixed, so I need to know how much to generate
+                // prior to the chunk manager taking over and doing intensive things on the screen.
+                // Since we're trying to eventually simulate full nations - even under the chunk
+                // fog of war, I need to do more complete generation like this until it either
+                // blows out the CPU or gives me a good generation/simulation division line.
                 const tile = this.generator.generate(globalX, globalY);
                 const localIndex = Chunk.getLocalIndex(x, y, this.size);
 

@@ -2,18 +2,13 @@ import * as pc from 'playcanvas'
 
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 
-import type { ChunkSettings }        from '../lib/generation/chunk';
-import { MapGenerator, type GenerationSettings, type GlobalGenerationMeta } from '../lib/generation/MapGenerator';
+import { MapGenerator, type GenerationSettings } from '../lib/generation/MapGenerator';
 
 import { OrthoCameraController }     from './scripts/OrthoCamera';
 import { DebugUiController }         from './scripts/DebugUi';
 import { ChunkManager }              from './scripts/ChunkManager';
 
-// Merges all the settings which will later split 
-export type GameSettings = 
-    Pick<GlobalGenerationMeta, 'stretchX' | 'stretchY' | 'oceanClamp'> & 
-    ChunkSettings & 
-    { seed: string }; 
+
 
 export class GameScene {
     // playcanvas orchestrators
@@ -34,7 +29,7 @@ export class GameScene {
     public chunker!: ChunkManager;
 
     // settings & services
-    public config!: GameSettings
+    public config!: GenerationSettings
 
     constructor() {
         // @TODO: Handle more gracefully if webGL is disabled or not around

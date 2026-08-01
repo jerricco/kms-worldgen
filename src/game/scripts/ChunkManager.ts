@@ -66,8 +66,7 @@ export class ChunkManager extends pc.Script {
 
                 let chunk = this.chunks.get(chunkKey);
 
-                if (!chunk) {
-                    // @TODO: split out GameSettings into ChunkSettings here.
+                if (!chunk) { // @TODO: rather than seat of the pants generate these, I should separate pre-passes from chunk generation better
                     chunk = new Chunk(targetX, targetY, this.generator, this.settings);
                     chunk.generate(targetX, targetY);
                     this.chunks.set(chunkKey, chunk);

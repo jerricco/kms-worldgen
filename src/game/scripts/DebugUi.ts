@@ -19,7 +19,7 @@ export class DebugUiController extends pc.Script {
     private refreshBtn!: pc.Entity;
 
     private inputs: { [key: string]: pc.Entity } = {}; // track input containers across the screen
-    private values: { [key: string]: unknown } = {}; // track input values across the screen
+    private values: { [key: string]: any } = {}; // track input values across the screen
 
     initialize() {
         if (!this.settings) {
@@ -40,22 +40,6 @@ export class DebugUiController extends pc.Script {
     }
 
     update() {
-        // fill GameSettings inputs
-        if (this.values['seed'] === undefined) {
-            this.map = this.app.root.findByName('ChunkManagerEntity')?.script.ChunkManager
-            for (const name in this.inputs) {
-                let fillValue = this.map?.settings[name];
-
-                // @TODO: number type input & switch or checkbox
-                if (typeof fillValue === 'number') fillValue = `${fillValue}`;
-                if (typeof fillValue === 'boolean') fillValue = fillValue ? 'true' : 'false';
-                if (fillValue === undefined) fillValue = '';
-
-                this.values[name] = fillValue
-                this.inputs[name].script['textbox-input'].inputValue = fillValue
-            }
-        }
-
         // if the UI receives world generation voronoi cells, render them out
         // @TODO: a rendering toggle UI for generative layers
         if (this.voronoi && this.voronoi.sites.length > 0 && !this.voronoiSiteEntity) {
@@ -115,7 +99,8 @@ export class DebugUiController extends pc.Script {
         });
 
         this.inputs['seed'].addComponent('script');
-        this.inputs['seed'].script?.create(Textbox);
+        const seedbox = this.inputs['seed'].script?.create(Textbox) as unknown as Textbox;
+        seedbox.initValue = this.values['seed'] = this.settings['seed']
 
         // seed refresh button
         this.refreshBtn = new pc.Entity('RefreshButton');
@@ -158,8 +143,7 @@ export class DebugUiController extends pc.Script {
             // @TODO: rewrite this to account for all other settings
             if (this.values['seed'] === null) return;
 
-            this.values['seed'] = this.inputs['seed'].script['textbox-input'].inputValue
-            // this.refreshSeed(this.values['seed']) // @TODO
+            // @TODO - refresh generation
         });
 
         // compose elements for display
@@ -196,7 +180,9 @@ export class DebugUiController extends pc.Script {
             });
     
             this.inputs[name].addComponent('script');
-            this.inputs[name].script?.create(Textbox);
+            const textbox = this.inputs[name].script?.create(Textbox) as unknown as Textbox;
+            textbox.initValue = this.values[name] = String(setting);
+            textbox.label = name;
 
             group.addChild(this.inputs[name])
             settingCount++
@@ -207,7 +193,7 @@ export class DebugUiController extends pc.Script {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0, 1, 0, 1), // Top center
             pivot: new pc.Vec2(0, 1),
-            width: 100,
+            width: 300,
             height: (settingCount * 38) + 8,
             margin: new pc.Vec4(0, 0, 0, 0),
             color: new pc.Color(0.15, 0.15, 0.15, 0.6),
