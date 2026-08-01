@@ -82,6 +82,14 @@ export class ChunkManager extends pc.Script {
             }
         }
 
+        // Update the chunk extents to account for chunkManager settings
+        // add 1 to the Max extents because 0,0 is considered in the positive integer range only
+        // then multiply by the chunkSize so that it represents the number of Tiles.
+        this.chunkExtentMaxX = (this.chunkExtentMaxX + 1) * this.settings.chunkSize;
+        this.chunkExtentMaxY = (this.chunkExtentMaxY + 1) * this.settings.chunkSize;
+        this.chunkExtentMinX = this.chunkExtentMinX * this.settings.chunkSize;
+        this.chunkExtentMinY = this.chunkExtentMinY * this.settings.chunkSize;
+
         // 2. Performance Clean Up: Disable or dismantle meshes that left the camera bounds
         // @TODO: I'll worry about this for areas the camera is far from, rather than leaving bounds.
         // this.chunks.forEach((chunk, key) => {

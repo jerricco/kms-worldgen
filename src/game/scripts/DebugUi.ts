@@ -66,7 +66,7 @@ export class DebugUiController extends pc.Script {
             this.voronoiSiteEntity.addChild(borders);
             // this.voronoiSiteEntity.addChild(dots);
 
-            this.voronoiSiteEntity.enabled = true; // @DEBUG turn on/off
+            this.voronoiSiteEntity.enabled = false; // @DEBUG turn on/off
 
             this.app.root.addChild(this.voronoiSiteEntity);
         } // @TODO: restart visual entity if voronoi cells regenerate & destroy them if turned off at the UI
