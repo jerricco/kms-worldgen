@@ -202,7 +202,8 @@ export class GameScene {
         const ui = new pc.Entity('UIContainerEntity');
         ui.addComponent('script')
         const debugUIScript = ui.script?.create(DebugUiController) as unknown as DebugUiController;
-        debugUIScript.settings = { ...this.config }
+        debugUIScript.settings = { ...this.chunker.generator.settings }
+        debugUIScript.meta = { ...this.chunker.generator.meta }
         
         this.app.root.addChild(ui);
         return ui;

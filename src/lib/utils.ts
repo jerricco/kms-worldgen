@@ -19,5 +19,6 @@ export function hexToRgb(hex: string) {
 
 type Primitive = string | number | boolean | bigint | symbol | null | undefined;
 export function isPrimitive(value: unknown): value is Primitive {
-    return value !== Object(value);
+    const test = value; // safely copy value so it's never overwritten in memory
+    return test !== Object(test);
 }

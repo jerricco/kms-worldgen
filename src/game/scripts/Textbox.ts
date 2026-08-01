@@ -6,6 +6,7 @@ export class Textbox extends pc.Script {
 
     initValue: string = '';
     label!: string;
+    readonly!: boolean;
 
     private inputText: pc.Entity | null = null;
     private fireFocus = (e: FocusEvent) => this.entity?.fire('ui:focus', e);
@@ -39,7 +40,7 @@ export class Textbox extends pc.Script {
             const labelElement = new pc.Entity('LabelElement');
             labelElement.addComponent('element', {
                 type: pc.ELEMENTTYPE_TEXT,
-                anchor: new pc.Vec4(0, 0, 0.7, 1), // fill first third
+                anchor: new pc.Vec4(0, 0, 0.7, 1),
                 pivot: new pc.Vec2(0, 0),
                 alignment: new pc.Vec2(0, 0.5),
                 margin: new pc.Vec4(0, 0, 0, 0),
@@ -60,9 +61,8 @@ export class Textbox extends pc.Script {
             anchor: new pc.Vec4(hasLabel ? 0.7 : 0, 0, 1, 1), // fill parent if no label
             pivot: new pc.Vec2(0, 0),
             margin: new pc.Vec4(0, 0, 0, 0),
-            color: new pc.Color(1, 1, 1, 1),
+            color: this.readonly ? new pc.Color(0.8, 0.8, 0.8, 1) : new pc.Color(1, 1, 1, 1),
         });
-
 
         this.inputText = new pc.Entity('InputText');
         this.inputText.addComponent('element', {
@@ -78,16 +78,18 @@ export class Textbox extends pc.Script {
             fontAsset,
         });
 
-        this.inputText.addComponent('script');
-        this.inputText!.script!.create(TextInputBinder);
+        if (!this.readonly) {
+            this.inputText.addComponent('script');
+            this.inputText!.script!.create(TextInputBinder);
+            // bubble events
+            this.inputText.on('ui:key:enter', this.fireEnterPress);
+            this.inputText.on('ui:focus', this.fireFocus);
+            this.inputText.on('ui:blur', this.fireBlur);
+        }
+        
         inputElement.addChild(this.inputText);
 
         this.entity.addChild(inputElement);
-
-        // bubble events
-        this.inputText.on('ui:key:enter', this.fireEnterPress);
-        this.inputText.on('ui:focus', this.fireFocus);
-        this.inputText.on('ui:blur', this.fireBlur);
     }
 
     destroy() {

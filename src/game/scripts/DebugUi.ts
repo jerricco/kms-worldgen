@@ -2,11 +2,11 @@ import * as pc from 'playcanvas';
 import { RuleGridRenderer } from './RuleGridRenderer';
 import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
-import type { GameSettings } from '../GameScene';
 import { VoronoiFactory } from '../../lib/generation/VoronoiCluster';
+import type { GenerationMeta, GenerationSettings } from '../../lib/generation/MapGenerator';
 
 export class DebugUiController extends pc.Script {
-    static scriptName=  'debug-ui-controller';
+    static scriptName = 'debug-ui-controller';
 
     public font: pc.Asset | null = null;
     public voronoi!: VoronoiFactory;
@@ -14,7 +14,8 @@ export class DebugUiController extends pc.Script {
     private voronoiSiteEntity!: pc.Entity;
     private screenEntity!: pc.Entity;
     private ruler!: pc.Entity;
-    private settings!: GameSettings;
+    private settings!: GenerationSettings;
+    private meta!: GenerationMeta;
 
     private refreshBtn!: pc.Entity;
 
@@ -70,7 +71,7 @@ export class DebugUiController extends pc.Script {
 
         // Render sections
         this.buildSeedDebugInput();
-        this.buildMapSettingsPanel();
+        this.buildMapSettingsPanel({ ...this.settings, ...this.meta });
     }
 
     private buildSeedDebugInput() {
@@ -153,19 +154,21 @@ export class DebugUiController extends pc.Script {
         this.screenEntity.addChild(group);
     }
 
-    private buildMapSettingsPanel() {
+    private buildMapSettingsPanel(settings: GenerationSettings | GenerationMeta) {
         // initialise group
         const group = new pc.Entity('MapSettingsDebugInputGroup');
         group.setLocalPosition(20, -90, 0);
 
         // fill with settings
         let settingCount = 0;
-        for (const name in this.settings) {
+        for (const name in settings) {
             if (name === 'seed') continue; // we already have seedbox
-            const setting = this.settings[name];
+            // @ts-ignore
+            const setting = settings[name];
             // we'll handle more complex bits later
             if (!isPrimitive(setting)) continue;
 
+            const isMetaValue = !this.settings[name] && !!this.meta[name];
             this.inputs[name] = new pc.Entity('SeedDebugInputContainer')
             const localPositionZ = (settingCount * 38) + 8
             this.inputs[name].setLocalPosition(0, -localPositionZ, 0);
@@ -181,8 +184,11 @@ export class DebugUiController extends pc.Script {
     
             this.inputs[name].addComponent('script');
             const textbox = this.inputs[name].script?.create(Textbox) as unknown as Textbox;
-            textbox.initValue = this.values[name] = String(setting);
+            let inputValue = setting === undefined || setting === null ? "" : setting;
+            inputValue = typeof inputValue === "number" && inputValue % 1 === 0 ? inputValue : inputValue.toFixed(); // typescript is retarded.
+            textbox.initValue = this.values[name] = Number.isNaN(inputValue) ? `${String(inputValue)}` : inputValue;
             textbox.label = name;
+            if (isMetaValue) textbox.readonly = true;
 
             group.addChild(this.inputs[name])
             settingCount++
@@ -193,7 +199,7 @@ export class DebugUiController extends pc.Script {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(0, 1, 0, 1), // Top center
             pivot: new pc.Vec2(0, 1),
-            width: 300,
+            width: 250,
             height: (settingCount * 38) + 8,
             margin: new pc.Vec4(0, 0, 0, 0),
             color: new pc.Color(0.15, 0.15, 0.15, 0.6),
