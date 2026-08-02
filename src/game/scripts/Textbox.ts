@@ -9,9 +9,10 @@ export class Textbox extends pc.Script {
     readonly!: boolean;
 
     private inputText: pc.Entity | null = null;
-    private fireFocus = (e: FocusEvent) => this.entity?.fire('ui:focus', e);
-    private fireBlur = (e: FocusEvent) => this.entity?.fire('ui:blur', e);
-    private fireEnterPress = (e: KeyboardEvent) => this.entity?.fire('ui:key:enter', e);
+    // @TODO: handle this more cleanly with a unique name for the field.
+    private fireFocus = (e: FocusEvent) => this.entity?.fire('ui:focus', { event: e, label: this.label });
+    private fireBlur = (e: FocusEvent) => this.entity?.fire('ui:blur', { event: e, label: this.label });
+    private fireEnterPress = (e: KeyboardEvent) => this.entity?.fire('ui:key:enter', { event: e, label: this.label });
 
     get inputValue(): String {
         return this.inputText?.element?.text || '';

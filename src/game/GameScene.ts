@@ -2,7 +2,7 @@ import * as pc from 'playcanvas'
 
 import fontJsonUrl from '../assets/font/PatrickHand.json?url';
 
-import { MapGenerator, type GenerationSettings } from '../lib/generation/MapGenerator';
+import { MapGenerator, type GenerationMeta, type GenerationSettings } from '../lib/generation/MapGenerator';
 
 import { OrthoCameraController }     from './scripts/OrthoCamera';
 import { DebugUiController }         from './scripts/DebugUi';
@@ -131,6 +131,37 @@ export class GameScene {
     /////////////////
     startLevel() {
         this.camera = this.getOrthoCamera();
+
+        this.doLevelGeneration();
+
+        // listen to regeneration requests
+        this.app.root.on('world:regenerate', (newConfig: GenerationSettings & GenerationMeta) => {
+            let settingHasChanged: boolean = false;
+            for (const [key, value] of Object.entries(newConfig)) { // @TODO: satisfy typescript's stupid [Iterator] thing
+                if (this.config[key] === undefined) continue; // ignore GenerationMeta
+                const comparevalue = !isNaN(Number(value)) ? Number(value) : value;
+                if (comparevalue !== this.config[key]) {
+                    // update config and flag for regen
+                    this.config[key] = comparevalue;
+                    settingHasChanged = true;
+                }
+            }
+
+            if (settingHasChanged) {
+                this.doLevelGeneration();
+            }
+        })
+
+
+        // finally load the UI
+        this.ui = this.getUI();
+
+        // load artefacts into the UI so that they can get rendered
+        const debugUIScript = this.ui.script['debug-ui-controller'];
+        debugUIScript.voronoi = this.chunker.generator.voronoi;
+    }
+
+    doLevelGeneration() {
         this.chunkManager = this.getChunkManager();
 
         //////////////////////
@@ -146,14 +177,6 @@ export class GameScene {
         // @TODO reveal all loaded chunks when save data is present.
 
         ///// STEP 3: Chunk generation streaming
-
-
-        // finally load the UI
-        this.ui = this.getUI();
-
-        // load artefacts into the UI so that they can get rendered
-        const debugUIScript = this.ui.script['debug-ui-controller'];
-        debugUIScript.voronoi = this.chunker.generator.voronoi;
     }
 
     getOrthoCamera(): pc.Entity {
@@ -186,6 +209,10 @@ export class GameScene {
     }
 
     getChunkManager(): pc.Entity {
+        if (this.chunker) {
+            this.chunkManager.destroy();
+        }
+
         const chunkManager = new pc.Entity('ChunkManagerEntity')
         chunkManager.addComponent('script')
 

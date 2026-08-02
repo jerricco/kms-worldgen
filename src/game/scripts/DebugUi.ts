@@ -89,7 +89,7 @@ export class DebugUiController extends pc.Script {
             color: new pc.Color(0.15, 0.15, 0.15, 0.6),
         });
 
-        // input container - wraps Textbox entity
+        // seed box
         this.inputs['seed'] = new pc.Entity('SeedDebugInputContainer')
         this.inputs['seed'].addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
@@ -102,6 +102,7 @@ export class DebugUiController extends pc.Script {
         this.inputs['seed'].addComponent('script');
         const seedbox = this.inputs['seed'].script?.create(Textbox) as unknown as Textbox;
         seedbox.initValue = this.values['seed'] = this.settings['seed']
+        this.inputs['seed'].on('ui:blur', (e) => this.values['seed'] = e.event)
 
         // seed refresh button
         this.refreshBtn = new pc.Entity('RefreshButton');
@@ -141,10 +142,8 @@ export class DebugUiController extends pc.Script {
         // @TODO: handle reference and cleanup in destroy()
         this.inputs['seed'].on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
         this.refreshBtn.button?.on('click', () => {
-            // @TODO: rewrite this to account for all other settings
-            if (this.values['seed'] === null) return;
-
-            // @TODO - refresh generation
+            // explicitly throw a global event to regenerate the world with new settings
+            this.app.root.fire('world:regenerate', {...this.values})
         });
 
         // compose elements for display
@@ -187,6 +186,8 @@ export class DebugUiController extends pc.Script {
             textbox.initValue = this.values[name] = setting
             textbox.label = name;
             if (isMetaValue) textbox.readonly = true;
+            this.inputs[name].on('ui:blur', (e) => this.values[e.label] = e.event)
+
 
             group.addChild(this.inputs[name])
             settingCount++
