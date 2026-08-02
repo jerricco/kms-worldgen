@@ -184,9 +184,7 @@ export class DebugUiController extends pc.Script {
     
             this.inputs[name].addComponent('script');
             const textbox = this.inputs[name].script?.create(Textbox) as unknown as Textbox;
-            let inputValue = setting === undefined || setting === null ? "" : setting;
-            inputValue = typeof inputValue === "number" && inputValue % 1 === 0 ? inputValue : inputValue.toFixed(); // typescript is retarded.
-            textbox.initValue = this.values[name] = Number.isNaN(inputValue) ? `${String(inputValue)}` : inputValue;
+            textbox.initValue = this.values[name] = setting
             textbox.label = name;
             if (isMetaValue) textbox.readonly = true;
 
