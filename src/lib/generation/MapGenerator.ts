@@ -75,7 +75,7 @@ export class MapGenerator {
 
     constructor(config: GenerationSettings, gd: pc.GraphicsDevice) {
         this.seed = config.seed; // expose seed so we can easily see the current one being operated on.
-        this.settings = { ...config }; // @TODO: more robustly pull the right properties for ChunkSettings
+        this.settings = { ...config }; // @TODO: more robustly pull the right properties for GenerationSettings
         
         this.rng = new SeededRandom(config.seed);
         this.noise = new OpenSimplexNoise(this.rng);

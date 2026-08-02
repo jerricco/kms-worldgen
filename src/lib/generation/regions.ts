@@ -7,33 +7,34 @@ export const RegionID: Record<string, number> = {
     UNASSIGNED  : 1,
     // AQUATIC REGIONS
     // elevation
-    ABYSSAL     : 2,
-    DEEP_OCEAN  : 3,
-    OCEAN       : 4,
+    CRUST_FLOOR : 2,
+    ABYSSAL_OCEAN: 3,
+    DEEP_OCEAN  : 4,
+    OCEAN       : 5,
     // geographic
-    SEA         : 5,
+    SEA         : 6,
     // climatic
-    FRESH_LAKE  : 6,
-    SALINE_LAKE : 7,
-    REEF        : 8,
+    FRESH_LAKE  : 7,
+    SALINE_LAKE : 8,
+    REEF        : 9,
     // TRANSITIONAL REGIONS
     // geographic
-    BEACH       : 9,
-    CLIFF       : 10,
-    ISLAND      : 11,
+    BEACH       : 10,
+    CLIFF       : 11,
+    ISLAND      : 12,
     // climatic
-    WETLAND     : 12,
-    ESTUARY     : 13,
+    WETLAND     : 13,
+    ESTUARY     : 14,
     // climatic + rivers
-    RIVER       : 14,
-    RIVER_DELTA : 15,
+    RIVER       : 15,
+    RIVER_DELTA : 16,
     // TERRESTRIAL REGIONS
     // elevation regions
-    HILL        : 16,
-    MOUNTAIN    : 17,
-    PEAK        : 18,
+    HILL        : 17,
+    MOUNTAIN    : 18,
+    PEAK        : 19,
     // climatic
-    PLAIN       : 19,
+    PLAIN       : 20,
     // geographic
     PLATEAU     : 21,
     VALLEY      : 22,

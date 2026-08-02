@@ -1,24 +1,8 @@
 import * as pc from 'playcanvas';
 import { PALETTES } from '../../data/color'; // @TODO: this needs to not be shit
 import { RegionID } from './regions';
-import { MapGenerator } from './MapGenerator';
+import { MapGenerator, type GenerationSettings } from './MapGenerator';
 import { hexToRgb } from '../utils';
-
-export type ChunkSettings = {
-    worldWidth: number, worldHeight: number,
-    chunkSize: number,
-    macroScale: number,
-    squishFactor: number,
-
-    seaLevel: number,
-    abyssalLevel: number,
-    trenchLevel: number,
-    beachLevel: number,
-    plainLevel: number,
-    hillLevel: number,
-    mountainLevel: number,
-    peakLevel: number,
-}
 
 export class Chunk {
     static DEFAULT_SIZE = 50;
@@ -32,7 +16,7 @@ export class Chunk {
     public tileCount: number;
 
     public generator: MapGenerator;
-    public settings: ChunkSettings;
+    public settings: GenerationSettings;
 
     private _isActive: boolean = true;
     get isActive():boolean {
@@ -54,7 +38,7 @@ export class Chunk {
 
     public visualEntity: pc.Entity | null = null;
 
-    constructor(chunkX: number, chunkY: number, generator: MapGenerator, settings: ChunkSettings) {
+    constructor(chunkX: number, chunkY: number, generator: MapGenerator, settings: GenerationSettings) {
         this.generator = generator;
         this.settings = settings;
         
@@ -196,13 +180,16 @@ export class Chunk {
         // @TODO: replace elevation based regions with dynamic climatic regions
         let region: RegionID = RegionID.UNASSIGNED;
 
+        
         // MARINE regions - first establish a seafloor
         if (elevation < this.settings.seaLevel) {
-            if (elevation < this.settings.abyssalLevel) {
-                region = RegionID.ABYSSAL;
+            if (elevation === this.settings.abyssalLevel) {
+                region = RegionID.CRUST_FLOOR;
             } else if (elevation < this.settings.trenchLevel) {
+                region = RegionID.ABYSSAL_OCEAN;
+            } else if (elevation < this.settings.deepOceanLevel) {
                 region = RegionID.DEEP_OCEAN;
-            } else {
+            } else { // below oceanLevel
                 region = RegionID.OCEAN;
             }
         }

@@ -148,7 +148,11 @@ export class GameScene {
             }
 
             if (settingHasChanged) {
+                // @TODO: give the UI a loading state here so it can display loading
+                // before the level generation happens.
+                this.ui.enabled = false;
                 this.doLevelGeneration();
+                this.ui.enabled = true;
             }
         })
 
