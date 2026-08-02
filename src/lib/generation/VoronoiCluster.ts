@@ -29,7 +29,9 @@ export class VoronoiFactory {
     generate() {
         this.#generateTectonicSpine();
         this.sites = this.#assembleVoronoiSites();
-        this.delaunay = this.#buildDelaunay()
+
+        // build or rebuild the delaunay
+        this.delaunay = this.buildDelaunay()
     }
 
     /**
@@ -199,7 +201,7 @@ export class VoronoiFactory {
         return localSites;
     }
 
-    #buildDelaunay(): Delaunay<number> {
+    buildDelaunay(): Delaunay<number> {
         const flatCoordinates = new Float64Array(this.sites.length * 2);
         for (let i = 0; i < this.sites.length; i++) {
             flatCoordinates[i * 2] = this.sites[i].position.x;

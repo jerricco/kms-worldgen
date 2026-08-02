@@ -28,6 +28,8 @@ export class ChunkManager extends pc.Script {
         this.maxChunksX = this.settings.worldWidth / this.settings.chunkSize;
         this.maxChunksY = this.settings.worldHeight / this.settings.chunkSize;
 
+        // @TODO: load savegame chunks if they exist.
+
         // @TODO: throw error for an amount of max chunks that would crash the game.
     }
 

@@ -4,7 +4,6 @@ import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
 import { VoronoiFactory } from '../../lib/generation/VoronoiCluster';
 import type { GenerationMeta, GenerationSettings } from '../../lib/generation/MapGenerator';
-import { OrthoCameraController } from './OrthoCamera';
 
 export class DebugUiController extends pc.Script {
     static scriptName = 'debug-ui-controller';
@@ -42,6 +41,7 @@ export class DebugUiController extends pc.Script {
     }
 
     update() {
+        return; // @DEBUG
         // if the UI receives world generation voronoi cells, render them out
         // @TODO: a rendering toggle UI for generative layers
         if (this.voronoi && this.voronoi.sites.length > 0 && !this.voronoiSiteEntity) {
@@ -52,7 +52,6 @@ export class DebugUiController extends pc.Script {
             this.voronoiSiteEntity.addChild(borders);
             // this.voronoiSiteEntity.addChild(dots);
 
-            this.voronoiSiteEntity.enabled = true; // @DEBUG turn on/off
 
             this.app.root.addChild(this.voronoiSiteEntity);
         } // @TODO: restart visual entity if voronoi cells regenerate & destroy them if turned off at the UI
@@ -131,7 +130,7 @@ export class DebugUiController extends pc.Script {
             type: pc.ELEMENTTYPE_TEXT,
             anchor: new pc.Vec4(0.5, 0.5, 0.5, 0.5),
             pivot: new pc.Vec2(0.5, 0.5),
-            text: "Regenerate",
+            text: (this.voronoi && this.voronoi.sites.length > 0) ? "Regenerate" : "Generate",
             fontSize: 18,
             color: new pc.Color(1, 1, 1),
             margin: new pc.Vec4(0, 0, 0, 0),
@@ -146,7 +145,8 @@ export class DebugUiController extends pc.Script {
             const camera = this.app.root.findByName('OrthoCamera')?.script['ortho-camera-controller'];
             if (!camera) return;
 
-            // @TODO: find a be
+            // @TODO: update Generate button to read Regenerate if it's the first time we're doing it
+
             camera.setPosition(0, 0)
             this.app.root.fire('world:regenerate', {...this.values})
         });

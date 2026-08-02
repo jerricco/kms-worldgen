@@ -4,6 +4,9 @@ import { RegionID } from './regions';
 import { MapGenerator, type GenerationSettings } from './MapGenerator';
 import { hexToRgb } from '../utils';
 
+export type SerialChunk = 
+    Pick<Chunk, 'chunkX' | 'chunkY' | 'elevations' | 'regionIds' | 'moisture' | 'temperatures' | 'materials'>
+
 export class Chunk {
     static DEFAULT_SIZE = 50;
 
@@ -217,5 +220,30 @@ export class Chunk {
     // Fast inline index helper mapping local 2D space to 1D space
     static getLocalIndex(x: number, y: number, size: number = Chunk.DEFAULT_SIZE): number {
         return x * size + y;
+    }
+
+    // returns blank, copyable chunk data for saving
+    serialize(): SerialChunk {
+        return {
+            chunkX: this.chunkX,
+            chunkY: this.chunkY,
+            elevations: new Float32Array(this.elevations),
+            regionIds: new Int32Array(this.regionIds),
+            moisture: new Float32Array(this.moisture),
+            temperatures: new Float32Array(this.temperatures),
+            materials: new Float32Array(this.materials),
+        }
+    }
+
+    // unwinds save data chunk into a valid Chunk object
+    static unserialize(serialData: SerialChunk, generator: MapGenerator, settings: GenerationSettings): Chunk {
+        const chunk: Chunk = new Chunk(serialData.chunkX, serialData.chunkY, generator, settings);
+        chunk.elevations = new Float32Array(serialData.elevations);
+        chunk.regionIds = new Int32Array(serialData.regionIds);
+        chunk.moisture = new Float32Array(serialData.moisture);
+        chunk.temperatures = new Float32Array(serialData.temperatures);
+        chunk.materials = new Float32Array(serialData.materials);
+
+        return chunk;
     }
 }

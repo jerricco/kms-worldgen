@@ -7,6 +7,9 @@ import { MapGenerator, type GenerationMeta, type GenerationSettings } from '../l
 import { OrthoCameraController }     from './scripts/OrthoCamera';
 import { DebugUiController }         from './scripts/DebugUi';
 import { ChunkManager }              from './scripts/ChunkManager';
+import { SaveGameManager } from './scripts/SaveGameManager';
+import { get } from 'idb-keyval';
+import { Chunk, type SerialChunk } from '../lib/generation/chunk';
 
 
 
@@ -27,6 +30,8 @@ export class GameScene {
     // behaviour
     public chunkManager!: pc.Entity;
     public chunker!: ChunkManager;
+    public saveManagerEntity!: pc.Entity;
+    public saveManager!: SaveGameManager;
 
     // settings & services
     public config!: GenerationSettings
@@ -38,12 +43,10 @@ export class GameScene {
 
         // @TODO: main menu & game creation screen.
         
-        // configure the game level
-        this.config = this.configureLevel();
-        
         // start the currently configured level.
         // @TODO: load this in from disk if needed.
-        this.startLevel()     
+        this.startLevel();
+
 
         console.timeEnd('Initialising...')
     }
@@ -103,8 +106,8 @@ export class GameScene {
             // seed: 'fuck me I wish I were dead, aye',
             // seed: 'helpmeimdrowning',
             // seed: 'aborio rice',
-            worldWidth: 3200, // 12800,
-            worldHeight: 3200, // 12800,
+            worldWidth: 6400, // 12800,
+            worldHeight: 6400, // 12800,
             cellGridSize: 400,
             oceanClamp: 0.85,
             macroScale: 0.0045,
@@ -130,12 +133,15 @@ export class GameScene {
     // START LEVEL //
     /////////////////
     startLevel() {
-        this.camera = this.getOrthoCamera();
+        // configure the game level
+        this.config = this.configureLevel();               // GenerationSettings creation
+        this.camera = this.getOrthoCamera();               // initialise the default game camera
 
-        this.doLevelGeneration();
+        this.saveManagerEntity = this.startSaveManager()   // create the save game manager now that a game is present
+        this.chunkManager = this.getChunkManager();        // start an initial chunk manager so we can see a blank level
 
         // listen to regeneration requests
-        this.app.root.on('world:regenerate', (newConfig: GenerationSettings & GenerationMeta) => {
+        this.app.root.on('world:regenerate', async (newConfig: GenerationSettings & GenerationMeta) => {
             let settingHasChanged: boolean = false;
             for (const [key, value] of Object.entries(newConfig)) { // @TODO: satisfy typescript's stupid [Iterator] thing
                 if (this.config[key] === undefined) continue; // ignore GenerationMeta
@@ -147,57 +153,89 @@ export class GameScene {
                 }
             }
 
-            if (settingHasChanged) {
+            if (settingHasChanged || this.chunker.chunks.size === 0) {
                 // @TODO: give the UI a loading state here so it can display loading
                 // before the level generation happens.
                 this.ui.enabled = false;
-                this.doLevelGeneration();
+                await this.doLevelGeneration();
                 this.ui.enabled = true;
             }
         })
 
         // finally load the UI
         this.ui = this.getUI();
-
-        // load artefacts into the UI so that they can get rendered
-        const debugUIScript = this.ui.script['debug-ui-controller'];
-        debugUIScript.voronoi = this.chunker.generator.voronoi;
     }
 
-    doLevelGeneration() {
+    async doLevelGeneration() {
+        // reinitialise the save/chunk manager.
+        this.saveManagerEntity = this.startSaveManager()
         this.chunkManager = this.getChunkManager();
 
-        //////////////////////
-        // LEVEL GENERATION //
-        //////////////////////
+        // @DEBUG: if there is a current save for this, don't save over it. We're just testing
+        const weHaveASave = await get(`${this.saveManager.saveKey}-settings`)
+        if (weHaveASave) {
+            console.log('save game detected, avoiding re-save')
+            const loadData = await this.saveManager.load();
+            console.log(loadData)
+            // restore settings
+            this.config = loadData.settings;
+            // restore VoronoiCluster
+            this.chunker.generator.voronoi.sites = [...loadData.voronoi];
+            this.chunker.generator.voronoi.buildDelaunay();
+            // restore chunks
+            (loadData.chunks as SerialChunk[]).forEach((serialChunk: SerialChunk) => {
+                const chunk: Chunk = Chunk.unserialize(serialChunk, this.chunker.generator, this.config);
+                this.chunker.chunks.set(`${chunk.chunkX},${chunk.chunkY}`, chunk);
+            });
 
-        ///// STEP 1: Prepass
-        this.chunker.generator.pregenerate();
+        } else {
+            //////////////////////////
+            // RAW LEVEL GENERATION //
+            //////////////////////////
+    
+            ///// STEP 1: Prepass
+            this.chunker.generator.pregenerate();
+        }
+
         ///// STEP 2: Initial Chunk generation at current camera location
         // generate starting chunks at the loaded camera location
+        // If any chunks are preloaded, they should be available now.
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
-        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 32)
+        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16)
         // @TODO reveal all loaded chunks when save data is present.
+
+
+        // @DEBUG load artefacts into the debug so that they can get rendered
+        // @TODO: handle the whole UI and debug states better
+        const debugUIScript = this.ui.script['debug-ui-controller'];
+        debugUIScript.voronoi = this.chunker.generator.voronoi;
 
         ///// STEP 3: Chunk generation streaming
 
         // set camera orthoheight to current vertical chunk extend
         const cam = this.camera.script['ortho-camera-controller'];
         const newOrthoHeight = Math.abs(this.chunker.chunkExtentMaxY - this.chunker.chunkExtentMinY) / 2
+        cam.orthoHeight = newOrthoHeight + 40; // give it a buffer
         cam.maxOrthoHeight = newOrthoHeight + 40; // give it a buffer
+        
+        if (!weHaveASave) { // @DEBUG
+            // save the generated level
+            this.saveManager.save({
+                settings: this.chunker.settings,
+                // @TODO: save voronoi more on-demand once we load successfully
+                voronoi: this.chunker.generator.voronoi.sites, 
+                chunks: this.chunker.chunks,
+            });
+        }
     }
 
     getOrthoCamera(): pc.Entity {
-        // @TODO: get current width/height (larger of the two) of generated chunks
-        // and use that to determine a new max orthoHeight. Will also need to be updated with new chunks.
-        // For now, we'll just stick it to being the original 16 chunk radius.
-        const orthoHeight = (16 * 50) * 1.1; // default ortho height
         // create and attach camera
         const cam = new pc.Entity('OrthoCamera');
         cam.addComponent('camera', {
             clearColor: new pc.Color(0.8, 0.8, 0.8),
             projection: pc.PROJECTION_ORTHOGRAPHIC,
-            orthoHeight,
+            orthoHeight: 50, // @TODO: default to a chunk size
             nearClip: 0.1,
             farClip: 2000,
         });
@@ -211,7 +249,7 @@ export class GameScene {
         
         const camScript = cam.script!.create(OrthoCameraController) as unknown as OrthoCameraController
 
-        camScript.maxOrthoHeight = orthoHeight
+        camScript.maxOrthoHeight = 50
         camScript.zoomSpeed = 0.33
         return cam;
     }
@@ -242,5 +280,19 @@ export class GameScene {
         
         this.app.root.addChild(ui);
         return ui;
+    }
+
+    startSaveManager(): pc.Entity {
+        if (this.saveManagerEntity) {
+            this.saveManagerEntity.destroy();
+        }
+
+        const saveManager = new pc.Entity('SaveGameManagerEntity');
+        saveManager.addComponent('script')
+        this.saveManager = saveManager.script?.create(SaveGameManager) as unknown as SaveGameManager
+        this.saveManager.config = {...this.config}; 
+        
+        this.app.root.addChild(saveManager);
+        return saveManager;
     }
 }
