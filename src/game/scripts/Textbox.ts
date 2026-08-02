@@ -55,14 +55,23 @@ export class Textbox extends pc.Script {
             this.entity.addChild(labelWrapper);
         }
 
-        const inputElement = new pc.Entity('InputWrapper');
-        inputElement.addComponent('element', {
+        const inputWrapper = new pc.Entity('InputWrapper');
+        inputWrapper.addComponent('element', {
             type: pc.ELEMENTTYPE_IMAGE,
             anchor: new pc.Vec4(hasLabel ? 0.7 : 0, 0, 1, 1), // fill parent if no label
             pivot: new pc.Vec2(0, 0),
             margin: new pc.Vec4(0, 0, 0, 0),
-            color: this.readonly ? new pc.Color(0.8, 0.8, 0.8, 1) : new pc.Color(1, 1, 1, 1),
+            mask: true,
         });
+
+        const inputBackground = new pc.Entity('InputWrapper');
+        inputBackground.addComponent('element', {
+            type: pc.ELEMENTTYPE_IMAGE,
+            anchor: new pc.Vec4(0, 0, 1, 1),
+            pivot: new pc.Vec2(0, 0),
+            margin: new pc.Vec4(0, 0, 0, 0),
+            color: this.readonly ? new pc.Color(0.8, 0.8, 0.8, 1) : new pc.Color(1, 1, 1, 1),
+        }) 
 
         this.inputText = new pc.Entity('InputText');
         this.inputText.addComponent('element', {
@@ -87,9 +96,10 @@ export class Textbox extends pc.Script {
             this.inputText.on('ui:blur', this.fireBlur);
         }
         
-        inputElement.addChild(this.inputText);
+        inputWrapper.addChild(inputBackground);
+        inputWrapper.addChild(this.inputText);
 
-        this.entity.addChild(inputElement);
+        this.entity.addChild(inputWrapper);
     }
 
     destroy() {
