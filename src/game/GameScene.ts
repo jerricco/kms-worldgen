@@ -103,8 +103,8 @@ export class GameScene {
             // seed: 'fuck me I wish I were dead, aye',
             // seed: 'helpmeimdrowning',
             // seed: 'aborio rice',
-            worldWidth: 1600, // 12800,
-            worldHeight: 1600, // 12800,
+            worldWidth: 3200, // 12800,
+            worldHeight: 3200, // 12800,
             cellGridSize: 400,
             oceanClamp: 0.85,
             macroScale: 0.0045,
@@ -156,7 +156,6 @@ export class GameScene {
             }
         })
 
-
         // finally load the UI
         this.ui = this.getUI();
 
@@ -177,17 +176,22 @@ export class GameScene {
         ///// STEP 2: Initial Chunk generation at current camera location
         // generate starting chunks at the loaded camera location
         const globalCamPos: pc.Vec3 = this.camera.getPosition();
-        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 16)
+        this.chunker.updateChunkRadius(globalCamPos.x, globalCamPos.z, 32)
         // @TODO reveal all loaded chunks when save data is present.
 
         ///// STEP 3: Chunk generation streaming
+
+        // set camera orthoheight to current vertical chunk extend
+        const cam = this.camera.script['ortho-camera-controller'];
+        const newOrthoHeight = Math.abs(this.chunker.chunkExtentMaxY - this.chunker.chunkExtentMinY) / 2
+        cam.maxOrthoHeight = newOrthoHeight + 40; // give it a buffer
     }
 
     getOrthoCamera(): pc.Entity {
         // @TODO: get current width/height (larger of the two) of generated chunks
         // and use that to determine a new max orthoHeight. Will also need to be updated with new chunks.
         // For now, we'll just stick it to being the original 16 chunk radius.
-        const orthoHeight = (16 * 50) * 1.1;
+        const orthoHeight = (16 * 50) * 1.1; // default ortho height
         // create and attach camera
         const cam = new pc.Entity('OrthoCamera');
         cam.addComponent('camera', {

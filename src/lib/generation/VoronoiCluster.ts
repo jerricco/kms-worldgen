@@ -145,15 +145,13 @@ export class VoronoiFactory {
             const rotX = -halfW + (rng.next() * worldW);
             const rotY = -halfH + (rng.next() * worldH);
 
-            // 1. Check basic field values to determine sampling density
+            // check basic field values to determine sampling density
             const densityField = this.#evaluateGeologicalField(rotX, rotY);
             const acceptanceProbability = pc.math.lerp(0.012, 1.0, Math.pow(densityField.landChance, 1.2));
 
-            if (rng.next() > acceptanceProbability) {
-                continue;
-            }
+            if (rng.next() > acceptanceProbability) continue;
 
-            // 2. Compute the twist displacement variables
+            // compute the twist displacement variables
             const twistFreq = 1.0 / (baseSpacing * 5.0);
             const twistAngle = noise.noise2D(rotX * twistFreq, rotY * twistFreq) * Math.PI * 2;
             const twistIntensity = baseSpacing * 0.7 * (1.0 - densityField.landChance);
@@ -165,9 +163,7 @@ export class VoronoiFactory {
                 continue;
             }
 
-            // --- THE ANTI-PILLOWING CORRECTION ---
-            // Calculate the actual geological parameters AT THE FINAL COMPASS POINT.
-            // This ensures cell elevations line up perfectly with their physical mesh locations.
+            // find the geological field from the final compass point.
             const finalField = this.#evaluateGeologicalField(finalX, finalY);
 
             const isOceanic = finalField.landChance < 0.42;
@@ -188,7 +184,6 @@ export class VoronoiFactory {
                 // to distribute up through Hill (0.58) and Mountain (0.70) levels.
                 const landProgress = (finalField.landChance - 0.42) / 0.58;
                 const exponentialRise = Math.pow(landProgress, 1.6);
-
                 baseElevation = pc.math.lerp(sLevel + 0.02, pLevel, exponentialRise) + (this.plateElevationBiases[finalField.closestPlateId] * 0.15);
             }
 

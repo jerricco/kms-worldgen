@@ -4,6 +4,7 @@ import { Textbox } from './Textbox';
 import { isPrimitive } from '../../lib/utils';
 import { VoronoiFactory } from '../../lib/generation/VoronoiCluster';
 import type { GenerationMeta, GenerationSettings } from '../../lib/generation/MapGenerator';
+import { OrthoCameraController } from './OrthoCamera';
 
 export class DebugUiController extends pc.Script {
     static scriptName = 'debug-ui-controller';
@@ -142,7 +143,11 @@ export class DebugUiController extends pc.Script {
         // @TODO: handle reference and cleanup in destroy()
         this.inputs['seed'].on('ui:key:enter', () => this.refreshBtn.button?.fire('click'))
         this.refreshBtn.button?.on('click', () => {
-            // explicitly throw a global event to regenerate the world with new settings
+            const camera = this.app.root.findByName('OrthoCamera')?.script['ortho-camera-controller'];
+            if (!camera) return;
+
+            // @TODO: find a be
+            camera.setPosition(0, 0)
             this.app.root.fire('world:regenerate', {...this.values})
         });
 

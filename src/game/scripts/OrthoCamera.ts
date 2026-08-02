@@ -97,6 +97,14 @@ export class OrthoCameraController extends pc.Script {
         camera.orthoHeight = pc.math.lerp(camera.orthoHeight, this.targetOrthoHeight, t);
     }
 
+    public setPosition(x: number, z: number) {
+        this.currentPosition.x = 0
+        this.currentPosition.z = 0
+        this.targetPosition.x = 0
+        this.targetPosition.z = 0
+        this.entity.setPosition(x, this.currentPosition.y, z);
+    }
+
     private onMouseDown(event: pc.MouseEvent) {
         if (event.button === pc.MOUSEBUTTON_LEFT || event.button === pc.MOUSEBUTTON_RIGHT) {
             this.isPanning = true;
