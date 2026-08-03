@@ -1,0 +1,51 @@
+MapDebugScreen
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+    margin: 8px;
+	background-color: #444;
+    opacity: 0.8;
+	border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+
+    .debug-menu {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        font-family: Poppins;
+    }
+
+    .debug-menu.error {
+        color: #ffffff;
+    }
+
+    .stat-row {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+
+        .label {
+            color: #cacaca;
+            margin-right: 10px;
+        }
+        
+        .value {
+            font-weight: 600;
+            color: white;
+        }
+    }
+
+	h2
+	{
+		font-size: 15px;
+		color: #fff;
+        margin-bottom: 12px;
+        font-weight: 700;
+	}
+
+    h2.subhead {
+        margin-top: 12px;
+    }
+}
