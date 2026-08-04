@@ -1,6 +1,6 @@
 using Sandbox;
 using System;
-using Sandbox;
+using Sandbox.Triangulation;
 
 namespace Sandbox.Generation;
 
@@ -14,7 +14,7 @@ public sealed class VoronoiFactory
     private double MacroBayIntensity { get; set; }
 
     public List<VoronoiSite> Sites;
-    public List<Delaunay.Triangle> DelaunayMesh;
+    public Delaunator DelaunayMesh;
     
     private List<Vector2> PlateCenters;
     private List<double> PlateElevationBiases;
@@ -227,16 +227,9 @@ public sealed class VoronoiFactory
     */
     private void BuildDelaunay()
     {
-	    Log.Info( $"Building delaunay for {Sites.Count} objects." );
-	    Log.Info(Sites[0]  );
-	    Vector2[] flatCoords = new Vector2[Sites.Count];
-	    /*for ( int i = 0; i < Sites.Count; i++ )
-	    {
-		    flatCoords[i] = new Vector2(Sites[i].Position.x, Sites[i].Position.y);
-	    }
-	    
-	    Log.Info( $"Triangulating delaunay for {flatCoords.Length} sites." );
-	    DelaunayMesh = Delaunay.Triangulate(flatCoords, Settings.HalfWidth, Settings.HalfHeight);
-	    Log.Info( $"Delaunay populated with {DelaunayMesh.Count} triangles."  );*/
+	    IPoint[] delaunayPoints = Sites.Select(s => (IPoint)new Point(s.Position.x, s.Position.y)).ToArray();
+	    Log.Info( $"Triangulating delaunay for {delaunayPoints.Length} sites." );
+	    DelaunayMesh = new Delaunator(delaunayPoints);
+	    Log.Info( $"Delaunay populated with {DelaunayMesh.Triangles.Length} triangles."  );
     }
 }

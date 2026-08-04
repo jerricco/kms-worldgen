@@ -127,22 +127,23 @@ public sealed class MapGenerator : Component
     // @DEBUG - Use these methods to show the current Delaunay triangulation on-screen.
     private void DrawDelaunay()
     {
-	    if (Voronoi == null || Voronoi.DelaunayMesh == null || Voronoi.DelaunayMesh.Count == 0 )
+	    if (Voronoi == null || Voronoi.DelaunayMesh == null || Voronoi.DelaunayMesh.Triangles.Length == 0 )
 	    {
 		    return; // stop rendering immediately if the mesh count doesn't exist
 	    }
 	    Log.Info("Trying to draw delaunay");
 
-	    foreach ( Delaunay.Triangle triangle in Voronoi.DelaunayMesh )
-	    {
-		    Vector3 a3D = new Vector3( triangle.A.x, triangle.A.y, 0 );
+	    /*foreach ( Triangulation.Triangle triangle in Voronoi.DelaunayMesh )
+	    {*/
+		    // $TODO: fix w/ Delaunator
+		    /*Vector3 a3D = new Vector3( triangle.A.x, triangle.A.y, 0 );
 		    Vector3 b3D = new Vector3( triangle.B.x, triangle.B.y, 0 );
 		    Vector3 c3D = new Vector3( triangle.C.x, triangle.C.y, 0 );
 		    
 		    DebugOverlay.Line( a3D, b3D, Color.Magenta, 0f );
 		    DebugOverlay.Line( b3D, c3D, Color.Magenta, 0f );
-		    DebugOverlay.Line( c3D, a3D, Color.Magenta, 0f );
-	    }
+		    DebugOverlay.Line( c3D, a3D, Color.Magenta, 0f );*/
+	    /*}*/
     }
 
     [Button( "Draw Voronoi Cells " )]

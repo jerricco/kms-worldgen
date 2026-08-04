@@ -58,11 +58,12 @@ public class Tile
 	{
 		Vector2 globalPosition = new Vector2( x, y );
 
-		Delaunay.Triangle site0 = _generator.Voronoi.DelaunayMesh.Find( triangle
-			=> triangle.ContainsPoint( globalPosition ) );
+		// @TODO: fix - Implement DelaunatorSharp
+		// Triangulation.Triangle site0 = _generator.Voronoi.DelaunayMesh.Find( triangle
+		// 	=> triangle.ContainsPoint( globalPosition ) );
 		
 		// @TODO: continue from here
-		Log.Info(site0  );
+		// Log.Info(site0  );
 
 		/*if ( site0 == null ) // Give a floored out voronoi site
 		{
