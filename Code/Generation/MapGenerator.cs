@@ -5,18 +5,20 @@ namespace Sandbox.Generation;
 public sealed class MapGenerator : Component
 {
     [Property] public GenerationSettings Settings { get; set; }
-    [Property] public uint Seed;
-    [Property] public double RandomAngle;
-    [Property] public int OffsetX;
-    [Property] public int OffsetY;
-    [Property] public double CosA;
-    [Property] public double SinA;
+    [Property] public uint Seed { get; set; }
+    [Property] public double RandomAngle { get; set; }
+    [Property] public int OffsetX { get; set; }
+    [Property] public int OffsetY { get; set; }
+    [Property] public double CosA { get; set; }
+    [Property] public double SinA { get; set; }
 
-    public Sfc32 Rng;
-    public OpenSimplexNoise Noise;
-
-    private VoronoiFactory Voronoi { get; set; }
+    public Sfc32 Rng { get; set; }
+    public OpenSimplexNoise Noise { get; set; }
+    public VoronoiFactory Voronoi { get; set; }
+    
     [Property, ReadOnly] private bool _drawDelaunay = false;
+
+    private Dictionary<Vector2, Chunk> _chunks;
 
     // When a map generator is invoked, it should immediately begin the generation.
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
@@ -46,17 +48,66 @@ public sealed class MapGenerator : Component
 	    }
 }
 
+    // @TODO: The save file should determine the List<Vector2> of places to do
+    // default chunk revealing from, since 0,0 always gets its initial 32 chunk generation.
+    // Revealing saved chunks should be a lot faster than generating new ones, so this shouldn't be as
+    // expensive to run.
+    // @TODO: Rather than default to 0,0 for initial generation, get a starting position sent to 
+    // Generate so that alternate start locations on a map can be given.
     public void Generate()
     {
         Log.Info($"Starting level generation with seed  {Settings.SeedText}...");
         Voronoi = new VoronoiFactory(Settings, this);
         Voronoi.Generate();
-        // for (int x = 0; x < Settings.WorldWidth; x++)
-        // {
-        //     for (int y = 0; Y < Settings.WorldHeight; y++)
-        //     {
-        //     }
-        // }
+        
+        // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
+        _chunks = new Dictionary<Vector2, Chunk>();
+        UpdateChunkRadius( 0, 0 , 32);
+    }
+    
+    // Generate a number of individual chunks in a radius around the given point.
+    public void UpdateChunkRadius( int centerX, int centerY, int revealRadius = 4 )
+    {
+	    Log.Info($"Generating {revealRadius * revealRadius} chunks around {centerX},{centerY}"  );
+	    
+	    int centerChunkX = centerX / Settings.ChunkGridSize;
+	    int centerChunkY = centerY / Settings.ChunkGridSize;
+	    
+	    for ( int xOffset = -revealRadius; xOffset < revealRadius; xOffset++ )
+	    {
+		    for ( int yOffset = -revealRadius; yOffset < revealRadius; yOffset++ )
+		    {
+			    int targetX = centerChunkX + xOffset;
+			    int targetY = centerChunkY + yOffset;
+			    
+			    // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extend + a buffer
+			    
+			    // this clamp determines the square around the centerX,centerY given
+			    if (targetX < -revealRadius 
+			        || targetX > revealRadius 
+			        || targetY < -revealRadius 
+			        || targetY > revealRadius) 
+				    continue;
+			    
+			    Vector2 chunkKey = new Vector2( targetX, targetY );
+			    Chunk chunk =  _chunks.GetValueOrDefault(chunkKey);
+			    
+			    if ( chunk == null )
+			    {
+				    chunk = new Chunk(targetX, targetY, Settings, this);
+				    chunk.Generate(targetX, targetY);
+				    
+				    _chunks[chunkKey] = chunk;
+			    }
+		    }
+	    }
+
+	    int minX = centerX - revealRadius * Settings.ChunkGridSize;
+	    int minY = centerY - revealRadius * Settings.ChunkGridSize;
+	    int maxX = centerX + revealRadius * Settings.ChunkGridSize;
+	    int maxY = centerY + revealRadius * Settings.ChunkGridSize;
+	    
+	    Log.Info($"{centerX},{centerY} has revealed chunks from {minX},{minY} to {maxX},{maxY}"  );
     }
 
     public (double sampleX, double sampleY) SampleWarpedDomain(double x, double y)

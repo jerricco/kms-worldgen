@@ -43,6 +43,36 @@ public class Delaunay
                    B == other.A || B == other.B || B == other.C ||
                    C == other.A || C == other.B || C == other.C;
         }
+        
+        public bool ContainsPoint(Vector2 p)
+        {
+	        // Sign/Cross-product test to check if point is on the same side of all 3 edges
+	        float Sign(Vector2 p1, Vector2 p2, Vector2 p3) => 
+		        (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+
+	        float d1 = Sign(p, A, B);
+	        float d2 = Sign(p, B, C);
+	        float d3 = Sign(p, C, A);
+
+	        bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+	        bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+	        return !(hasNeg && hasPos);
+        }
+        
+        public bool IsNeighborOf(Triangle other)
+        {
+	        if (other == this) return false;
+
+	        // Count how many vertices this triangle shares with the other triangle
+	        int sharedVertices = 0;
+	        if (A == other.A || A == other.B || A == other.C) sharedVertices++;
+	        if (B == other.A || B == other.B || B == other.C) sharedVertices++;
+	        if (C == other.A || C == other.B || C == other.C) sharedVertices++;
+
+	        // True neighbors in a triangulation share exactly 2 vertices (an edge)
+	        return sharedVertices == 2;
+        }
     }
 
     public struct Edge
