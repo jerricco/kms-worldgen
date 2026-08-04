@@ -49,19 +49,18 @@ public sealed class VoronoiFactory
         MacroBayIntensity = Generator.Rng.NextRangeDouble(0.20d, 0.35d);
 
         Log.Info( $"Tectonic spine generating with settings..." );
-        Log.Info( $"======== Continental Fragmentation Factor: {ContinentalFragmentationFactor}" );
+        Log.Info( $"======== Continental Fragmentation Factor: {ContinentalFragmentationFactor.ToString( "F3" )}" );
 		Log.Info( $"======== Bay Frequency: {MacroBayFrequency.ToString( "F3" )}" );
 		Log.Info( $"======== Bay Intensity: {MacroBayIntensity.ToString("F3")}" );
 
         int tectonicPlateCount = Generator.Rng.NextRange(6, 9);
-        double spineAngle = Generator.Rng.NextRangeDouble(0d, Math.PI * 2d);
+        double spineAngle = Generator.Rng.NextRangeDouble(0d, Math.Tau);
         double spineDirectionX = Math.Cos(spineAngle);
         double spineDirectionY = Math.Sin(spineAngle);
 
         for (int p = 0; p < tectonicPlateCount; p++)
         {
-
-	        double progress = (p / (float)tectonicPlateCount - 1d) * 2.0d - 1.0d;
+	        double progress = (p / (tectonicPlateCount - 1d)) * 2.0d - 1.0d;
 	        double bowIntensity = Settings.MaxDimension * 0.18d;
 	        double bowNoise = Math.Sin(progress * Math.PI) * bowIntensity;
 
@@ -157,22 +156,21 @@ public sealed class VoronoiFactory
         Log.Info( $"======== Target points: {targetPoints}" );
         Log.Warning( $"======== Builder will only attempt a max of {maxAttempts} times!" );
         
-        /*while (Sites.Count < targetPoints && attempts < maxAttempts)*/
-        while (Sites.Count < targetPoints && attempts < maxAttempts) // @DEBUG - must see what's crashing this
+        while (Sites.Count < targetPoints && attempts < maxAttempts)
         {
 	        attempts++;
 
-            float rotX = -Settings.HalfWidth + (Generator.Rng.NextFloat() * Settings.WorldWidth);
-            float rotY = -Settings.HalfHeight + (Generator.Rng.NextFloat() * Settings.WorldHeight);
+            float rotX = -Settings.HalfWidth + (Generator.Rng.Next() * Settings.WorldWidth);
+            float rotY = -Settings.HalfHeight + (Generator.Rng.Next() * Settings.WorldHeight);
             
             (double landChance, int closestPlateId) densityField = EvaluateGeologicalField(rotX, rotY);
             double acceptanceProbability = double.Lerp(0.012d, 1.0d, Math.Pow(densityField.landChance, 1.2d));
 
-            if (Generator.Rng.NextFloat() > acceptanceProbability) continue;
+            if (Generator.Rng.Next() > acceptanceProbability) continue;
 
             // twist displacement
             double twistFrequency = 1.0 / (baseSpacing * 5.0);
-            double twistAngle = Generator.Noise.Evaluate(rotX * twistFrequency, rotY * twistFrequency) * Math.PI * 2d;
+            double twistAngle = Generator.Noise.Evaluate(rotX * twistFrequency, rotY * twistFrequency) * Math.Tau;
             double twistIntensity = baseSpacing * 0.7d * (1.0d - densityField.landChance);
 
             double finalX = rotX + Math.Cos(twistAngle) * twistIntensity;
@@ -230,13 +228,15 @@ public sealed class VoronoiFactory
     private void BuildDelaunay()
     {
 	    Log.Info( $"Building delaunay for {Sites.Count} objects." );
-	    List<Vector2> flatCoordinates = new List<Vector2>();
-	    for ( int i = 0; i < Sites.Count; i++ )
+	    Log.Info(Sites[0]  );
+	    Vector2[] flatCoords = new Vector2[Sites.Count];
+	    /*for ( int i = 0; i < Sites.Count; i++ )
 	    {
-		    flatCoordinates.Add(new Vector2(Sites[i].Position.x, Sites[i].Position.y));
+		    flatCoords[i] = new Vector2(Sites[i].Position.x, Sites[i].Position.y);
 	    }
 	    
-	    Log.Info( $"Triangulating delaunay for {flatCoordinates.Count} sites." );
-	    DelaunayMesh = Delaunay.Triangulate(flatCoordinates);
+	    Log.Info( $"Triangulating delaunay for {flatCoords.Length} sites." );
+	    DelaunayMesh = Delaunay.Triangulate(flatCoords, Settings.HalfWidth, Settings.HalfHeight);
+	    Log.Info( $"Delaunay populated with {DelaunayMesh.Count} triangles."  );*/
     }
 }

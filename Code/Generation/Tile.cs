@@ -10,10 +10,10 @@ public class Tile
 	
 	// speedy immediate-y chunk data
 	public double Elevation;
-	public int RegionId;
+	public RegionId RegionId;
 	public double Humidity;
 	public double Temperature;
-	public int MaterialId;
+	public int MaterialId; // @TODO: Type as MaterialId
 	
 	private MapGenerator _generator;
 
@@ -26,6 +26,9 @@ public class Tile
 		Settings = settings; 
 		Position = (globalX, globalY);
 		Elevation = GetElevation(globalX, globalY);
+		RegionId = GetRegion( Elevation );
+		Humidity = 0; // @TODO: Does nothing for now
+		MaterialId = 0; // @TODO: Does nothing for now
 		Geology = BuildGeology(globalX, globalY, Elevation);
 	}
 
@@ -98,7 +101,7 @@ public class Tile
      * Use the determinate data of a tile to find what region it belongs to.
 	 * @NOTE: currently only accepts elevation data.
     */
-	private RegionId GetRegion( int elevation )
+	private RegionId GetRegion( double elevation )
 	{
 		return Generation.RegionId.Unassigned; // @TODO: Does nothing for now.
 	}

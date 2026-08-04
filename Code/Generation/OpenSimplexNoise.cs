@@ -16,7 +16,7 @@ public class OpenSimplexNoise
          5, -2,    2, -5,   -5, -2,   -2, -5
     };
 
-    public OpenSimplexNoise(Sfc32 rng)
+    public OpenSimplexNoise(Prng rng)
     {
 	    _perm = new short[256];
         short[] source = new short[256];

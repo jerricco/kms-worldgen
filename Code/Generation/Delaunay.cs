@@ -33,7 +33,9 @@ public class Delaunay
 
         public bool ContainsInCircumcircle(Vector2 point)
         {
-            float distSq = (point.x - CircumCenter.x) * (point.x - CircumCenter.x) + (point.y - CircumCenter.y) * (point.y - CircumCenter.y);
+            float distSq = (point.x - CircumCenter.x) * (point.x - CircumCenter.x)
+                           + (point.y - CircumCenter.y) * (point.y - CircumCenter.y);
+            
             return distSq < CircumRadiusSq;
         }
 
@@ -82,14 +84,18 @@ public class Delaunay
         public bool Equals(Edge other) => (U == other.U && V == other.V) || (U == other.V && V == other.U);
     }
 
-    public static List<Triangle> Triangulate(List<Vector2> points, float width = 5000f, float height = 5000f)
+    public static List<Triangle> Triangulate(Vector2[] points, float halfW = 5000f, float halfH = 5000f)
     {
         var triangulation = new List<Triangle>();
 
         // 1. Create a super-triangle that covers the generation boundaries safely
-        var stA = new Vector2(width / 2f, height * 3f);
-        var stB = new Vector2(-width * 2f, -height);
-        var stC = new Vector2(width * 3f, -height);
+        // Scale factor to ensure the super-triangle is massively larger than the bounding box
+        float scale = 10f; 
+
+        var stA = new Vector2(0f, halfH * scale * 2f);
+        var stB = new Vector2(-halfW * scale * 2f, -halfH * scale);
+        var stC = new Vector2(halfW * scale * 2f, -halfH * scale);
+    
         var superTriangle = new Triangle(stA, stB, stC);
         triangulation.Add(superTriangle);
 

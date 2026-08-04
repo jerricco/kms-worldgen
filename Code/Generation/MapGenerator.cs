@@ -5,14 +5,13 @@ namespace Sandbox.Generation;
 public sealed class MapGenerator : Component
 {
     [Property] public GenerationSettings Settings { get; set; }
-    [Property] public uint Seed { get; set; }
     [Property] public double RandomAngle { get; set; }
     [Property] public int OffsetX { get; set; }
     [Property] public int OffsetY { get; set; }
     [Property] public double CosA { get; set; }
     [Property] public double SinA { get; set; }
 
-    public Sfc32 Rng { get; set; }
+    public Prng Rng { get; set; }
     public OpenSimplexNoise Noise { get; set; }
     public VoronoiFactory Voronoi { get; set; }
     
@@ -30,10 +29,9 @@ public sealed class MapGenerator : Component
         }
 
         // create helpers
-        Seed = Sfc32Extensions.ToSeed(Settings.SeedText);
-        Rng = new Sfc32(Seed);
+        Rng = new Prng(Settings.SeedText);
         Noise = new OpenSimplexNoise(Rng);
-        RandomAngle = Rng.NextRangeDouble(0, Math.PI * 2d);
+        RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
         CosA = Math.Cos(RandomAngle);
         SinA = Math.Sin(RandomAngle);
         OffsetX = Rng.NextRange(10000, 90000);
@@ -61,8 +59,8 @@ public sealed class MapGenerator : Component
         Voronoi.Generate();
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
-        _chunks = new Dictionary<Vector2, Chunk>();
-        UpdateChunkRadius( 0, 0 , 32);
+        /*_chunks = new Dictionary<Vector2, Chunk>();
+        UpdateChunkRadius( 0, 0 , 1);*/
     }
     
     // Generate a number of individual chunks in a radius around the given point.
@@ -80,8 +78,6 @@ public sealed class MapGenerator : Component
 			    int targetX = centerChunkX + xOffset;
 			    int targetY = centerChunkY + yOffset;
 			    
-			    // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extend + a buffer
-			    
 			    // this clamp determines the square around the centerX,centerY given
 			    if (targetX < -revealRadius 
 			        || targetX > revealRadius 
@@ -90,18 +86,15 @@ public sealed class MapGenerator : Component
 				    continue;
 			    
 			    Vector2 chunkKey = new Vector2( targetX, targetY );
-			    Chunk chunk =  _chunks.GetValueOrDefault(chunkKey);
+			    // @TODO: handle turning off & back on for performance if needed
+			    Chunk chunk =  _chunks.GetValueOrDefault(chunkKey); 
 			    
 			    if ( chunk == null )
-			    {
-				    chunk = new Chunk(targetX, targetY, Settings, this);
-				    chunk.Generate(targetX, targetY);
-				    
-				    _chunks[chunkKey] = chunk;
-			    }
+				    _chunks[chunkKey] = new Chunk(targetX, targetY, Settings, this);
 		    }
 	    }
-
+	    
+        // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extent + a buffer
 	    int minX = centerX - revealRadius * Settings.ChunkGridSize;
 	    int minY = centerY - revealRadius * Settings.ChunkGridSize;
 	    int maxX = centerX + revealRadius * Settings.ChunkGridSize;
@@ -138,6 +131,7 @@ public sealed class MapGenerator : Component
 	    {
 		    return; // stop rendering immediately if the mesh count doesn't exist
 	    }
+	    Log.Info("Trying to draw delaunay");
 
 	    foreach ( Delaunay.Triangle triangle in Voronoi.DelaunayMesh )
 	    {

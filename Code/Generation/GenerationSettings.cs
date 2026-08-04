@@ -8,24 +8,24 @@ public sealed class GenerationSettings
     // --- STATIC(ISH) PROPERTIES --- //
 
     // Seeded randomisation
-    [Property] public string SeedText       { get; set; } = "aborio rice";
+    [Property] public string SeedText   { get; set; } = "aborio rice";
 
     // Map dimensions
     [Property] public int WorldWidth    { get; set; } = 12800;
     [Property] public int WorldHeight   { get; set; } = 12800;
     [Property] public int CellGridSize  { get; set; } = 400;
-    [Property] public int ChunkGridSize  { get; set; } = 50;
+    [Property] public int ChunkGridSize { get; set; } = 50;
     
     // Map generation modifiers
     [Property] public float OceanClamp  { get; set; } = 0.85f;
     [Property] public float MacroScale  { get; set; } = 0.0045f;
-    [Property] public float SquishFactor  { get; set; } = 1.0f;
-    [Property] public float StretchX  { get; set; } = 0.7f;
-    [Property] public float StretchY  { get; set; } = 1.3f;
+    [Property] public float SquishFactor{ get; set; } = 1.0f;
+    [Property] public float StretchX    { get; set; } = 0.7f;
+    [Property] public float StretchY    { get; set; } = 1.3f;
 
     // Elevation boundaries
     [Property] public float AbyssalLevel { get; set; } = -1.0f;
-    [Property] public float TrenchLevel { get; set; } = -0.85f;
+    [Property] public float TrenchLevel  { get; set; } = -0.85f;
     [Property] public float DeepOceanLevel { get; set; } = -0.55f;
     [Property] public float OceanLevel { get; set; } = -0.25f;
     [Property] public float SeaLevel { get; set; } = 0f;

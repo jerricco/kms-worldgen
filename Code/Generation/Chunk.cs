@@ -18,10 +18,12 @@ public class Chunk
 	
 	private int _size;
 	private MapGenerator _generator;
+	private GenerationSettings _settings;
 
 	public Chunk(int chunkX, int chunkY, GenerationSettings settings, MapGenerator generator)
 	{
 		_generator = generator;
+		_settings = settings;
 		
 		ChunkX = chunkX;
 		ChunkY = chunkY;
@@ -30,16 +32,41 @@ public class Chunk
 		
 		_size = settings.ChunkGridSize;
 
-		Elevations = new double[_size];
-		RegionIds = new int[_size];
-		Humidities = new double[_size];
-		Temperatures = new double[_size];
-		MaterialIds = new int[_size];
+		Elevations = new double[TileCount];
+		RegionIds = new int[TileCount];
+		Humidities = new double[TileCount];
+		Temperatures = new double[TileCount];
+		MaterialIds = new int[TileCount];
+		
+		Generate();
 	}
 
-	public void Generate(int chunkX, int chunkY)
+	public void Generate()
 	{
-		// does nothing for now
+		new Tile(0, 0, _settings, _generator);
+		// @DEBG
+		/*for ( int x = 0; x < _size; x++ )
+		{
+			for ( int y = 0; y < _size; y++ )
+			{
+				int globalX = ChunkX * _size + x;
+				int globalY = ChunkY *  _size + y;
+				
+				// check out of bounds, in case we only need a partial chunk.
+				if ( globalX > WorldWidth || globalY > WorldHeight || globalX < -WorldWidth ||
+				     globalY < -WorldHeight ) continue;
+				
+				Tile tile = new Tile(globalX, globalY, _settings, _generator);
+				
+				// store rapid retrieve tile data against the chunk
+				uint tileIndex = LocalIndex(x, y);
+				Elevations[tileIndex] = tile.Elevation;
+				RegionIds[tileIndex] = (int)tile.RegionId;
+				Humidities[tileIndex] = tile.Humidity;
+				Temperatures[tileIndex] = tile.Temperature;
+				MaterialIds[tileIndex] = tile.MaterialId;
+			}
+		}*/
 	}
 	
 	// Fast inline index helper mapping local 2D space to 1D space
