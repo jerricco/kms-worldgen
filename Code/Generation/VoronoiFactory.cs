@@ -48,7 +48,6 @@ public sealed class VoronoiFactory
         MacroBayFrequency = Generator.Rng.NextRangeDouble(0.002d, 0.005d);
         MacroBayIntensity = Generator.Rng.NextRangeDouble(0.20d, 0.35d);
 
-        // @DEBUG
         Log.Info( $"Tectonic spine generating with settings..." );
         Log.Info( $"======== Continental Fragmentation Factor: {ContinentalFragmentationFactor}" );
 		Log.Info( $"======== Bay Frequency: {MacroBayFrequency.ToString( "F3" )}" );
