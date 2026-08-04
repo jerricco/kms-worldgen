@@ -62,6 +62,29 @@ public class Sfc32
         uint range = (uint)(max - min);
         return (int)(min + (NextUInt() % range));
     }
+
+    /// <summary>
+    /// Returns a random float between min (inclusive) and max (exclusive).
+    /// </summary>
+    public float NextRangeFloat(float min, float max)
+    {
+        if (min >= max) return min;
+
+        float range = (float)(max - min);
+        return (float)(min + (NextUInt() % range));
+    }
+    
+    
+    /// <summary>
+    /// Returns a random double between min (inclusive) and max (exclusive).
+    /// </summary>
+    public double NextRangeDouble(double min, double max)
+    {
+	    if (min >= max) return min;
+
+	    double range = max - min;
+	    return min + NextUInt() % range;
+    }
 }
 
 public static class Sfc32Extensions 

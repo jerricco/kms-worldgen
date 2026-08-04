@@ -14,12 +14,9 @@ public sealed class GenerationSettings
     [Property] public int WorldWidth    { get; set; } = 12800;
     [Property] public int WorldHeight   { get; set; } = 12800;
     [Property] public int CellGridSize  { get; set; } = 400;
-    [Property] public float ChunkGridSize  { get; set; } = 50f;
+    [Property] public int ChunkGridSize  { get; set; } = 50;
     
     // Map generation modifiers
-    [Property] public float ContinentalFragFactor  { get; set; } = 0.45f;
-    [Property] public float MacroBayFrequency  { get; set; } = 0.0035f;
-    [Property] public float MacroBayIntensity  { get; set; } = 0.28f;
     [Property] public float OceanClamp  { get; set; } = 0.85f;
     [Property] public float MacroScale  { get; set; } = 0.0045f;
     [Property] public float SquishFactor  { get; set; } = 1.0f;
@@ -42,13 +39,14 @@ public sealed class GenerationSettings
     // --- COMPUTED PROPERTIES --- //
     // dimensionality
     [Property] public int TotalTiles => WorldWidth * WorldHeight;
-    [Property] public float TotalChunks => TotalTiles / ChunkGridSize;
-    [Property] public float HalfWidth => WorldWidth / 2;
-    [Property] public float HalfHeight => WorldHeight / 2;
+    [Property] public int MaxDimension => Math.Max(WorldWidth, WorldHeight);
+    [Property] public int TotalChunks => TotalTiles / ChunkGridSize;
+    [Property] public int HalfWidth => WorldWidth / 2;
+    [Property] public int HalfHeight => WorldHeight / 2;
 
     // randomisation
-    [Property] public float CosA => 0.0f;
-    [Property] public float SinA => 0.0f;
-    [Property] public float OffsetX => 0.0f;
-    [Property] public float OffsetY => 0.0f;
+    [Property] public double CosA => 0.0d;
+    [Property] public double SinA => 0.0d;
+    [Property] public int OffsetX => 0;
+    [Property] public int OffsetY => 0;
 }

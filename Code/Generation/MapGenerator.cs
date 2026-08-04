@@ -13,8 +13,8 @@ public sealed class MapGenerator : Component
     [Property] public double CosA;
     [Property] public double SinA;
 
-    [Property, Hide] private Sfc32 RNG;
-    [Property, Hide] private OpenSimplexNoise Noise;
+    [Property, Hide] public Sfc32 Rng;
+    [Property, Hide] public OpenSimplexNoise Noise;
 
     [Property, Hide] private VoronoiFactory Voronoi { get; set; }
 
@@ -29,15 +29,13 @@ public sealed class MapGenerator : Component
 
         // create helpers
         Seed = Sfc32Extensions.ToSeed(Settings.SeedText);
-        RNG = new Sfc32(Seed);
-        Noise = new OpenSimplexNoise(RNG);
-        // @TODO: Create a NextRangeDouble which accepts float or double for this.
-        // this casting seems to be rounding the radians to whole numbers.
-        RandomAngle = RNG.NextRange(0, (int)Math.PI * 2); // uh..is this cast ok to do?
+        Rng = new Sfc32(Seed);
+        Noise = new OpenSimplexNoise(Rng);
+        RandomAngle = Rng.NextRangeDouble(0, Math.PI * 2d);
         CosA = Math.Cos(RandomAngle);
         SinA = Math.Sin(RandomAngle);
-        OffsetX = RNG.NextRange(10000, 90000);
-        OffsetY = RNG.NextRange(10000, 90000);
+        OffsetX = Rng.NextRange(10000, 90000);
+        OffsetY = Rng.NextRange(10000, 90000);
     }
 
     protected override void OnUpdate()
@@ -48,7 +46,7 @@ public sealed class MapGenerator : Component
     public void Generate()
     {
         Log.Info("Starting Level Generation...");
-        Voronoi = new VoronoiFactory(Settings);
+        Voronoi = new VoronoiFactory(Settings, this);
         // for (int x = 0; x < Settings.WorldWidth; x++)
         // {
         //     for (int y = 0; Y < Settings.WorldHeight; y++)
@@ -57,5 +55,16 @@ public sealed class MapGenerator : Component
         //     }
 
         // }
+    }
+
+    public (double sampleX, double sampleY) SampleWarpedDomain(double x, double y)
+    {
+        double warpX = Noise.Evaluate((x + 200d) * 0.018d, (y + 200d) * 0.018d) * 45d;
+        double warpY = Noise.Evaluate((x - 200d) * 0.018d, (y - 200d) * 0.018d) * 45d;
+
+        double sampleX = (x + OffsetX + warpX) * Settings.MacroScale;
+        double sampleY = (y + OffsetY + warpY) * Settings.MacroScale;
+
+        return ( sampleX, sampleY );
     }
 }

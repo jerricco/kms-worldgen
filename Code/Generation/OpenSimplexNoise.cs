@@ -16,7 +16,7 @@ public class OpenSimplexNoise
          5, -2,    2, -5,   -5, -2,   -2, -5
     };
 
-    public OpenSimplexNoise(Sfc32 RNG)
+    public OpenSimplexNoise(Sfc32 Rng)
     {
         perm = new short[256];
         short[] source = new short[256];
@@ -24,7 +24,7 @@ public class OpenSimplexNoise
 
         for (int i = 255; i >= 0; i--)
         {
-            int r = RNG.NextRange(0, i + 1);
+            int r = Rng.NextRange(0, i + 1);
             perm[i] = source[r];
             source[r] = source[i];
         }
