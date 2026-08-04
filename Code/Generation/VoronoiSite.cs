@@ -1,6 +1,6 @@
 using Sandbox;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public record VoronoiSite
 {

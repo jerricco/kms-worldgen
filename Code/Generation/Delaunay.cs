@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Sandbox;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public class Delaunay
 {

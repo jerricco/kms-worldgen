@@ -1,6 +1,6 @@
 using System;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public class Sfc32
 {
@@ -71,7 +71,7 @@ public class Sfc32
         if (min >= max) return min;
 
         float range = (float)(max - min);
-        return (float)(min + (NextUInt() % range));
+        return (float)(min + (NextFloat() % range));
     }
     
     
@@ -83,7 +83,7 @@ public class Sfc32
 	    if (min >= max) return min;
 
 	    double range = max - min;
-	    return min + NextUInt() % range;
+	    return min + NextFloat() % range;
     }
 }
 

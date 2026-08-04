@@ -1,6 +1,6 @@
 using System;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 [Serializable]
 public sealed class GenerationSettings

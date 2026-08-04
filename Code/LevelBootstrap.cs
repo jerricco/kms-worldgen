@@ -1,6 +1,7 @@
-using Sandbox;
+using Sandbox.Generation;
 
-namespace Aeons;
+namespace Sandbox;
+
 public sealed class LevelBootstrap : Component
 {
     [Property] public MapGenerator Generator { get; set; }
@@ -10,7 +11,7 @@ public sealed class LevelBootstrap : Component
     {
         Log.Info($"Scene for seed '{Settings.SeedText}' starting...");
         Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
-        Generator.Generate();
+        Generator?.Generate();
     }
 	protected override void OnUpdate()
 	{

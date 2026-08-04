@@ -1,7 +1,8 @@
 using Sandbox;
 using System;
+using Sandbox;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public sealed class VoronoiFactory
 {
@@ -12,15 +13,16 @@ public sealed class VoronoiFactory
     private double MacroBayFrequency { get; set; }
     private double MacroBayIntensity { get; set; }
 
-    private List<VoronoiSite> Sites;
+    public List<VoronoiSite> Sites;
+    public List<Delaunay.Triangle> DelaunayMesh;
+    
     private List<Vector2> PlateCenters;
     private List<double> PlateElevationBiases;
-    private List<Delaunay.Triangle> DelaunayMesh;
 
-    public VoronoiFactory(GenerationSettings GenSettings, MapGenerator Gen)
+    public VoronoiFactory(GenerationSettings generationSettingsSettings, MapGenerator mapGenerator)
     {
-        Settings = GenSettings;
-        Generator = Gen;
+        Settings = generationSettingsSettings;
+        Generator = mapGenerator;
     }
 
     public void Generate()
@@ -28,6 +30,8 @@ public sealed class VoronoiFactory
         BuildTectonicSpine();
         BuildVoronoiSites();
         BuildDelaunay(); // @DEBUG
+        
+        Log.Info( "Voronoi generation complete!" );
     }
 
     /**
@@ -45,7 +49,10 @@ public sealed class VoronoiFactory
         MacroBayIntensity = Generator.Rng.NextRangeDouble(0.20d, 0.35d);
 
         // @DEBUG
-        Log.Info($"Tectonic Spine Settings: {ContinentalFragmentationFactor}, {MacroBayFrequency}, {MacroBayIntensity}");
+        Log.Info( $"Tectonic spine generating with settings..." );
+        Log.Info( $"======== Continental Fragmentation Factor: {ContinentalFragmentationFactor}" );
+		Log.Info( $"======== Bay Frequency: {MacroBayFrequency.ToString( "F3" )}" );
+		Log.Info( $"======== Bay Intensity: {MacroBayIntensity.ToString("F3")}" );
 
         int tectonicPlateCount = Generator.Rng.NextRange(6, 9);
         double spineAngle = Generator.Rng.NextRangeDouble(0d, Math.PI * 2d);
@@ -69,7 +76,10 @@ public sealed class VoronoiFactory
             PlateElevationBiases.Add(plateElevationBias);
         }
 
-        Log.Info("Tectonic Spine Generated");
+        Log.Info($"Tectonic spine with {PlateCenters.Count} tectonic plates generated.");
+        Log.Info( $"======== Overall spine angle: {spineAngle.ToString("F3")} radian" );
+        Log.Info( $"======== X spine direction: {spineDirectionX.ToString("F3")} radian" );
+        Log.Info( $"======== Y spine direction: {spineDirectionY.ToString("F3")} radian" );
     }
 
     /**
@@ -132,6 +142,7 @@ public sealed class VoronoiFactory
     */
     private void BuildVoronoiSites()
     {
+	    Sites = new List<VoronoiSite>();
         // @TODO These two values should be a setting in GenerationSettings??
         // - 30 -> Settings.MinVoronoiGridSize
         // - Settings.ChunkGridSize ->(add) Settings.VoronoiGridSize
@@ -142,16 +153,23 @@ public sealed class VoronoiFactory
         int attempts = 0;
         int maxAttempts = targetPoints * 12;
 
-        while (Sites.Count < targetPoints && attempts < maxAttempts)
+        Log.Info( $"Building voronoi site list..." );
+        Log.Info( $"======== Site spacing: {baseSpacing}" );
+        Log.Info( $"======== Target points: {targetPoints}" );
+        Log.Warning( $"======== Builder will only attempt a max of {maxAttempts} times!" );
+        
+        /*while (Sites.Count < targetPoints && attempts < maxAttempts)*/
+        while (Sites.Count < targetPoints && attempts < maxAttempts) // @DEBUG - must see what's crashing this
         {
 	        attempts++;
 
-            long rotX = -Settings.HalfWidth + (Generator.Rng.NextUInt() * Settings.WorldWidth);
-            long rotY = -Settings.HalfHeight + (Generator.Rng.NextUInt() * Settings.WorldHeight);
+            float rotX = -Settings.HalfWidth + (Generator.Rng.NextFloat() * Settings.WorldWidth);
+            float rotY = -Settings.HalfHeight + (Generator.Rng.NextFloat() * Settings.WorldHeight);
+            
             (double landChance, int closestPlateId) densityField = EvaluateGeologicalField(rotX, rotY);
             double acceptanceProbability = double.Lerp(0.012d, 1.0d, Math.Pow(densityField.landChance, 1.2d));
 
-            if (Generator.Rng.NextUInt() > acceptanceProbability) continue;
+            if (Generator.Rng.NextFloat() > acceptanceProbability) continue;
 
             // twist displacement
             double twistFrequency = 1.0 / (baseSpacing * 5.0);
@@ -168,7 +186,7 @@ public sealed class VoronoiFactory
 
             (double landChance, int closestPlateId) finalField = EvaluateGeologicalField(finalX, finalY);
             bool isOceanic = finalField.landChance < 0.42d; // @TODO: I should figure out how this lever relates to other values
-            double baseElevation = Settings.SeaLevel;
+            double baseElevation;
 
             if (isOceanic)
             {
@@ -200,8 +218,26 @@ public sealed class VoronoiFactory
 
             Sites.Add(localSite);
         }
+        
+        
+        Log.Info( $"Created {Sites.Count} voronoi sites." );
     }
 
-    
-    private void BuildDelaunay() {}
+    /**
+     * PASS 3: TRIANGULATION
+     * Create a Delaunay triangle array from the generated Vector2 points in Sites.
+     * This is largely only useful for rendering a debug overlay of Voronoi sites.
+    */
+    private void BuildDelaunay()
+    {
+	    Log.Info( $"Building delaunay for {Sites.Count} objects." );
+	    List<Vector2> flatCoordinates = new List<Vector2>();
+	    for ( int i = 0; i < Sites.Count; i++ )
+	    {
+		    flatCoordinates.Add(new Vector2(Sites[i].Position.x, Sites[i].Position.y));
+	    }
+	    
+	    Log.Info( $"Triangulating delaunay for {flatCoordinates.Count} sites." );
+	    DelaunayMesh = Delaunay.Triangulate(flatCoordinates);
+    }
 }

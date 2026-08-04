@@ -1,31 +1,31 @@
 using System;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public class OpenSimplexNoise
 {
-    private const double STRETCH_CONSTANT_2D = -0.211324865405187; // (1 / Math.Sqrt(2 + 1) - 1) / 2
-    private const double SQUISH_CONSTANT_2D = 0.366025403784439;  // (Math.Sqrt(2 + 1) - 1) / 2
-    private const double NORM_CONSTANT_2D = 47.0;
+    private const double StretchConstant2D = -0.211324865405187; // (1 / Math.Sqrt(2 + 1) - 1) / 2
+    private const double SquishConstant2D = 0.366025403784439;  // (Math.Sqrt(2 + 1) - 1) / 2
+    private const double NormConstant2D = 47.0;
 
-    private readonly short[] perm;
+    private readonly short[] _perm;
 
     // Gradients for 2D OpenSimplex
-    private static readonly sbyte[] gradients2D = {
+    private static readonly sbyte[] Gradients2D = {
          5,  2,    2,  5,   -5,  2,   -2,  5,
          5, -2,    2, -5,   -5, -2,   -2, -5
     };
 
-    public OpenSimplexNoise(Sfc32 Rng)
+    public OpenSimplexNoise(Sfc32 rng)
     {
-        perm = new short[256];
+	    _perm = new short[256];
         short[] source = new short[256];
         for (short i = 0; i < 256; i++) source[i] = i;
 
         for (int i = 255; i >= 0; i--)
         {
-            int r = Rng.NextRange(0, i + 1);
-            perm[i] = source[r];
+            int r = rng.NextRange(0, i + 1);
+            _perm[i] = source[r];
             source[r] = source[i];
         }
     }
@@ -33,7 +33,7 @@ public class OpenSimplexNoise
     public double Evaluate(double x, double y)
     {
         // Place input coordinates onto grid
-        double stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
+        double stretchOffset = (x + y) * StretchConstant2D;
         double xs = x + stretchOffset;
         double ys = y + stretchOffset;
 
@@ -42,7 +42,7 @@ public class OpenSimplexNoise
         int ysb = (int)Math.Floor(ys);
 
         // Skew back to relative internal coordinates
-        double squishOffset = (xsb + ysb) * SQUISH_CONSTANT_2D;
+        double squishOffset = (xsb + ysb) * SquishConstant2D;
         double xb = xsb + squishOffset;
         double yb = ysb + squishOffset;
 
@@ -63,19 +63,19 @@ public class OpenSimplexNoise
         if (attn0 > 0)
         {
             attn0 *= attn0;
-            hash = perm[(perm[xsb & 0xFF] + ysb) & 0xFF] & 0x0E;
-            value += attn0 * attn0 * (gradients2D[(int)hash] * x0 + gradients2D[(int)hash + 1] * y0);
+            hash = _perm[(_perm[xsb & 0xFF] + ysb) & 0xFF] & 0x0E;
+            value += attn0 * attn0 * (Gradients2D[(int)hash] * x0 + Gradients2D[(int)hash + 1] * y0);
         }
 
         // Contribution from second corner (1,1)
-        double x1 = x0 - 1.0 - 2.0 * SQUISH_CONSTANT_2D;
-        double y1 = y0 - 1.0 - 2.0 * SQUISH_CONSTANT_2D;
+        double x1 = x0 - 1.0 - 2.0 * SquishConstant2D;
+        double y1 = y0 - 1.0 - 2.0 * SquishConstant2D;
         double attn1 = 2 - x1 * x1 - y1 * y1;
         if (attn1 > 0)
         {
             attn1 *= attn1;
-            hash = perm[(perm[(xsb + 1) & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
-            value += attn1 * attn1 * (gradients2D[(int)hash] * x1 + gradients2D[(int)hash + 1] * y1);
+            hash = _perm[(_perm[(xsb + 1) & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
+            value += attn1 * attn1 * (Gradients2D[(int)hash] * x1 + Gradients2D[(int)hash + 1] * y1);
         }
 
         // Contribution from the remaining internal corner points
@@ -84,26 +84,26 @@ public class OpenSimplexNoise
             // Inside the (0,0)-(1,0)-(0,1) triangle
             if (xins > yins)
             {
-                double x2 = x0 - 1.0 - SQUISH_CONSTANT_2D;
-                double y2 = y0 - SQUISH_CONSTANT_2D;
+                double x2 = x0 - 1.0 - SquishConstant2D;
+                double y2 = y0 - SquishConstant2D;
                 double attn2 = 2 - x2 * x2 - y2 * y2;
                 if (attn2 > 0)
                 {
                     attn2 *= attn2;
-                    hash = perm[(perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
-                    value += attn2 * attn2 * (gradients2D[(int)hash] * x2 + gradients2D[(int)hash + 1] * y2);
+                    hash = _perm[(_perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
+                    value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
                 }
             }
             else
             {
-                double x2 = x0 - SQUISH_CONSTANT_2D;
-                double y2 = y0 - 1.0 - SQUISH_CONSTANT_2D;
+                double x2 = x0 - SquishConstant2D;
+                double y2 = y0 - 1.0 - SquishConstant2D;
                 double attn2 = 2 - x2 * x2 - y2 * y2;
                 if (attn2 > 0)
                 {
                     attn2 *= attn2;
-                    hash = perm[(perm[xsb & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
-                    value += attn2 * attn2 * (gradients2D[(int)hash] * x2 + gradients2D[(int)hash + 1] * y2);
+                    hash = _perm[(_perm[xsb & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
+                    value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
                 }
             }
         }
@@ -112,30 +112,30 @@ public class OpenSimplexNoise
             // Inside the (1,1)-(1,0)-(0,1) triangle
             if (xins < yins)
             {
-                double x2 = x0 + SQUISH_CONSTANT_2D;
-                double y2 = y0 - 1.0 + SQUISH_CONSTANT_2D;
+                double x2 = x0 + SquishConstant2D;
+                double y2 = y0 - 1.0 + SquishConstant2D;
                 double attn2 = 2 - x2 * x2 - y2 * y2;
                 if (attn2 > 0)
                 {
                     attn2 *= attn2;
-                    hash = perm[(perm[xsb & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
-                    value += attn2 * attn2 * (gradients2D[(int)hash] * x2 + gradients2D[(int)hash + 1] * y2);
+                    hash = _perm[(_perm[xsb & 0xFF] + (ysb + 1)) & 0xFF] & 0x0E;
+                    value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
                 }
             }
             else
             {
-                double x2 = x0 - 1.0 + SQUISH_CONSTANT_2D;
-                double y2 = y0 + SQUISH_CONSTANT_2D;
+                double x2 = x0 - 1.0 + SquishConstant2D;
+                double y2 = y0 + SquishConstant2D;
                 double attn2 = 2 - x2 * x2 - y2 * y2;
                 if (attn2 > 0)
                 {
                     attn2 *= attn2;
-                    hash = perm[(perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
-                    value += attn2 * attn2 * (gradients2D[(int)hash] * x2 + gradients2D[(int)hash + 1] * y2);
+                    hash = _perm[(_perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
+                    value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
                 }
             }
         }
 
-        return value / NORM_CONSTANT_2D;
+        return value / NormConstant2D;
     }
 }

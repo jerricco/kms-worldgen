@@ -1,6 +1,6 @@
 using Sandbox;
 
-namespace Aeons;
+namespace Sandbox.Generation;
 
 public sealed class ChunkFactory : Component
 {

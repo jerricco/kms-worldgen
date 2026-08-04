@@ -1,6 +1,6 @@
 @using Sandbox;
 @using Sandbox.UI;
-@using Aeons;
+@using Sandbox.Generation;
 @inherits PanelComponent
 @namespace Sandbox
 
@@ -156,12 +156,16 @@
         base.OnStart();
         // get the active settings component
         Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
+        if ( Generator != null )
+        {
+	        Settings = Generator.Settings;
+        }
     }
 
 	/// <summary>
 	/// the hash determines if the system should be rebuilt. If it changes, it will be rebuilt
 	/// </summary>
 	protected override int BuildHash() {
-        return System.HashCode.Combine(Settings, Generator);
+        return System.HashCode.Combine(Settings, Generator, Generator?.Settings);
     }
 }

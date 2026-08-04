@@ -1,5 +1,6 @@
 MapDebugScreen
 {
+    display: none; // @TEMP: This debug screen isn't needed right now, but will be at a certain point
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -7,7 +8,7 @@ MapDebugScreen
 	background-color: #444;
     opacity: 0.8;
 	border-radius: 12px;
-    display: flex;
+    // display: flex;
     flex-direction: column;
 
     .debug-menu {
