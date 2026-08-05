@@ -1,10 +1,11 @@
 using System;
+using Sandbox.Triangulation;
 
 namespace Sandbox.Generation;
 
 public sealed class MapGenerator : Component
 {
-    [Property] public GenerationSettings Settings { get; set; }
+	[Property] public GenerationSettings Settings { get; set; }
     [Property] public double RandomAngle { get; set; }
     [Property] public int OffsetX { get; set; }
     [Property] public int OffsetY { get; set; }
@@ -14,37 +15,19 @@ public sealed class MapGenerator : Component
     public Prng Rng { get; set; }
     public OpenSimplexNoise Noise { get; set; }
     public VoronoiFactory Voronoi { get; set; }
-    
-    [Property, ReadOnly] private bool _drawDelaunay = false;
 
     private Dictionary<Vector2, Chunk> _chunks;
+    // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
+    // of tile chunks.
+    private int _chunksToInitialiseWith => Settings.MaxDimension / Settings.ChunkGridSize;
 
     // When a map generator is invoked, it should immediately begin the generation.
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
     // @TODO: this should be preceeded with a game menu to invoke the generation and save/load specific generations from disk.
     protected override void OnStart()
     {
-        if (Settings == null) {
-            throw new InvalidOperationException("Critical GenerationSettings object could not be loaded");
-        }
-
-        // create helpers
-        Rng = new Prng(Settings.SeedText);
-        Noise = new OpenSimplexNoise(Rng);
-        RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
-        CosA = Math.Cos(RandomAngle);
-        SinA = Math.Sin(RandomAngle);
-        OffsetX = Rng.NextRange(10000, 90000);
-        OffsetY = Rng.NextRange(10000, 90000);
+        Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
     }
-
-    protected override void OnUpdate()
-    {
-	    if ( _drawDelaunay )
-	    {
-		    DrawDelaunay();
-	    }
-}
 
     // @TODO: The save file should determine the List<Vector2> of places to do
     // default chunk revealing from, since 0,0 always gets its initial 32 chunk generation.
@@ -54,13 +37,23 @@ public sealed class MapGenerator : Component
     // Generate so that alternate start locations on a map can be given.
     public void Generate()
     {
+	    Log.Info($"Randomising player-readonly configuration properties");
+	    // create helpers - future steps of generation will always need to share these
+	    Rng = new Prng(Settings.SeedText);
+	    Noise = new OpenSimplexNoise(Rng);
+	    RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
+	    CosA = Math.Cos(RandomAngle);
+	    SinA = Math.Sin(RandomAngle);
+	    OffsetX = Rng.NextRange(10000, 90000);
+	    OffsetY = Rng.NextRange(10000, 90000);
+	    
         Log.Info($"Starting level generation with seed  {Settings.SeedText}...");
-        Voronoi = new VoronoiFactory(Settings, this);
         Voronoi.Generate();
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
         /*_chunks = new Dictionary<Vector2, Chunk>();
         UpdateChunkRadius( 0, 0 , 1);*/
+        // UpdateChunkRadius( 0, 0, _chunksToInitialiseWith ) // @TODO: fuck around with this
     }
     
     // Generate a number of individual chunks in a radius around the given point.
@@ -122,33 +115,5 @@ public sealed class MapGenerator : Component
 	    // Remaining aretifacts are self-cleaning
 	    Generate();
 
-    }
-    
-    // @DEBUG - Use these methods to show the current Delaunay triangulation on-screen.
-    private void DrawDelaunay()
-    {
-	    if (Voronoi == null || Voronoi.DelaunayMesh == null || Voronoi.DelaunayMesh.Triangles.Length == 0 )
-	    {
-		    return; // stop rendering immediately if the mesh count doesn't exist
-	    }
-	    Log.Info("Trying to draw delaunay");
-
-	    /*foreach ( Triangulation.Triangle triangle in Voronoi.DelaunayMesh )
-	    {*/
-		    // $TODO: fix w/ Delaunator
-		    /*Vector3 a3D = new Vector3( triangle.A.x, triangle.A.y, 0 );
-		    Vector3 b3D = new Vector3( triangle.B.x, triangle.B.y, 0 );
-		    Vector3 c3D = new Vector3( triangle.C.x, triangle.C.y, 0 );
-		    
-		    DebugOverlay.Line( a3D, b3D, Color.Magenta, 0f );
-		    DebugOverlay.Line( b3D, c3D, Color.Magenta, 0f );
-		    DebugOverlay.Line( c3D, a3D, Color.Magenta, 0f );*/
-	    /*}*/
-    }
-
-    [Button( "Draw Voronoi Cells " )]
-    public void ToggleDrawDelaunay()
-    {
-	    _drawDelaunay = !_drawDelaunay;
     }
 }

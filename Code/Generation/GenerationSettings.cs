@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 
 namespace Sandbox.Generation;
 
-[Serializable]
-public sealed class GenerationSettings
+[AssetType(Name = "Generation Settings", Extension = "genconf", Category = "Configuration")]
+public partial class GenerationSettings : GameResource
 {
     // --- STATIC(ISH) PROPERTIES --- //
 
@@ -32,7 +32,7 @@ public sealed class GenerationSettings
     [Property] public float BeachLevel { get; set; } = 0.03f;
     [Property] public float PlainLevel { get; set; } = 0.48f;
     [Property] public float HillLevel { get; set; } = 0.68f;
-    [Property] public float MointainLevel { get; set; } = 0.82f;
+    [Property] public float MountainLevel { get; set; } = 0.82f;
     [Property] public float PeakLevel { get; set; } = 0.95f;
 
 
@@ -43,10 +43,10 @@ public sealed class GenerationSettings
     [Property] public int TotalChunks => TotalTiles / ChunkGridSize;
     [Property] public int HalfWidth => WorldWidth / 2;
     [Property] public int HalfHeight => WorldHeight / 2;
-
-    // randomisation
-    [Property] public double CosA => 0.0d;
-    [Property] public double SinA => 0.0d;
-    [Property] public int OffsetX => 0;
-    [Property] public int OffsetY => 0;
+    
+    // resource visual icon
+    protected override Bitmap CreateAssetTypeIcon( int width, int height )
+    {
+	    return CreateSimpleAssetTypeIcon( "landscape", width, height, "#fdea60", "black" );
+    }
 }

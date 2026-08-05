@@ -1,28 +1,37 @@
-using Sandbox;
 using System;
 using Sandbox.Triangulation;
 
 namespace Sandbox.Generation;
 
-public sealed class VoronoiFactory
+public sealed class VoronoiFactory : Component
 {
-    private GenerationSettings Settings { get; set; }
-    private MapGenerator Generator { get; set; }
+	[Property] public GenerationSettings Settings { get; set;  }
+	[Property, ReadOnly] private MapGenerator Generator { get; set;  }
 
-    private double ContinentalFragmentationFactor { get; set; }
-    private double MacroBayFrequency { get; set; }
-    private double MacroBayIntensity { get; set; }
+    [Property] private double ContinentalFragmentationFactor { get; set; }
+    [Property] private double MacroBayFrequency { get; set; }
+    [Property] private double MacroBayIntensity { get; set; }
 
-    public List<VoronoiSite> Sites;
-    public Delaunator DelaunayMesh;
+    public Delaunator Delaunay;
+    public List<DelaunayChunk> DelaunayChunks = new();
     
-    private List<Vector2> PlateCenters;
-    private List<double> PlateElevationBiases;
+    private List<VoronoiSite> _voronoiSites;
+    private List<Vector2> _plateCenters;
+    private List<double> _plateElevationBiases;
+    
+    [Property, ReadOnly] private bool _drawDelaunay = false;
 
-    public VoronoiFactory(GenerationSettings generationSettingsSettings, MapGenerator mapGenerator)
+    protected override void OnStart()
     {
-        Settings = generationSettingsSettings;
-        Generator = mapGenerator;
+		Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
+    }
+    
+    protected override void OnUpdate()
+    {
+	    if ( _drawDelaunay )
+	    {
+		    DrawDelaunay();
+	    }
     }
 
     public void Generate()
@@ -41,8 +50,8 @@ public sealed class VoronoiFactory
     */
     private void BuildTectonicSpine()
     {
-        PlateCenters = [];
-        PlateElevationBiases = [];
+	    _plateCenters = [];
+	    _plateElevationBiases = [];
 
         ContinentalFragmentationFactor = Generator.Rng.NextRangeDouble(0.35d, 0.60d);
         MacroBayFrequency = Generator.Rng.NextRangeDouble(0.002d, 0.005d);
@@ -70,11 +79,11 @@ public sealed class VoronoiFactory
             Vector2 platePosition = new Vector2((float)px, (float)py);
             double plateElevationBias = Generator.Rng.NextRangeDouble(-0.15d, 0.45d);
 
-            PlateCenters.Add(platePosition);
-            PlateElevationBiases.Add(plateElevationBias);
+            _plateCenters.Add(platePosition);
+            _plateElevationBiases.Add(plateElevationBias);
         }
 
-        Log.Info($"Tectonic spine with {PlateCenters.Count} tectonic plates generated.");
+        Log.Info($"Tectonic spine with {_plateCenters.Count} tectonic plates generated.");
         Log.Info( $"======== Overall spine angle: {spineAngle.ToString("F3")} radian" );
         Log.Info( $"======== X spine direction: {spineDirectionX.ToString("F3")} radian" );
         Log.Info( $"======== Y spine direction: {spineDirectionY.ToString("F3")} radian" );
@@ -99,10 +108,10 @@ public sealed class VoronoiFactory
 
         int closestPlateId = 0;
         double minPlateDistanceSq = double.PositiveInfinity;
-        for (int p = 0; p < PlateCenters.Count; p++)
+        for (int p = 0; p < _plateCenters.Count; p++)
         {
-            double dx = x - PlateCenters[p].x;
-            double dy = y - PlateCenters[p].y;
+            double dx = x - _plateCenters[p].x;
+            double dy = y - _plateCenters[p].y;
             double distSq = dx * dx + dy * dy; 
             if (distSq < minPlateDistanceSq)
             {
@@ -140,7 +149,7 @@ public sealed class VoronoiFactory
     */
     private void BuildVoronoiSites()
     {
-	    Sites = new List<VoronoiSite>();
+	    _voronoiSites = new List<VoronoiSite>();
         // @TODO These two values should be a setting in GenerationSettings??
         // - 30 -> Settings.MinVoronoiGridSize
         // - Settings.ChunkGridSize ->(add) Settings.VoronoiGridSize
@@ -156,7 +165,7 @@ public sealed class VoronoiFactory
         Log.Info( $"======== Target points: {targetPoints}" );
         Log.Warning( $"======== Builder will only attempt a max of {maxAttempts} times!" );
         
-        while (Sites.Count < targetPoints && attempts < maxAttempts)
+        while (_voronoiSites.Count < targetPoints && attempts < maxAttempts)
         {
 	        attempts++;
 
@@ -194,14 +203,14 @@ public sealed class VoronoiFactory
                 double trenchFactor = Math.Pow(trueRatio, 1.8d);
                 // grade the ocean smoothly to Settings.AbyssalLevel
                 baseElevation = double.Lerp(Settings.SeaLevel - 0.05d, Settings.AbyssalLevel, trenchFactor)
-                                + (PlateElevationBiases[finalField.closestPlateId] * 0.08d);
+                                + (_plateElevationBiases[finalField.closestPlateId] * 0.08d);
             } else
             {
                 // force values to distribute smoothly up through Settings.HillLevel and Settigns.MountainLevel
                 double landProgress = (finalField.landChance - 0.42d) / 0.58d; // @TODO: ???? this feels off.
                 double exponentialRise = Math.Pow(landProgress, 1.6d);
                 baseElevation = double.Lerp(Settings.SeaLevel + 0.02d, Settings.PeakLevel, exponentialRise)
-                                + (PlateElevationBiases[finalField.closestPlateId]) * 0.15d;
+                                + (_plateElevationBiases[finalField.closestPlateId]) * 0.15d;
             }
 
             VoronoiSite localSite = new VoronoiSite()
@@ -213,23 +222,112 @@ public sealed class VoronoiFactory
                 BaseElevation = Math.Max(-1.0, Math.Min(1.0, baseElevation))
             };
 
-            Sites.Add(localSite);
+            _voronoiSites.Add(localSite);
         }
         
         
-        Log.Info( $"Created {Sites.Count} voronoi sites." );
+        Log.Info( $"Created {_voronoiSites.Count} voronoi sites." );
     }
 
     /**
      * PASS 3: TRIANGULATION
      * Create a Delaunay triangle array from the generated Vector2 points in Sites.
-     * This is largely only useful for rendering a debug overlay of Voronoi sites.
+     * This is largely only useful currently for rendering a debug overlay of Voronoi sites.
+     * Once I understand Delaunay more, I may be able to utilise it better for generation.
     */
     private void BuildDelaunay()
     {
-	    IPoint[] delaunayPoints = Sites.Select(s => (IPoint)new Point(s.Position.x, s.Position.y)).ToArray();
-	    Log.Info( $"Triangulating delaunay for {delaunayPoints.Length} sites." );
-	    DelaunayMesh = new Delaunator(delaunayPoints);
-	    Log.Info( $"Delaunay populated with {DelaunayMesh.Triangles.Length} triangles."  );
+	    IPoint[] delaunayPoints = _voronoiSites.Select(s => (IPoint)new Point(s.Position.x, s.Position.y)).ToArray();
+	    
+	    // Do triangulation
+	    Log.Info( $"Delaunay triangulation for {delaunayPoints.Length} Voronoi sites." );
+	    Delaunay = new Delaunator(delaunayPoints);
+	    Log.Info( $"{Delaunay.Triangles.Length} triangles created."  );
+	    
+	    // Chunk the Delaunay space
+	    Log.Info( $"Dividing the Delaunay triangles into grid sections {Settings.CellGridSize} wide." );
+	    BuildSpatialDelaunayGrid();
+	    Log.Info( $"Spatial delaunay grid created with {DelaunayChunks.Count} chunks." );
+    }
+
+    // Divides the Delaunay triangle space into chunks so that we can ensure much faster checking of frustum bounds
+    // when trying to do anything with rendering or scanning wide portions of the tesselation space.
+    private void BuildSpatialDelaunayGrid()
+    {
+	    DelaunayChunks.Clear();
+	    var grid = new Dictionary<Vector2, DelaunayChunk>();
+	    var d = Delaunay;
+	    var chunkSize = Settings.CellGridSize;
+	    
+	    for ( int i = 0; i < d.Triangles.Length; i += 3 )
+	    {
+		    IPoint pA = d.Points[d.Triangles[i]];
+		    IPoint pB = d.Points[d.Triangles[i + 1]];
+		    IPoint pC = d.Points[d.Triangles[i + 2]];
+		    
+		    Vector3 a3D = new Vector3( (float)pA.X, (float)pA.Y, 0 );
+		    Vector3 b3D = new Vector3( (float)pB.X, (float)pB.Y, 0 );
+		    Vector3 c3D = new Vector3( (float)pC.X, (float)pC.Y, 0 );
+		    
+		    // Calculate a center point for the triangle to determine its grid cell based on the original
+		    // CellGridSize provided to generate the tectonic voronoi spine.
+		    Vector3 center = (a3D + b3D + c3D) / 3f;
+		    Vector2 gridPos = new Vector2( MathF.Floor(center.x / chunkSize), MathF.Floor(center.y / chunkSize) );
+		    
+		    if ( !grid.TryGetValue( gridPos, out var chunk ) )
+		    {
+			    chunk = new DelaunayChunk { 
+				    ChunkBounds = BBox.FromPositionAndSize( a3D, 0f ), 
+				    TriangleIndices = new List<int>() 
+			    };
+		    }
+		    
+		    chunk.ChunkBounds = chunk.ChunkBounds.AddPoint( a3D ).AddPoint( b3D ).AddPoint( c3D );
+		    chunk.TriangleIndices.Add( i );
+        
+		    grid[gridPos] = chunk;
+	    }
+	    
+	    DelaunayChunks = grid.Values.ToList();
+    }
+    
+    // @DEBUG - Use these methods to show the current Delaunay triangulation on-screen.
+    private void DrawDelaunay()
+    {
+	    // stop rendering immediately if the mesh count doesn't exist
+	    if (Delaunay == null || Delaunay.Triangles.Length == 0 ) return; 
+	    
+	    // stop rendering if no camera exists
+	    var camera = Scene.Camera;
+	    if (camera == null) return;
+	    
+	    // get the current frustum to ensure it only draws voronoi in the screen bounds.
+	    var frustum = camera.GetFrustum( camera.ScreenRect, Screen.Size );
+
+	    foreach ( var chunk in DelaunayChunks )
+	    {
+		    if (!frustum.IsInside( chunk.ChunkBounds, true )) continue;
+
+		    foreach ( int i in chunk.TriangleIndices )
+		    {
+			    IPoint pA = Delaunay.Points[Delaunay.Triangles[i]];
+			    IPoint pB = Delaunay.Points[Delaunay.Triangles[i + 1]];
+			    IPoint pC = Delaunay.Points[Delaunay.Triangles[i + 2]];
+            
+			    Vector3 a3D = new Vector3( (float)pA.X, (float)pA.Y, 0 );
+			    Vector3 b3D = new Vector3( (float)pB.X, (float)pB.Y, 0 );
+			    Vector3 c3D = new Vector3( (float)pC.X, (float)pC.Y, 0 );
+
+			    DebugOverlay.Line( a3D, b3D, Color.Magenta, 0f );
+			    DebugOverlay.Line( b3D, c3D, Color.Magenta, 0f );
+			    DebugOverlay.Line( c3D, a3D, Color.Magenta, 0f );
+		    }
+	    }
+    }
+
+    [Button( "Draw Voronoi Cells " )]
+    public void ToggleDrawDelaunay()
+    {
+	    _drawDelaunay = !_drawDelaunay;
     }
 }
