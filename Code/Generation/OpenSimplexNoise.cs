@@ -2,6 +2,7 @@ using System;
 
 namespace Sandbox.Generation;
 
+[Category("Procedural Generation")]
 public class OpenSimplexNoise
 {
     private const double StretchConstant2D = -0.211324865405187; // (1 / Math.Sqrt(2 + 1) - 1) / 2

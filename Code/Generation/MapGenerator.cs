@@ -3,6 +3,7 @@ using Sandbox.Triangulation;
 
 namespace Sandbox.Generation;
 
+[Category("Procedural Generation")]
 public sealed class MapGenerator : Component
 {
 	[Property] public GenerationSettings Settings { get; set; }

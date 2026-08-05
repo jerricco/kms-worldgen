@@ -155,7 +155,7 @@
       "Flags": 0,
       "Name": "Camera",
       "Position": "0,0,100",
-      "Rotation": "0,0.707106769,0,0.707106769",
+      "Rotation": "-0.49999997,0.49999997,0.49999997,0.49999997",
       "Scale": "1,1,1",
       "Tags": "",
       "Enabled": true,
@@ -252,12 +252,18 @@
           "__guid": "23f960e4-7c43-4295-bf4e-27393d5f5b8d",
           "__enabled": true,
           "Flags": 0,
+          "MaxZoom": 10000,
+          "MinZoom": 100,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
-          "OnComponentUpdate": null
+          "OnComponentUpdate": null,
+          "PanSpeed": 1,
+          "Settings": "default_generation.genconf",
+          "ZoomSensitivity": 0.15,
+          "ZoomSmoothness": 15
         }
       ],
       "Children": []
@@ -331,76 +337,6 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "Settings": "default_generation.genconf"
-            }
-          ],
-          "Children": []
-        }
-      ]
-    },
-    {
-      "__guid": "df896307-9cc3-45ea-b5fc-4afa8e0322f5",
-      "__version": 2,
-      "Flags": 32768,
-      "Name": "GeneratorConfiguration",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [],
-      "Children": [
-        {
-          "__guid": "88f22246-a018-485a-ab5a-9712c91cb912",
-          "__version": 2,
-          "Flags": 0,
-          "Name": "GenerationDebugScreen",
-          "Position": "0,0,100",
-          "Rotation": "0,0.707106769,0,0.707106769",
-          "Scale": "1,1,1",
-          "Tags": "debug",
-          "Enabled": true,
-          "NetworkMode": 2,
-          "NetworkFlags": 0,
-          "NetworkOrphaned": 0,
-          "NetworkTransmit": true,
-          "OwnerTransfer": 1,
-          "Components": [
-            {
-              "__type": "Sandbox.ScreenPanel",
-              "__guid": "a63141e0-07a2-4ad9-bb97-4a41589c79ea",
-              "__enabled": true,
-              "Flags": 0,
-              "AutoScreenScale": true,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Opacity": 1,
-              "Scale": 1,
-              "ScaleStrategy": "ConsistentHeight",
-              "TargetCamera": null,
-              "ZIndex": 100
-            },
-            {
-              "__type": "Sandbox.MapDebugScreen",
-              "__guid": "b549becc-2508-401f-b4bd-34b6d807db6c",
-              "__enabled": true,
-              "Flags": 0,
-              "Generator": null,
-              "OnComponentDestroy": null,
-              "OnComponentDisabled": null,
-              "OnComponentEnabled": null,
-              "OnComponentFixedUpdate": null,
-              "OnComponentStart": null,
-              "OnComponentUpdate": null,
-              "Settings": null
             }
           ],
           "Children": []

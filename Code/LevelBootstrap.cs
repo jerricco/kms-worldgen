@@ -3,6 +3,7 @@ using System;
 
 namespace Sandbox;
 
+[Category("Scene Orchestration")]
 public sealed class LevelBootstrap : Component
 {
     [Property] public MapGenerator Generator { get; set; }

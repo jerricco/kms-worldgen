@@ -2,6 +2,7 @@ using System;
 
 namespace Sandbox.Generation;
 
+[Category("Procedural Generation")]
 public class Prng
 {
     // The internal 4-word state required by the SFC32 algorithm

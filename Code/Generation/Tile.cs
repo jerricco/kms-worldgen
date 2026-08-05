@@ -2,6 +2,7 @@
 
 namespace Sandbox.Generation;
 
+[Category("Procedural Generation")]
 public class Tile
 {
 	public GenerationSettings Settings;

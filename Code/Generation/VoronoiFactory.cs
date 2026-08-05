@@ -1,8 +1,10 @@
 using System;
+using Sandbox.Gameplay;
 using Sandbox.Triangulation;
 
 namespace Sandbox.Generation;
 
+[Category("Procedural Generation")]
 public sealed class VoronoiFactory : Component
 {
 	[Property] public GenerationSettings Settings { get; set;  }
@@ -19,20 +21,20 @@ public sealed class VoronoiFactory : Component
     private List<Vector2> _plateCenters;
     private List<double> _plateElevationBiases;
     
-    [Property, ReadOnly] private bool _drawDelaunay = false;
+    [Property, ReadOnly] private bool _drawDelaunay = true; // @DEBUG: normally false;
 
     protected override void OnStart()
     {
 		Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
     }
     
-    protected override void OnUpdate()
+    /*protected override void OnUpdate()
     {
 	    if ( _drawDelaunay )
 	    {
 		    DrawDelaunay();
 	    }
-    }
+    }*/
 
     public void Generate()
     {
@@ -242,12 +244,16 @@ public sealed class VoronoiFactory : Component
 	    // Do triangulation
 	    Log.Info( $"Delaunay triangulation for {delaunayPoints.Length} Voronoi sites." );
 	    Delaunay = new Delaunator(delaunayPoints);
-	    Log.Info( $"{Delaunay.Triangles.Length} triangles created."  );
+	    Log.Info( $"{Delaunay.Triangles.Length} triangles created." );
 	    
 	    // Chunk the Delaunay space
 	    Log.Info( $"Dividing the Delaunay triangles into grid sections {Settings.CellGridSize} wide." );
 	    BuildSpatialDelaunayGrid();
 	    Log.Info( $"Spatial delaunay grid created with {DelaunayChunks.Count} chunks." );
+
+	    var pdRenderer = GetComponent<ProceduralDelaunayRenderer>();
+	    pdRenderer.RebuildMesh(Delaunay);
+	    Log.Info( "Mesh geometry created for voronoi information. Toggle 'Draw Voronoi Cells' to view." );
     }
 
     // Divides the Delaunay triangle space into chunks so that we can ensure much faster checking of frustum bounds
@@ -280,17 +286,17 @@ public sealed class VoronoiFactory : Component
 				    ChunkBounds = BBox.FromPositionAndSize( a3D, 0f ), 
 				    TriangleIndices = new List<int>() 
 			    };
+			    grid[gridPos] = chunk;
 		    }
 		    
 		    chunk.ChunkBounds = chunk.ChunkBounds.AddPoint( a3D ).AddPoint( b3D ).AddPoint( c3D );
 		    chunk.TriangleIndices.Add( i );
-        
-		    grid[gridPos] = chunk;
 	    }
 	    
 	    DelaunayChunks = grid.Values.ToList();
     }
     
+    [Obsolete("Being replaced with Sandbox.Triangulation.ProceduralDelaunayRenderer")]
     private void DrawDelaunay()
     {
 	    // stop rendering immediately if the mesh count doesn't exist
@@ -298,20 +304,27 @@ public sealed class VoronoiFactory : Component
 	    
 	    // stop rendering if no camera exists
 	    var camera = Scene.Camera;
-	    if (camera == null) return;
+	    MapCameraController camControl = Scene.GetAllComponents<MapCameraController>().FirstOrDefault();
+	    if (camera == null || camControl == null) return;
+	    
+	    // clamp so that bottom 60% of zoom levels is the only time it's actually rendering, even if culled
+	    float maxRenderHeight = camControl.MaxZoom * 0.6f; 
+	    if ( camera.OrthographicHeight > maxRenderHeight ) return;
 	    
 	    // get the current frustum to ensure it only draws voronoi in the screen bounds.
 	    var frustum = camera.GetFrustum( camera.ScreenRect, Screen.Size );
-
 	    foreach ( var chunk in DelaunayChunks )
 	    {
 		    if (!frustum.IsInside( chunk.ChunkBounds, true )) continue;
 
-		    foreach ( int i in chunk.TriangleIndices )
+		    for ( int i = 0; i < chunk.TriangleIndices.Count; i += 3)
 		    {
-			    IPoint pA = Delaunay.Points[Delaunay.Triangles[i]];
-			    IPoint pB = Delaunay.Points[Delaunay.Triangles[i + 1]];
-			    IPoint pC = Delaunay.Points[Delaunay.Triangles[i + 2]];
+			    int t = chunk.TriangleIndices[i];
+			    if (t + 2 >= Delaunay.Triangles.Length ) continue;
+			    
+			    IPoint pA = Delaunay.Points[Delaunay.Triangles[t]];
+			    IPoint pB = Delaunay.Points[Delaunay.Triangles[t + 1]];
+			    IPoint pC = Delaunay.Points[Delaunay.Triangles[t + 2]];
             
 			    Vector3 a3D = new Vector3( (float)pA.X, (float)pA.Y, 0 );
 			    Vector3 b3D = new Vector3( (float)pB.X, (float)pB.Y, 0 );
