@@ -283,7 +283,6 @@
           "__guid": "415f5036-1d57-4cb1-a879-d5a181a221bc",
           "__enabled": true,
           "Flags": 0,
-          "_drawDelaunay": false,
           "CosA": -0.3032780985345427,
           "OffsetX": 36061,
           "OffsetY": 77826,
@@ -294,7 +293,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "RandomAngle": 4.404258079758727,
-          "Settings": null,
+          "Settings": "default_generation.genconf",
           "SinA": -0.9529020909565012
         }
       ],
@@ -320,6 +319,7 @@
               "__guid": "464f7746-1cb3-46f4-80f2-d10c86a40d4a",
               "__enabled": true,
               "Flags": 0,
+              "_drawDelaunay": false,
               "ContinentalFragmentationFactor": 0,
               "Generator": null,
               "MacroBayFrequency": 0,
@@ -330,7 +330,7 @@
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
               "OnComponentUpdate": null,
-              "Settings": null
+              "Settings": "default_generation.genconf"
             }
           ],
           "Children": []
@@ -453,7 +453,7 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Settings": null
+          "Settings": "default_generation.genconf"
         }
       ],
       "Children": []

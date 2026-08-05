@@ -51,8 +51,8 @@ public sealed class MapGenerator : Component
         Voronoi.Generate();
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
-        /*_chunks = new Dictionary<Vector2, Chunk>();
-        UpdateChunkRadius( 0, 0 , 1);*/
+        _chunks = new Dictionary<Vector2, Chunk>();
+        UpdateChunkRadius( 0, 0 , 1);
         // UpdateChunkRadius( 0, 0, _chunksToInitialiseWith ) // @TODO: fuck around with this
     }
     

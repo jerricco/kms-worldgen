@@ -43,9 +43,7 @@ public class Chunk
 
 	public void Generate()
 	{
-		new Tile(0, 0, _settings, _generator);
-		// @DEBG
-		/*for ( int x = 0; x < _size; x++ )
+		for ( int x = 0; x < _size; x++ )
 		{
 			for ( int y = 0; y < _size; y++ )
 			{
@@ -66,7 +64,7 @@ public class Chunk
 				Temperatures[tileIndex] = tile.Temperature;
 				MaterialIds[tileIndex] = tile.MaterialId;
 			}
-		}*/
+		}
 	}
 	
 	// Fast inline index helper mapping local 2D space to 1D space

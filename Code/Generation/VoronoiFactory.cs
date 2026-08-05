@@ -291,7 +291,6 @@ public sealed class VoronoiFactory : Component
 	    DelaunayChunks = grid.Values.ToList();
     }
     
-    // @DEBUG - Use these methods to show the current Delaunay triangulation on-screen.
     private void DrawDelaunay()
     {
 	    // stop rendering immediately if the mesh count doesn't exist
