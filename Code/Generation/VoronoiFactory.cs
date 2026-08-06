@@ -16,8 +16,8 @@ public sealed class VoronoiFactory : Component
 
     public Delaunator Delaunay;
     public List<DelaunayChunk> DelaunayChunks = new();
+    public List<VoronoiSite> VoronoiSites;
     
-    private List<VoronoiSite> _voronoiSites;
     private List<Vector2> _plateCenters;
     private List<double> _plateElevationBiases;
     
@@ -28,6 +28,8 @@ public sealed class VoronoiFactory : Component
 
     public void Generate()
     {
+	    float startTime = RealTime.Now; // @DEBUG
+	    
         BuildTectonicSpine();
         BuildVoronoiSites();
         BuildDelaunay(); // @DEBUG
@@ -36,7 +38,77 @@ public sealed class VoronoiFactory : Component
         var pdRenderer = GetComponent<ProceduralDelaunayRenderer>();
         pdRenderer.RebuildMesh(Delaunay);
         
-        Log.Info( "Voronoi generation complete!" );
+        Log.Info( $"Voronoi generation complete! Took {RealTime.Now - startTime} s" );
+    }
+    
+    /// <summary>
+    /// Finds the index of the Delaunator input point closest to the specified target coordinates.
+    /// </summary>
+    public int FindClosestPointIndex( Vector2 target )
+    {
+	    if ( Delaunay == null || Delaunay.Points == null || Delaunay.Points.Length == 0 )
+	    {
+		    return -1;
+	    }
+
+	    int closestIndex = 0;
+	    // Use DistanceSquared to completely bypass costly Math.Sqrt calculations on the CPU
+	    float minDistanceSq = float.MaxValue;
+
+	    for ( int i = 0; i < Delaunay.Points.Length; i++ )
+	    {
+		    var p = Delaunay.Points[i];
+		
+		    float dx = (float)p.X - target.x;
+		    float dy = (float)p.Y - target.y;
+		    float distSq = (dx * dx) + (dy * dy);
+
+		    if ( distSq < minDistanceSq )
+		    {
+			    minDistanceSq = distSq;
+			    closestIndex = i;
+		    }
+	    }
+
+	    return closestIndex;
+    }
+    
+    /// <summary>
+    /// Returns a list of point indices that share a direct Delaunay edge with point index 'pointIndex'.
+    /// </summary>
+    public List<int> GetNeighbors( int pointIndex )
+    {
+	    var neighbors = new HashSet<int>();
+
+	    if ( Delaunay == null || Delaunay.Triangles == null )
+		    return new List<int>();
+
+	    // Triangles are grouped in sets of 3 indices. Loop through every single triangle.
+	    for ( int i = 0; i < Delaunay.Triangles.Length; i += 3 )
+	    {
+		    int a = (int)Delaunay.Triangles[i];
+		    int b = (int)Delaunay.Triangles[i + 1];
+		    int c = (int)Delaunay.Triangles[i + 2];
+
+		    // If this triangle contains our target point, the other two vertices are neighbors
+		    if ( a == pointIndex )
+		    {
+			    neighbors.Add( b );
+			    neighbors.Add( c );
+		    }
+		    else if ( b == pointIndex )
+		    {
+			    neighbors.Add( a );
+			    neighbors.Add( c );
+		    }
+		    else if ( c == pointIndex )
+		    {
+			    neighbors.Add( a );
+			    neighbors.Add( b );
+		    }
+	    }
+
+	    return new List<int>( neighbors );
     }
 
     /**
@@ -144,7 +216,7 @@ public sealed class VoronoiFactory : Component
     */
     private void BuildVoronoiSites()
     {
-	    _voronoiSites = new List<VoronoiSite>();
+	    VoronoiSites = new List<VoronoiSite>();
         // @TODO These two values should be a setting in GenerationSettings??
         // - 30 -> Settings.MinVoronoiGridSize
         // - Settings.ChunkGridSize ->(add) Settings.VoronoiGridSize
@@ -160,7 +232,7 @@ public sealed class VoronoiFactory : Component
         Log.Info( $"======== Target points: {targetPoints}" );
         Log.Warning( $"======== Builder will only attempt a max of {maxAttempts} times!" );
         
-        while (_voronoiSites.Count < targetPoints && attempts < maxAttempts)
+        while (VoronoiSites.Count < targetPoints && attempts < maxAttempts)
         {
 	        attempts++;
 
@@ -217,11 +289,11 @@ public sealed class VoronoiFactory : Component
                 BaseElevation = Math.Max(-1.0, Math.Min(1.0, baseElevation))
             };
 
-            _voronoiSites.Add(localSite);
+            VoronoiSites.Add(localSite);
         }
         
         
-        Log.Info( $"Created {_voronoiSites.Count} voronoi sites." );
+        Log.Info( $"Created {VoronoiSites.Count} voronoi sites." );
     }
 
     /**
@@ -232,7 +304,7 @@ public sealed class VoronoiFactory : Component
     */
     private void BuildDelaunay()
     {
-	    IPoint[] delaunayPoints = _voronoiSites.Select(s => (IPoint)new Point(s.Position.x, s.Position.y)).ToArray();
+	    IPoint[] delaunayPoints = VoronoiSites.Select(s => (IPoint)new Point(s.Position.x, s.Position.y)).ToArray();
 	    
 	    // Do triangulation
 	    Log.Info( $"Delaunay triangulation for {delaunayPoints.Length} Voronoi sites." );

@@ -43,7 +43,17 @@ public class Chunk
 
 	public void Generate()
 	{
-		for ( int x = 0; x < _size; x++ )
+		// @DEBUG - only generate the first tile per chunk for now - this should by default only happen 16 times.
+		int globalX = ChunkX * _size;
+		int globalY = ChunkY * _size;
+		Tile tile = new Tile( globalX, globalY, _settings, _generator ); // @DEBUG
+		uint tileIndex = LocalIndex(0, 0);
+		Elevations[tileIndex] = tile.Elevation;
+		RegionIds[tileIndex] = (int)tile.RegionId;
+		Humidities[tileIndex] = tile.Humidity;
+		Temperatures[tileIndex] = tile.Temperature;
+		MaterialIds[tileIndex] = tile.MaterialId;
+		/*for ( int x = 0; x < _size; x++ )
 		{
 			for ( int y = 0; y < _size; y++ )
 			{
@@ -64,11 +74,11 @@ public class Chunk
 				Temperatures[tileIndex] = tile.Temperature;
 				MaterialIds[tileIndex] = tile.MaterialId;
 			}
-		}
+		}*/
 	}
 	
 	// Fast inline index helper mapping local 2D space to 1D space
 	public uint LocalIndex( int x, int y ) {
-		return (uint)(x * _size + y);
+		return (uint)(y * _size + x);
 	}
 }

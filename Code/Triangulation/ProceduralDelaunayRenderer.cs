@@ -55,7 +55,7 @@ public sealed class ProceduralDelaunayRenderer : Component
 		
 		for ( int i = 0; i < delaunayData.Points.Length; i++ )
 		{
-			// Lerp between CYAN -> RED as we move away from WorldCenter (0,0,0)
+			// Lerp between GREEN -> RED as we move away from WorldCenter (0,0,0)
 			var p = delaunayData.Points[i];
 			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 0f );
 			float distanceToCenter = Vector3.DistanceBetween( vertexPosition, worldCenter );
@@ -69,7 +69,7 @@ public sealed class ProceduralDelaunayRenderer : Component
 				Position = vertexPosition,
 				Normal = Vector3.Up,
 				Tangent = new Vector4( Vector3.Right, 1f ),
-				// 5. Correct UV mapping to shift the negative bounds back into a 0.0 -> 1.0 space
+				// correct UV mapping to shift the negative bounds back into a 0.0 -> 1.0 space
 				TexCoord0 = new Vector2( 
 					((float)p.X + Settings.HalfWidth) / Settings.WorldWidth, 
 					((float)p.Y + Settings.HalfHeight) / Settings.WorldHeight 

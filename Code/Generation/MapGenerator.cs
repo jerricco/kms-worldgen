@@ -20,7 +20,7 @@ public sealed class MapGenerator : Component
     private Dictionary<Vector2, Chunk> _chunks;
     // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
     // of tile chunks.
-    private int _chunksToInitialiseWith => Settings.MaxDimension / Settings.ChunkGridSize;
+    private int _chunksToInitialiseWith = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
 
     // When a map generator is invoked, it should immediately begin the generation.
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
@@ -38,7 +38,9 @@ public sealed class MapGenerator : Component
     // Generate so that alternate start locations on a map can be given.
     public void Generate()
     {
-	    Log.Info($"Randomising player-readonly configuration properties");
+	    float startTime = RealTime.Now; // @DEBUG
+	    
+	    Log.Info("Priming dynamic seeded generation properties");
 	    // create helpers - future steps of generation will always need to share these
 	    Rng = new Prng(Settings.SeedText);
 	    Noise = new OpenSimplexNoise(Rng);
@@ -53,15 +55,23 @@ public sealed class MapGenerator : Component
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
         _chunks = new Dictionary<Vector2, Chunk>();
-        UpdateChunkRadius( 0, 0 , 1);
-        // UpdateChunkRadius( 0, 0, _chunksToInitialiseWith ) // @TODO: fuck around with this
+        UpdateChunkRadius( 0, 0, _chunksToInitialiseWith ); // @TODO: fuck around with this
+        
+        Log.Info($"World generation complete! Took {RealTime.Now - startTime} s");
     }
     
     // Generate a number of individual chunks in a radius around the given point.
     public void UpdateChunkRadius( int centerX, int centerY, int revealRadius = 4 )
     {
+	    if ( revealRadius < 4 )
+	    {
+		    throw new ArgumentException(
+			    "The revealRadius should never be lower than 4 -> generating less chunks should be manual!" );
+	    }
+	    
 	    Log.Info($"Generating {revealRadius * revealRadius} chunks around {centerX},{centerY}"  );
 	    
+	    float startTime = RealTime.Now; // @DEBUG
 	    int centerChunkX = centerX / Settings.ChunkGridSize;
 	    int centerChunkY = centerY / Settings.ChunkGridSize;
 	    
@@ -94,7 +104,7 @@ public sealed class MapGenerator : Component
 	    int maxX = centerX + revealRadius * Settings.ChunkGridSize;
 	    int maxY = centerY + revealRadius * Settings.ChunkGridSize;
 	    
-	    Log.Info($"{centerX},{centerY} has revealed chunks from {minX},{minY} to {maxX},{maxY}"  );
+	    Log.Info($"{centerX},{centerY} has revealed chunks from {minX},{minY} to {maxX},{maxY} in {RealTime.Now - startTime}s"  );
     }
 
     public (double sampleX, double sampleY) SampleWarpedDomain(double x, double y)

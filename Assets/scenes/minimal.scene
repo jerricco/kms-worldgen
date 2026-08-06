@@ -200,8 +200,6 @@
           "__enabled": true,
           "Flags": 0,
           "__version": 1,
-          "Filter": "Bilinear",
-          "Gamma": 2.2,
           "Mode": "Additive",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
@@ -325,7 +323,6 @@
               "__guid": "464f7746-1cb3-46f4-80f2-d10c86a40d4a",
               "__enabled": true,
               "Flags": 0,
-              "_drawDelaunay": false,
               "ContinentalFragmentationFactor": 0,
               "Generator": null,
               "MacroBayFrequency": 0,
@@ -343,13 +340,16 @@
               "__guid": "86387377-bf76-480b-85fd-382cd7d19fc3",
               "__enabled": true,
               "Flags": 0,
-              "MeshMaterial": null,
+              "BaseMaterial": "materials/default/default_line.vmat",
+              "DefaultLineColor": "1,1,1,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
               "OnComponentFixedUpdate": null,
               "OnComponentStart": null,
-              "OnComponentUpdate": null
+              "OnComponentUpdate": null,
+              "Settings": "default_generation.genconf",
+              "ShowDelaunay": true
             }
           ],
           "Children": []
@@ -432,7 +432,8 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "eec54868-e6af-4763-92c9-ed747d37ed08"
+          "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
+          "$refs": []
         }
       },
       "Sandbox.SelectionSetsSystem": {
