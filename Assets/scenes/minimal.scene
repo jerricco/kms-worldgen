@@ -337,6 +337,19 @@
               "OnComponentStart": null,
               "OnComponentUpdate": null,
               "Settings": "default_generation.genconf"
+            },
+            {
+              "__type": "Sandbox.Triangulation.ProceduralDelaunayRenderer",
+              "__guid": "86387377-bf76-480b-85fd-382cd7d19fc3",
+              "__enabled": true,
+              "Flags": 0,
+              "MeshMaterial": null,
+              "OnComponentDestroy": null,
+              "OnComponentDisabled": null,
+              "OnComponentEnabled": null,
+              "OnComponentFixedUpdate": null,
+              "OnComponentStart": null,
+              "OnComponentUpdate": null
             }
           ],
           "Children": []

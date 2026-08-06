@@ -21,26 +21,20 @@ public sealed class VoronoiFactory : Component
     private List<Vector2> _plateCenters;
     private List<double> _plateElevationBiases;
     
-    [Property, ReadOnly] private bool _drawDelaunay = true; // @DEBUG: normally false;
-
     protected override void OnStart()
     {
 		Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
     }
-    
-    /*protected override void OnUpdate()
-    {
-	    if ( _drawDelaunay )
-	    {
-		    DrawDelaunay();
-	    }
-    }*/
 
     public void Generate()
     {
         BuildTectonicSpine();
         BuildVoronoiSites();
         BuildDelaunay(); // @DEBUG
+
+        // create mesh for drawing the voronoi sites - @TODO: debug flag
+        var pdRenderer = GetComponent<ProceduralDelaunayRenderer>();
+        pdRenderer.RebuildMesh(Delaunay);
         
         Log.Info( "Voronoi generation complete!" );
     }
@@ -96,7 +90,6 @@ public sealed class VoronoiFactory : Component
      * Pure function that assesses a single coordinate and returns its total 
      * structural land chance value [0.0 - 1.0] and its closest plate tracking metadata.
     */
-
     private (double LandChance, int ClosestPlateId) EvaluateGeologicalField(double x, double y)
     {
         (double sampleX, double sampleY) warpedSpace = Generator.SampleWarpedDomain(x, y);
@@ -250,10 +243,6 @@ public sealed class VoronoiFactory : Component
 	    Log.Info( $"Dividing the Delaunay triangles into grid sections {Settings.CellGridSize} wide." );
 	    BuildSpatialDelaunayGrid();
 	    Log.Info( $"Spatial delaunay grid created with {DelaunayChunks.Count} chunks." );
-
-	    var pdRenderer = GetComponent<ProceduralDelaunayRenderer>();
-	    pdRenderer.RebuildMesh(Delaunay);
-	    Log.Info( "Mesh geometry created for voronoi information. Toggle 'Draw Voronoi Cells' to view." );
     }
 
     // Divides the Delaunay triangle space into chunks so that we can ensure much faster checking of frustum bounds
@@ -294,52 +283,5 @@ public sealed class VoronoiFactory : Component
 	    }
 	    
 	    DelaunayChunks = grid.Values.ToList();
-    }
-    
-    [Obsolete("Being replaced with Sandbox.Triangulation.ProceduralDelaunayRenderer")]
-    private void DrawDelaunay()
-    {
-	    // stop rendering immediately if the mesh count doesn't exist
-	    if (Delaunay == null || Delaunay.Triangles.Length == 0 ) return; 
-	    
-	    // stop rendering if no camera exists
-	    var camera = Scene.Camera;
-	    MapCameraController camControl = Scene.GetAllComponents<MapCameraController>().FirstOrDefault();
-	    if (camera == null || camControl == null) return;
-	    
-	    // clamp so that bottom 60% of zoom levels is the only time it's actually rendering, even if culled
-	    float maxRenderHeight = camControl.MaxZoom * 0.6f; 
-	    if ( camera.OrthographicHeight > maxRenderHeight ) return;
-	    
-	    // get the current frustum to ensure it only draws voronoi in the screen bounds.
-	    var frustum = camera.GetFrustum( camera.ScreenRect, Screen.Size );
-	    foreach ( var chunk in DelaunayChunks )
-	    {
-		    if (!frustum.IsInside( chunk.ChunkBounds, true )) continue;
-
-		    for ( int i = 0; i < chunk.TriangleIndices.Count; i += 3)
-		    {
-			    int t = chunk.TriangleIndices[i];
-			    if (t + 2 >= Delaunay.Triangles.Length ) continue;
-			    
-			    IPoint pA = Delaunay.Points[Delaunay.Triangles[t]];
-			    IPoint pB = Delaunay.Points[Delaunay.Triangles[t + 1]];
-			    IPoint pC = Delaunay.Points[Delaunay.Triangles[t + 2]];
-            
-			    Vector3 a3D = new Vector3( (float)pA.X, (float)pA.Y, 0 );
-			    Vector3 b3D = new Vector3( (float)pB.X, (float)pB.Y, 0 );
-			    Vector3 c3D = new Vector3( (float)pC.X, (float)pC.Y, 0 );
-
-			    DebugOverlay.Line( a3D, b3D, Color.Magenta, 0f );
-			    DebugOverlay.Line( b3D, c3D, Color.Magenta, 0f );
-			    DebugOverlay.Line( c3D, a3D, Color.Magenta, 0f );
-		    }
-	    }
-    }
-
-    [Button( "Draw Voronoi Cells " )]
-    public void ToggleDrawDelaunay()
-    {
-	    _drawDelaunay = !_drawDelaunay;
     }
 }

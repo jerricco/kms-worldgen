@@ -40,6 +40,7 @@ public partial class GenerationSettings : GameResource
     // dimensionality
     [Property] public int TotalTiles => WorldWidth * WorldHeight;
     [Property] public int MaxDimension => Math.Max(WorldWidth, WorldHeight);
+    [Property] public float MaxRadius => MathF.Sqrt( (HalfWidth * HalfWidth) + (HalfHeight * HalfHeight) );
     [Property] public int TotalChunks => TotalTiles / ChunkGridSize;
     [Property] public int HalfWidth => WorldWidth / 2;
     [Property] public int HalfHeight => WorldHeight / 2;
