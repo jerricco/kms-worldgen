@@ -1,4 +1,4 @@
-﻿namespace Sandbox.Generation;
+﻿namespace Sandbox.Ecology;
 
 public enum RegionId
 {

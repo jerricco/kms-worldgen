@@ -6,7 +6,6 @@ namespace Sandbox.Generation;
 public partial class GenerationSettings : GameResource
 {
     // --- STATIC(ISH) PROPERTIES --- //
-
     // Seeded randomisation
     [Property] public string SeedText   { get; set; } = "aborio rice";
 

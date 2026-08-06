@@ -33,7 +33,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "SceneTags": "",
-          "Title": "minimal",
+          "Title": "test_generation",
           "Version": null
         }
       ],
@@ -247,7 +247,7 @@
         },
         {
           "__type": "Sandbox.Gameplay.MapCameraController",
-          "__guid": "23f960e4-7c43-4295-bf4e-27393d5f5b8d",
+          "__guid": "e89a23bd-1701-4c1d-97bf-1c27a37173f5",
           "__enabled": true,
           "Flags": 0,
           "MaxZoom": 10000,
@@ -283,22 +283,22 @@
       "OwnerTransfer": 1,
       "Components": [
         {
-          "__type": "Sandbox.Generation.MapGenerator",
-          "__guid": "415f5036-1d57-4cb1-a879-d5a181a221bc",
+          "__type": "Sandbox.Generator.MapGenerator",
+          "__guid": "d0b59c3d-6a60-4224-b8ae-23af8c50a96d",
           "__enabled": true,
           "Flags": 0,
-          "CosA": -0.3032780985345427,
-          "OffsetX": 36061,
-          "OffsetY": 77826,
+          "CosA": 0,
+          "OffsetX": 0,
+          "OffsetY": 0,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RandomAngle": 4.404258079758727,
+          "RandomAngle": 0,
           "Settings": "default_generation.genconf",
-          "SinA": -0.9529020909565012
+          "SinA": 0
         }
       ],
       "Children": [
@@ -319,8 +319,8 @@
           "OwnerTransfer": 1,
           "Components": [
             {
-              "__type": "Sandbox.Generation.VoronoiFactory",
-              "__guid": "464f7746-1cb3-46f4-80f2-d10c86a40d4a",
+              "__type": "Sandbox.Triangulation.VoronoiFactory",
+              "__guid": "cb220cd7-ca1e-4e88-9a28-f0f4d9fbbe32",
               "__enabled": true,
               "Flags": 0,
               "ContinentalFragmentationFactor": 0,
@@ -337,7 +337,7 @@
             },
             {
               "__type": "Sandbox.Triangulation.ProceduralDelaunayRenderer",
-              "__guid": "86387377-bf76-480b-85fd-382cd7d19fc3",
+              "__guid": "22410852-5219-4fb8-9dfe-bcb6de941ce9",
               "__enabled": true,
               "Flags": 0,
               "BaseMaterial": "materials/default/default_line.vmat",
@@ -357,24 +357,6 @@
       ]
     },
     {
-      "__guid": "e145ee21-553c-4bf2-84a7-9c9ea7635b25",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "MapContainer",
-      "Position": "-7.03482819,-169.219055,76.7313385",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [],
-      "Children": []
-    },
-    {
       "__guid": "f4a1c389-d70d-480f-96c1-f61fe902251b",
       "__version": 2,
       "Flags": 0,
@@ -392,7 +374,7 @@
       "Components": [
         {
           "__type": "Sandbox.LevelBootstrap",
-          "__guid": "bfd57674-e819-43a7-bc91-9d761ce11d43",
+          "__guid": "f059181b-8f91-48cc-87c1-6cec4fc230c8",
           "__enabled": true,
           "Flags": 0,
           "Generator": null,
@@ -413,7 +395,7 @@
     "TimeScale": 1,
     "WantsSystemScene": true,
     "Metadata": {
-      "Title": "minimal"
+      "Title": "test_generation"
     },
     "NavMesh": {
       "Enabled": false,
@@ -444,7 +426,7 @@
     }
   },
   "ResourceVersion": 3,
-  "Title": "minimal",
+  "Title": "test_generation",
   "Description": null,
   "__references": [],
   "__version": 3

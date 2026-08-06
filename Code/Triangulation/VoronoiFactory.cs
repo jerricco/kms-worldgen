@@ -1,8 +1,8 @@
 using System;
-using Sandbox.Gameplay;
-using Sandbox.Triangulation;
+using Sandbox.Generator;
+using Sandbox.Generation;
 
-namespace Sandbox.Generation;
+namespace Sandbox.Triangulation;
 
 [Category("Procedural Generation")]
 public sealed class VoronoiFactory : Component
@@ -40,6 +40,84 @@ public sealed class VoronoiFactory : Component
         
         Log.Info( $"Voronoi generation complete! Took {RealTime.Now - startTime} s" );
     }
+    
+    public DelaunayNeighbors GetVoronoiSiteCandidates( float x, float y )
+	{
+		// clear old candidates
+		DelaunayNeighbors candidates = default;
+		Vector2 globalPosition = new Vector2( x, y );
+		
+		int site0Id = FindClosestPointIndex( globalPosition );
+		VoronoiSite site0 = Generator.Voronoi.VoronoiSites[site0Id];
+		if ( site0 == null ) return candidates;
+		
+		// 1. Calculate Site 0
+		float dx0 = x - site0.Position.x;
+		float dy0 = y - site0.Position.y;
+		candidates.Candidate0 = new VoronoiResult { Site = site0, DistanceSq = (dx0 * dx0) + (dy0 * dy0) };
+		candidates.Count = 1;
+		
+		var neighborIds = GetNeighbors( site0Id );
+		int neighborCount = neighborIds.Count;
+		for ( int i = 0; i < neighborCount; i++ )
+		{
+			if ( candidates.Count >= 3 ) break;
+
+			VoronoiSite neighbor = VoronoiSites[neighborIds[i]];
+			if ( neighbor == null ) continue;
+
+			float dx = x - neighbor.Position.x;
+			float dy = y - neighbor.Position.y;
+			float distSq = (dx * dx) + (dy * dy);
+
+			if ( candidates.Count == 1 )
+			{
+				candidates.Candidate1 = new VoronoiResult(neighbor, distSq);
+				candidates.Count = 2;
+			}
+			else if ( candidates.Count == 2 )
+			{
+				candidates.Candidate2 = new VoronoiResult(neighbor, distSq);
+				candidates.Count = 3;
+			}
+		}
+
+		// sort candidates
+		if ( candidates.Count == 2 )
+		{
+			if ( candidates.Candidate0.DistanceSq > candidates.Candidate1.DistanceSq )
+			{
+				var temp = candidates.Candidate0;
+				candidates.Candidate0 = candidates.Candidate1;
+				candidates.Candidate1 = temp;
+			}
+		}
+		else if ( candidates.Count == 3 )
+		{
+			if ( candidates.Candidate0.DistanceSq > candidates.Candidate1.DistanceSq )
+			{
+				var temp = candidates.Candidate0;
+				candidates.Candidate0 = candidates.Candidate1;
+				candidates.Candidate1 = temp;
+			}
+			
+			if ( candidates.Candidate1.DistanceSq > candidates.Candidate2.DistanceSq )
+			{
+				var temp = candidates.Candidate1;
+				candidates.Candidate1 = candidates.Candidate2;
+				candidates.Candidate2 = temp;
+			}
+			
+			if ( candidates.Candidate0.DistanceSq > candidates.Candidate1.DistanceSq )
+			{
+				var temp = candidates.Candidate0;
+				candidates.Candidate0 = candidates.Candidate1;
+				candidates.Candidate1 = temp;
+			}
+		}
+			
+		return candidates;
+	}
     
     /// <summary>
     /// Finds the index of the Delaunator input point closest to the specified target coordinates.
@@ -280,14 +358,13 @@ public sealed class VoronoiFactory : Component
                                 + (_plateElevationBiases[finalField.closestPlateId]) * 0.15d;
             }
 
-            VoronoiSite localSite = new VoronoiSite()
-            {
-                Id = siteIdCounter++,
-                Position = new Vector2((float)finalX, (float)finalY),
-                PlateId = finalField.closestPlateId,
-                IsOceanic = isOceanic,
-                BaseElevation = Math.Max(-1.0, Math.Min(1.0, baseElevation))
-            };
+            VoronoiSite localSite = new VoronoiSite(
+                siteIdCounter++,
+                new Vector2((float)finalX, (float)finalY),
+                finalField.closestPlateId,
+                isOceanic,
+                Math.Max(-1.0, Math.Min(1.0, baseElevation))
+            );
 
             VoronoiSites.Add(localSite);
         }
@@ -343,10 +420,7 @@ public sealed class VoronoiFactory : Component
 		    
 		    if ( !grid.TryGetValue( gridPos, out var chunk ) )
 		    {
-			    chunk = new DelaunayChunk { 
-				    ChunkBounds = BBox.FromPositionAndSize( a3D, 0f ), 
-				    TriangleIndices = new List<int>() 
-			    };
+			    chunk = new DelaunayChunk( BBox.FromPositionAndSize( a3D, 0f ), new List<int>() );
 			    grid[gridPos] = chunk;
 		    }
 		    

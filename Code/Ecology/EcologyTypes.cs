@@ -1,4 +1,4 @@
-﻿namespace Sandbox.Generation;
+﻿namespace Sandbox.Ecology;
 
 public record SlopeVector( Vector2 Gradient, float Slope );
 

@@ -1,7 +1,14 @@
-﻿namespace Sandbox.Triangulation;
-
-public struct DelaunayChunk
+﻿namespace Sandbox.Triangulation
 {
-	public BBox ChunkBounds;
-	public List<int> TriangleIndices;
+	public struct DelaunayChunk : IDelaunayChunk
+	{
+		public BBox ChunkBounds { get; set; }
+		public List<int> TriangleIndices { get; set; }
+	
+		public DelaunayChunk(BBox chunkBounds, List<int> triangleIndices)
+		{
+			ChunkBounds = chunkBounds;
+			TriangleIndices = triangleIndices;
+		}
+	}	
 }
