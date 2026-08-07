@@ -2,6 +2,7 @@ using System;
 using Sandbox.Triangulation;
 using Sandbox.Generation;
 using Sandbox.Ecology;
+using System.Threading.Tasks;
 
 namespace Sandbox.Generator;
 
@@ -9,40 +10,33 @@ namespace Sandbox.Generator;
 public sealed class MapGenerator : Component
 {
 	[Property] public GenerationSettings Settings { get; set; }
-    [Property] public double RandomAngle { get; set; }
-    [Property] public int OffsetX { get; set; }
-    [Property] public int OffsetY { get; set; }
-    [Property] public double CosA { get; set; }
-    [Property] public double SinA { get; set; }
+	[Property, ReadOnly] public VoronoiFactory Voronoi { get; set; }
+    [Property, ReadOnly] public double RandomAngle { get; set; }
+    [Property, ReadOnly] public int OffsetX { get; set; }
+    [Property, ReadOnly] public int OffsetY { get; set; }
+    [Property, ReadOnly] public double CosA { get; set; }
+    [Property, ReadOnly] public double SinA { get; set; }
 
     public Prng Rng { get; set; }
     public OpenSimplexNoise Noise { get; set; }
-    public VoronoiFactory Voronoi { get; set; }
-
-    private Dictionary<Vector2, Chunk> _chunks;
+    
     // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
-    // of tile chunks.
-    private int _chunksToInitialiseWith = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
-
-    // When a map generator is invoked, it should immediately begin the generation.
+    // of tile chunks. Or rather, I should test whether that's going to be relevant here.
+    private int _initialRadius = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
+    private bool _isGenerating = false;
+    private Dictionary<Vector2, Chunk> _chunks;
+    
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
-    // @TODO: this should be preceeded with a game menu to invoke the generation and save/load specific generations from disk.
     protected override void OnStart()
     {
         Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
     }
 
-    // @TODO: The save file should determine the List<Vector2> of places to do
-    // default chunk revealing from, since 0,0 always gets its initial 32 chunk generation.
-    // Revealing saved chunks should be a lot faster than generating new ones, so this shouldn't be as
-    // expensive to run.
-    // @TODO: Rather than default to 0,0 for initial generation, get a starting position sent to 
-    // Generate so that alternate start locations on a map can be given.
-    public void Generate()
+    // @TODO: Use a dynamic centerpoint instead of 0,0 hardcoded.
+    public Task Generate()
     {
-	    float startTime = RealTime.Now; // @DEBUG
-	    
 	    Log.Info("Priming dynamic seeded generation properties");
+	    
 	    // create helpers - future steps of generation will always need to share these
 	    Rng = new Prng(Settings.SeedText);
 	    Noise = new OpenSimplexNoise(Rng);
@@ -53,78 +47,91 @@ public sealed class MapGenerator : Component
 	    OffsetY = Rng.NextRange(10000, 90000);
 	    
         Log.Info($"Starting level generation with seed  {Settings.SeedText}...");
+        Log.Info( "===========================================================" );
         Voronoi.Generate();
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
         _chunks = new Dictionary<Vector2, Chunk>();
-        GenerateSingleChunk(0,0); //@DEBUG
-        // UpdateChunkRadius( 0, 0, _chunksToInitialiseWith ); // @TODO: fuck around with this
-        
-        Log.Info($"World generation complete! Took {RealTime.Now - startTime} s");
+        return UpdateChunkRadius( 0, 0, _initialRadius );
     }
 
-    public void GenerateSingleChunk(int chunkX, int chunkY)
+    public async Task GenerateSingleChunk(int chunkX, int chunkY)
     {
+	    if ( _isGenerating ) return;
+	    _isGenerating = true;
+	    
 	    float startTime = RealTime.Now; // @DEBUG
 	    int targetX = chunkX / Settings.ChunkGridSize;
 	    int targetY = chunkY / Settings.ChunkGridSize;
 	    Log.Info($"Generating chunk at {targetX},{targetY}" );
 	    
 	    Vector2 chunkKey = new Vector2( targetX, targetY );
-	    // @TODO: handle turning off & back on for performance if needed
-	    Chunk chunk =  _chunks.GetValueOrDefault(chunkKey); 
-			    
-	    if ( chunk == null )
-		    _chunks[chunkKey] = new Chunk(targetX, targetY, Settings, this);
+	    var chunk = new Chunk( targetX, targetY, Settings.ChunkGridSize );
+	    _chunks[chunkKey] = chunk;
 	    
-	    Log.Info($"Chunk {targetX},{targetY} in {RealTime.Now - startTime}s"  );
+	    Log.Info( $"Allocated chunk. Threading to generate..." );
+	    
+	    // compute chunk off the main thread.
+	    await Task.RunInThreadAsync( () 
+		    => chunk.Generate(Settings.HalfWidth, Settings.HalfHeight, this) );
+	    
+	    _isGenerating = false;
+	    Log.Info($"Generated chunk {targetX},{targetY} in {RealTime.Now - startTime}s"  );
     }
     
     // Generate a number of individual chunks in a radius around the given point.
-    public void UpdateChunkRadius( int centerX, int centerY, int revealRadius = 4 )
+    public Task UpdateChunkRadius( int centerX, int centerY, int revealRadius = 4 )
     {
-	    if ( revealRadius < 4 )
+	    if ( _isGenerating )
 	    {
+		    // @TODO: parallelise so chunkRadiusGeneration only can't happen if they cross each other's radii
+		    Log.Warning( "Generation is already underway! Try again later" );
+		    return Task.CompletedTask;
+	    }
+	    _isGenerating = true;
+	    
+	    if ( revealRadius < 4 )
 		    throw new ArgumentException(
 			    "The revealRadius should never be lower than 4 -> generating less chunks should be manual!" );
-	    }
 	    
 	    Log.Info($"Generating {revealRadius * revealRadius} chunks around {centerX},{centerY}"  );
 	    
-	    float startTime = RealTime.Now; // @DEBUG
+	    List<Task> chunksToGenerate = new();
 	    int centerChunkX = centerX / Settings.ChunkGridSize;
 	    int centerChunkY = centerY / Settings.ChunkGridSize;
+	    int negR = -revealRadius / 2; int posR = revealRadius / 2;
 	    
-	    for ( int xOffset = -revealRadius; xOffset < revealRadius; xOffset++ )
+	    // chunk allocation
+	    for ( int xOffset = negR; xOffset < posR; xOffset++ )
 	    {
-		    for ( int yOffset = -revealRadius; yOffset < revealRadius; yOffset++ )
+		    for ( int yOffset = negR; yOffset < posR; yOffset++ )
 		    {
 			    int targetX = centerChunkX + xOffset;
 			    int targetY = centerChunkY + yOffset;
 			    
-			    // this clamp determines the square around the centerX,centerY given
-			    if (targetX < -revealRadius 
-			        || targetX > revealRadius 
-			        || targetY < -revealRadius 
-			        || targetY > revealRadius) 
-				    continue;
-			    
 			    Vector2 chunkKey = new Vector2( targetX, targetY );
-			    // @TODO: handle turning off & back on for performance if needed
-			    Chunk chunk =  _chunks.GetValueOrDefault(chunkKey); 
-			    
-			    if ( chunk == null )
-				    _chunks[chunkKey] = new Chunk(targetX, targetY, Settings, this);
+			    var chunk = new Chunk( targetX, targetY, Settings.ChunkGridSize );
+			    _chunks[chunkKey] = chunk;
+			    var threadTask = GameTask.RunInThreadAsync(() => 
+				    chunk.Generate(Settings.HalfWidth, Settings.HalfHeight, this)
+			    );
+            
+			    chunksToGenerate.Add( threadTask );
 		    }
 	    }
+
+	    if ( chunksToGenerate.Count == 0 )
+	    {
+		    Log.Warning("No chunks found to generate! Exiting..." );
+		    return Task.CompletedTask;
+	    }
+
+	    Log.Info( $"Allocated {chunksToGenerate.Count()} chunks. Threading to generate..." );
 	    
-        // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extent + a buffer
-	    int minX = centerX - revealRadius * Settings.ChunkGridSize;
-	    int minY = centerY - revealRadius * Settings.ChunkGridSize;
-	    int maxX = centerX + revealRadius * Settings.ChunkGridSize;
-	    int maxY = centerY + revealRadius * Settings.ChunkGridSize;
-	    
-	    Log.Info($"{centerX},{centerY} has revealed chunks from {minX},{minY} to {maxX},{maxY} in {RealTime.Now - startTime}s"  );
+	    // compute chunks off the main thread.
+	    return Task.WhenAll( chunksToGenerate );
+
+	    // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extent + a buffer
     }
     
 	/**
@@ -293,15 +300,16 @@ public sealed class MapGenerator : Component
 		return RegionId.Unassigned; // @TODO: Does nothing for now.
 	}
 
-    public (double sampleX, double sampleY) SampleWarpedDomain(double x, double y)
+    public Vector2 SampleWarpedDomain(float x, float y)
     {
-        double warpX = Noise.Evaluate((x + 200d) * 0.018d, (y + 200d) * 0.018d) * 45d;
-        double warpY = Noise.Evaluate((x - 200d) * 0.018d, (y - 200d) * 0.018d) * 45d;
+	    // Do we care about double precision here? Probably not.
+	    float warpX = (float)Noise.Evaluate((x + 200f) * 0.018f, (y + 200f) * 0.018f) * 45f;
+        float warpY = (float)Noise.Evaluate((x - 200f) * 0.018f, (y - 200f) * 0.018f) * 45f;
 
-        double sampleX = (x + OffsetX + warpX) * Settings.MacroScale;
-        double sampleY = (y + OffsetY + warpY) * Settings.MacroScale;
+        float sampleX = (x + OffsetX + warpX) * Settings.MacroScale;
+        float sampleY = (y + OffsetY + warpY) * Settings.MacroScale;
 
-        return ( sampleX, sampleY );
+        return new Vector2(sampleX, sampleY);
     }
     
     // @DEBUG - Clickable editor button for on-demand map regeneration.

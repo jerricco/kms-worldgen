@@ -10,16 +10,16 @@ public sealed class VoronoiFactory : Component
 	[Property] public GenerationSettings Settings { get; set;  }
 	[Property, ReadOnly] private MapGenerator Generator { get; set;  }
 
-    [Property] private double ContinentalFragmentationFactor { get; set; }
-    [Property] private double MacroBayFrequency { get; set; }
-    [Property] private double MacroBayIntensity { get; set; }
+    [Property] private float ContinentalFragmentationFactor { get; set; }
+    [Property] private float MacroBayFrequency { get; set; }
+    [Property] private float MacroBayIntensity { get; set; }
 
     public Delaunator Delaunay;
     public List<DelaunayChunk> DelaunayChunks = new();
     public List<VoronoiSite> VoronoiSites;
     
     private List<Vector2> _plateCenters;
-    private List<double> _plateElevationBiases;
+    private List<float> _plateElevationBiases;
     
     protected override void OnStart()
     {
@@ -199,9 +199,9 @@ public sealed class VoronoiFactory : Component
 	    _plateCenters = [];
 	    _plateElevationBiases = [];
 
-        ContinentalFragmentationFactor = Generator.Rng.NextRangeDouble(0.35d, 0.60d);
-        MacroBayFrequency = Generator.Rng.NextRangeDouble(0.002d, 0.005d);
-        MacroBayIntensity = Generator.Rng.NextRangeDouble(0.20d, 0.35d);
+        ContinentalFragmentationFactor = Generator.Rng.NextRangeFloat(0.35f, 0.60f);
+        MacroBayFrequency = Generator.Rng.NextRangeFloat(0.002f, 0.005f);
+        MacroBayIntensity = Generator.Rng.NextRangeFloat(0.20f, 0.35f);
 
         Log.Info( $"Tectonic spine generating with settings..." );
         Log.Info( $"======== Continental Fragmentation Factor: {ContinentalFragmentationFactor.ToString( "F3" )}" );
@@ -209,21 +209,21 @@ public sealed class VoronoiFactory : Component
 		Log.Info( $"======== Bay Intensity: {MacroBayIntensity.ToString("F3")}" );
 
         int tectonicPlateCount = Generator.Rng.NextRange(6, 9);
-        double spineAngle = Generator.Rng.NextRangeDouble(0d, Math.Tau);
-        double spineDirectionX = Math.Cos(spineAngle);
-        double spineDirectionY = Math.Sin(spineAngle);
+        float spineAngle = Generator.Rng.NextRangeFloat(0f, MathF.Tau);
+        float spineDirectionX = MathF.Cos(spineAngle);
+        float spineDirectionY = MathF.Sin(spineAngle);
 
         for (int p = 0; p < tectonicPlateCount; p++)
         {
-	        double progress = (p / (tectonicPlateCount - 1d)) * 2.0d - 1.0d;
-	        double bowIntensity = Settings.MaxDimension * 0.18d;
-	        double bowNoise = Math.Sin(progress * Math.PI) * bowIntensity;
+	        float progress = (p / (tectonicPlateCount - 1f)) * 2.0f - 1.0f;
+	        float bowIntensity = Settings.MaxDimension * 0.18f;
+	        float bowNoise = MathF.Sin(progress * MathF.PI) * bowIntensity;
 
-            double px = (spineDirectionX * progress * Settings.HalfWidth * 0.6d) + (-spineDirectionY * bowNoise);
-            double py = (spineDirectionY * progress * Settings.HalfHeight * 0.6d) + (spineDirectionX * bowNoise);
+	        float px = (spineDirectionX * progress * Settings.HalfWidth * 0.6f) + (-spineDirectionY * bowNoise);
+            float py = (spineDirectionY * progress * Settings.HalfHeight * 0.6f) + (spineDirectionX * bowNoise);
             
             Vector2 platePosition = new Vector2((float)px, (float)py);
-            double plateElevationBias = Generator.Rng.NextRangeDouble(-0.15d, 0.45d);
+            float plateElevationBias = Generator.Rng.NextRangeFloat(-0.15f, 0.45f);
 
             _plateCenters.Add(platePosition);
             _plateElevationBiases.Add(plateElevationBias);
@@ -240,24 +240,24 @@ public sealed class VoronoiFactory : Component
      * Pure function that assesses a single coordinate and returns its total 
      * structural land chance value [0.0 - 1.0] and its closest plate tracking metadata.
     */
-    private (double LandChance, int ClosestPlateId) EvaluateGeologicalField(double x, double y)
+    private GeologicalField EvaluateGeologicalField(float x, float y)
     {
-        (double sampleX, double sampleY) warpedSpace = Generator.SampleWarpedDomain(x, y);
-        double macroShapeNoise = (Generator.Noise.Evaluate(warpedSpace.sampleX * 0.8d, warpedSpace.sampleY * 0.8d) + 1d) * 0.5d;
-        double channelNoise = (Generator.Noise.Evaluate(warpedSpace.sampleY * 2.5d, warpedSpace.sampleX * 2.5d) + 1d) * 0.5d;
+        Vector2 warpedSpace = Generator.SampleWarpedDomain(x, y);
+        float macroShapeNoise = (float)((Generator.Noise.Evaluate( warpedSpace.x * 0.8d, warpedSpace.y * 0.8d ) + 1d) * 0.5d);
+        float channelNoise = (float)((Generator.Noise.Evaluate(warpedSpace.y * 2.5d, warpedSpace.x * 2.5d) + 1d) * 0.5d);
     
         // macro erosion pass
         // creates large-feature coastal indentations that carve into the core spine.
-        double bayNoise = Generator.Noise.Evaluate(x * MacroBayFrequency, y * MacroBayFrequency);
-        double gulfCarve = Math.Pow((bayNoise + 1d) * 0.5d, 1.5d) * MacroBayIntensity;
+        float bayNoise = (float)Generator.Noise.Evaluate(x * MacroBayFrequency, y * MacroBayFrequency);
+        float gulfCarve = MathF.Pow((bayNoise + 1f) * 0.5f, 1.5f) * MacroBayIntensity;
 
         int closestPlateId = 0;
-        double minPlateDistanceSq = double.PositiveInfinity;
+        float minPlateDistanceSq = float.PositiveInfinity;
         for (int p = 0; p < _plateCenters.Count; p++)
         {
-            double dx = x - _plateCenters[p].x;
-            double dy = y - _plateCenters[p].y;
-            double distSq = dx * dx + dy * dy; 
+	        float dx = x - _plateCenters[p].x;
+            float dy = y - _plateCenters[p].y;
+            float distSq = dx * dx + dy * dy; 
             if (distSq < minPlateDistanceSq)
             {
 	            minPlateDistanceSq = distSq;
@@ -265,26 +265,26 @@ public sealed class VoronoiFactory : Component
             }
         }
 
-        double distanceToClosestPlate = Math.Sqrt(minPlateDistanceSq);
-        double plateInfluenceRadius = Settings.MaxDimension * 0.42d;
-        double tectonicProximity = Math.Max(0.0d, Math.Min(1.0d, 1.0d - (distanceToClosestPlate / plateInfluenceRadius)));
-        double continentalCoreMask = Math.Pow(tectonicProximity, 1.2d);
+        float distanceToClosestPlate = MathF.Sqrt(minPlateDistanceSq);
+        float plateInfluenceRadius = Settings.MaxDimension * 0.42f;
+        float tectonicProximity = MathF.Max(0.0f, MathF.Min(1.0f, 1.0f - (distanceToClosestPlate / plateInfluenceRadius)));
+        float continentalCoreMask = MathF.Pow(tectonicProximity, 1.2f);
 
-        double globalLandChance = double.Lerp(macroShapeNoise * 0.4d, 0.46d + macroShapeNoise * 0.54d, continentalCoreMask);
+        float globalLandChance = float.Lerp(macroShapeNoise * 0.4f, 0.46f + macroShapeNoise * 0.54f, continentalCoreMask);
         if (channelNoise < ContinentalFragmentationFactor)
         {
 	        globalLandChance *= channelNoise / ContinentalFragmentationFactor;
         }
 
         // apply the bay/gulf carving pass to the land profile
-        globalLandChance = Math.Max(0.0d, globalLandChance - gulfCarve);
+        globalLandChance = MathF.Max(0.0f, globalLandChance - gulfCarve);
 
-        double distanceToCenter = Math.Sqrt(warpedSpace.sampleX * warpedSpace.sampleX + warpedSpace.sampleY * warpedSpace.sampleY);
-        double maxAllowedRadius  = Settings.HalfWidth * Settings.OceanClamp;
-        double boundaryBuffer = Math.Max(0.0d, Math.Min(1.0d, distanceToCenter / maxAllowedRadius));
-        globalLandChance = Math.Max(0.0d, globalLandChance - Math.Pow(boundaryBuffer, 4.0d));
+        float distanceToCenter = MathF.Sqrt(warpedSpace.x * warpedSpace.x + warpedSpace.y * warpedSpace.y);
+        float maxAllowedRadius  = Settings.HalfWidth * Settings.OceanClamp;
+        float boundaryBuffer = MathF.Max(0.0f, MathF.Min(1.0f, distanceToCenter / maxAllowedRadius));
+        globalLandChance = MathF.Max(0.0f, globalLandChance - MathF.Pow(boundaryBuffer, 4.0f));
         
-        return ( globalLandChance, closestPlateId );
+        return new GeologicalField( globalLandChance, closestPlateId );
     }
 
     /**
@@ -317,51 +317,52 @@ public sealed class VoronoiFactory : Component
             float rotX = -Settings.HalfWidth + (Generator.Rng.Next() * Settings.WorldWidth);
             float rotY = -Settings.HalfHeight + (Generator.Rng.Next() * Settings.WorldHeight);
             
-            (double landChance, int closestPlateId) densityField = EvaluateGeologicalField(rotX, rotY);
-            double acceptanceProbability = double.Lerp(0.012d, 1.0d, Math.Pow(densityField.landChance, 1.2d));
+            GeologicalField densityField = EvaluateGeologicalField(rotX, rotY);
+            float acceptanceProbability = float.Lerp(0.012f, 1.0f, MathF.Pow(densityField.LandChance, 1.2f));
 
             if (Generator.Rng.Next() > acceptanceProbability) continue;
 
             // twist displacement
-            double twistFrequency = 1.0 / (baseSpacing * 5.0);
-            double twistAngle = Generator.Noise.Evaluate(rotX * twistFrequency, rotY * twistFrequency) * Math.Tau;
-            double twistIntensity = baseSpacing * 0.7d * (1.0d - densityField.landChance);
+            float twistFrequency = 1.0f / (baseSpacing * 5.0f);
+            float twistAngle = (float)
+	            (Generator.Noise.Evaluate( rotX * twistFrequency, rotY * twistFrequency ) * Math.Tau);
+            float twistIntensity = baseSpacing * 0.7f * (1.0f - densityField.LandChance);
 
-            double finalX = rotX + Math.Cos(twistAngle) * twistIntensity;
-            double finalY = rotY + Math.Sin(twistAngle) * twistIntensity;
+            float finalX = rotX + MathF.Cos(twistAngle) * twistIntensity;
+            float finalY = rotY + MathF.Sin(twistAngle) * twistIntensity;
 
             if (finalX < -Settings.HalfWidth || finalX > Settings.HalfWidth || finalY < -Settings.HalfHeight || finalY > Settings.HalfHeight)
             {
                 continue;
             }
 
-            (double landChance, int closestPlateId) finalField = EvaluateGeologicalField(finalX, finalY);
-            bool isOceanic = finalField.landChance < 0.42d; // @TODO: I should figure out how this lever relates to other values
-            double baseElevation;
+            GeologicalField finalField = EvaluateGeologicalField(finalX, finalY);
+            bool isOceanic = finalField.LandChance < 0.42f; // @TODO: I should figure out how this lever relates to other values
+            float baseElevation;
 
             if (isOceanic)
             {
                 // @TODO: MaxAllowedRadius might do better as computed on GenerationSettings
-                double maxAllowedRadius = Settings.HalfWidth * Settings.OceanClamp;
-                double trueDist = Math.Sqrt(finalX * finalX + finalY * finalY);
-                double trueRatio = Math.Max(0.0d, Math.Min(1.0d, trueDist / maxAllowedRadius));
-                double trenchFactor = Math.Pow(trueRatio, 1.8d);
+                float maxAllowedRadius = Settings.HalfWidth * Settings.OceanClamp;
+                float trueDist = MathF.Sqrt(finalX * finalX + finalY * finalY);
+                float trueRatio = MathF.Max(0.0f, Math.Min(1.0f, trueDist / maxAllowedRadius));
+                float trenchFactor = MathF.Pow(trueRatio, 1.8f);
                 // grade the ocean smoothly to Settings.AbyssalLevel
-                baseElevation = double.Lerp(Settings.SeaLevel - 0.05d, Settings.AbyssalLevel, trenchFactor)
-                                + (_plateElevationBiases[finalField.closestPlateId] * 0.08d);
+                baseElevation = float.Lerp(Settings.SeaLevel - 0.05f, Settings.AbyssalLevel, trenchFactor)
+                                + (_plateElevationBiases[finalField.ClosestPlateId] * 0.08f);
             } else
             {
                 // force values to distribute smoothly up through Settings.HillLevel and Settigns.MountainLevel
-                double landProgress = (finalField.landChance - 0.42d) / 0.58d; // @TODO: ???? this feels off.
-                double exponentialRise = Math.Pow(landProgress, 1.6d);
-                baseElevation = double.Lerp(Settings.SeaLevel + 0.02d, Settings.PeakLevel, exponentialRise)
-                                + (_plateElevationBiases[finalField.closestPlateId]) * 0.15d;
+                float landProgress = (finalField.LandChance - 0.42f) / 0.58f; // @TODO: ???? this feels off.
+                float exponentialRise = MathF.Pow(landProgress, 1.6f);
+                baseElevation = float.Lerp(Settings.SeaLevel + 0.02f, Settings.PeakLevel, exponentialRise)
+                                + (_plateElevationBiases[finalField.ClosestPlateId]) * 0.15f;
             }
 
             VoronoiSite localSite = new VoronoiSite(
                 siteIdCounter++,
-                new Vector2((float)finalX, (float)finalY),
-                finalField.closestPlateId,
+                new Vector2(finalX, finalY),
+                finalField.ClosestPlateId,
                 isOceanic,
                 Math.Max(-1.0, Math.Min(1.0, baseElevation))
             );

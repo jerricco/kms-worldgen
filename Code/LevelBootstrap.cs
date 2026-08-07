@@ -1,6 +1,7 @@
 using Sandbox.Generation;
 using Sandbox.Generator;
 using System;
+using System.Threading.Tasks;
 
 namespace Sandbox;
 
@@ -18,10 +19,18 @@ public sealed class LevelBootstrap : Component
 	    
         Log.Info($"Scene for seed '{Settings.SeedText}' starting...");
         Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
-        Generator?.Generate();
+        
+        float startTime = RealTime.Now; // @DEBUG
+        Task genTask = Generator?.Generate();
+        genTask.ContinueWith( t =>
+        {
+	        if ( t.IsFaulted )
+		        Log.Warning( $"Chunk generation failed! Reason: {t.Exception.Message}" );
+	        else
+		        Log.Info( $"All requested chunks generated! Took {RealTime.Now - startTime} s" );
+	        
+	        
+	        Log.Info( "===========================================================" ); // end generation block
+        } );
     }
-	protected override void OnUpdate()
-	{
-
-	}
 }

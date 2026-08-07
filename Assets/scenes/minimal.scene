@@ -287,18 +287,24 @@
           "__guid": "d0b59c3d-6a60-4224-b8ae-23af8c50a96d",
           "__enabled": true,
           "Flags": 0,
-          "CosA": 0,
-          "OffsetX": 0,
-          "OffsetY": 0,
+          "CosA": -0.3032780985345427,
+          "OffsetX": 36061,
+          "OffsetY": 77826,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RandomAngle": 0,
+          "RandomAngle": 4.404258079758727,
           "Settings": "default_generation.genconf",
-          "SinA": 0
+          "SinA": -0.9529020909565012,
+          "Voronoi": {
+            "_type": "component",
+            "component_id": "cb220cd7-ca1e-4e88-9a28-f0f4d9fbbe32",
+            "go": "a25de10a-190f-45ae-9c65-569eef0d1a8a",
+            "component_type": "VoronoiFactory"
+          }
         }
       ],
       "Children": [
