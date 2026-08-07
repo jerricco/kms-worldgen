@@ -3,6 +3,7 @@ using Sandbox.Triangulation;
 using Sandbox.Generation;
 using Sandbox.Ecology;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Sandbox.Generator;
 
@@ -11,7 +12,8 @@ public sealed class MapGenerator : Component
 {
 	[Property] public GenerationSettings Settings { get; set; }
 	[Property, ReadOnly] public VoronoiFactory Voronoi { get; set; }
-    [Property, ReadOnly] public double RandomAngle { get; set; }
+	[Property, ReadOnly] public RevealRadius GameRevealer { get; set; }
+	[Property, ReadOnly] public double RandomAngle { get; set; }
     [Property, ReadOnly] public int OffsetX { get; set; }
     [Property, ReadOnly] public int OffsetY { get; set; }
     [Property, ReadOnly] public double CosA { get; set; }
@@ -23,17 +25,47 @@ public sealed class MapGenerator : Component
     // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
     // of tile chunks. Or rather, I should test whether that's going to be relevant here.
     private int _initialRadius = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
-    private bool _isGenerating = false;
+    private int _totalQueueChunks = 0;
+    private int _processedChunks = 0;
+    private float _chunkProcessStartTime;
+    private ConcurrentQueue<Chunk> _pendingVisualUpdates = new();
+    
+    // Stores a list of chunks with their GLOBAL Vector2 coordinate as a key
     private Dictionary<Vector2, Chunk> _chunks;
     
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
     protected override void OnStart()
     {
         Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
+        GameRevealer = new RevealRadius( Settings.ChunkGridSize );
+    }
+    
+    protected override void OnUpdate()
+    {
+	    // Establish a maximum amount of chunks we are allowed to visually build per frame
+	    // Adjust this number (e.g., 1, 2, or 3) depending on how heavy your mesh building is
+	    int chunksProcessedThisFrame = 0;
+	    int maxChunksPerFrame = 2; 
+
+	    while ( _pendingVisualUpdates.TryDequeue( out Chunk chunk ) )
+	    {
+		    // @TODO: chunk rendering
+		    // BuildChunkVisualMesh( chunk ); 
+		    Log.Info( $"Chunk [{chunk.ChunkX},{chunk.ChunkY}] will render now" ); // @DEBUG
+        
+		    chunksProcessedThisFrame++;
+
+		    // Stop processing for this frame if we hit our budget, 
+		    // letting CSwapChainBase present the frame successfully!
+		    if ( chunksProcessedThisFrame >= maxChunksPerFrame )
+		    {
+			    break; 
+		    }
+	    }
     }
 
     // @TODO: Use a dynamic centerpoint instead of 0,0 hardcoded.
-    public Task Generate()
+    public void Generate()
     {
 	    Log.Info("Priming dynamic seeded generation properties");
 	    
@@ -52,86 +84,84 @@ public sealed class MapGenerator : Component
         
         // clear existing chunks explicitly since Generate always starts from the beginning with the seed.
         _chunks = new Dictionary<Vector2, Chunk>();
-        return UpdateChunkRadius( 0, 0, _initialRadius );
+        
+        // start initial world chunk generation
+        UpdateChunkRadius(new Vector2(0,0), _initialRadius);
     }
 
-    public async Task GenerateSingleChunk(int chunkX, int chunkY)
+    // @TODO: enhance this to be able to track the progress of all the chunks it adds so it can chain
+    // more executions once it's done. Think concentric circles generating in sequence so that it shows a minimum area
+    // to get the player playing while further out chunks continue expanding.
+    public void UpdateChunkRadius( Vector2 position, int radius = 4 )
     {
-	    if ( _isGenerating ) return;
-	    _isGenerating = true;
-	    
-	    float startTime = RealTime.Now; // @DEBUG
-	    int targetX = chunkX / Settings.ChunkGridSize;
-	    int targetY = chunkY / Settings.ChunkGridSize;
-	    Log.Info($"Generating chunk at {targetX},{targetY}" );
-	    
-	    Vector2 chunkKey = new Vector2( targetX, targetY );
-	    var chunk = new Chunk( targetX, targetY, Settings.ChunkGridSize );
-	    _chunks[chunkKey] = chunk;
-	    
-	    Log.Info( $"Allocated chunk. Threading to generate..." );
-	    
-	    // compute chunk off the main thread.
-	    await Task.RunInThreadAsync( () 
-		    => chunk.Generate(Settings.HalfWidth, Settings.HalfHeight, this) );
-	    
-	    _isGenerating = false;
-	    Log.Info($"Generated chunk {targetX},{targetY} in {RealTime.Now - startTime}s"  );
+	    _chunkProcessStartTime = RealTime.Now; // start timer
+	    GetChunkGenerationTasks(new Vector2(0,0), _initialRadius);
     }
-    
-    // Generate a number of individual chunks in a radius around the given point.
-    public Task UpdateChunkRadius( int centerX, int centerY, int revealRadius = 4 )
+
+    public void GetChunkGenerationTasks(Vector2 position, int radius = 4)
     {
-	    if ( _isGenerating )
+	    Log.Info($"Finding chunks in circle {radius} chunks wide around {position.x},{position.y}");
+	    var chunkQueue = GameRevealer.EnumerateChunksInside( position, radius );
+	    
+	    // yields to the loop whenever a chunk is found in the world that needs to generate.
+	    // @TODO: update camera max pan area to the largest extent of all the chunks generated
+	    foreach ( Vector2 globalPos in chunkQueue )
 	    {
-		    // @TODO: parallelise so chunkRadiusGeneration only can't happen if they cross each other's radii
-		    Log.Warning( "Generation is already underway! Try again later" );
-		    return Task.CompletedTask;
-	    }
-	    _isGenerating = true;
-	    
-	    if ( revealRadius < 4 )
-		    throw new ArgumentException(
-			    "The revealRadius should never be lower than 4 -> generating less chunks should be manual!" );
-	    
-	    Log.Info($"Generating {revealRadius * revealRadius} chunks around {centerX},{centerY}"  );
-	    
-	    List<Task> chunksToGenerate = new();
-	    int centerChunkX = centerX / Settings.ChunkGridSize;
-	    int centerChunkY = centerY / Settings.ChunkGridSize;
-	    int negR = -revealRadius / 2; int posR = revealRadius / 2;
-	    
-	    // chunk allocation
-	    for ( int xOffset = negR; xOffset < posR; xOffset++ )
-	    {
-		    for ( int yOffset = negR; yOffset < posR; yOffset++ )
+		    var chunkPos = new Vector2( globalPos.x / Settings.ChunkGridSize, globalPos.y / Settings.ChunkGridSize );
+		    // get or create a chunk
+		    if ( _chunks.TryGetValue( chunkPos, out var chunk ) )
 		    {
-			    int targetX = centerChunkX + xOffset;
-			    int targetY = centerChunkY + yOffset;
-			    
-			    Vector2 chunkKey = new Vector2( targetX, targetY );
-			    var chunk = new Chunk( targetX, targetY, Settings.ChunkGridSize );
-			    _chunks[chunkKey] = chunk;
-			    var threadTask = GameTask.RunInThreadAsync(() => 
-				    chunk.Generate(Settings.HalfWidth, Settings.HalfHeight, this)
-			    );
-            
-			    chunksToGenerate.Add( threadTask );
+			    // don't regenerate or interrupt valid chunks
+			    if ( chunk.Generated || chunk.Generating )
+			    {
+				    var notice = chunk.Generating ? "generating" : "already generated";
+				    Log.Warning( $"Chunk at {globalPos.x},{globalPos.y} {notice}!" );
+				    continue;
+			    }
 		    }
-	    }
+		    else
+		    {
+			    chunk = new Chunk((int)chunkPos.x, (int)chunkPos.y, Settings.ChunkGridSize);
+		    }
 
-	    if ( chunksToGenerate.Count == 0 )
+		    _totalQueueChunks++;
+		    _chunks[globalPos] = chunk; // put it in the box
+		    Log.Info( $"Queued chunk [{globalPos.x},{globalPos.y}]" );
+			
+		    // start streaming immediately - fuck the police
+		    _ = StreamChunkGeneration(chunk);
+	    }
+    }
+
+    private async Task StreamChunkGeneration(Chunk chunk)
+    {
+	    try
 	    {
-		    Log.Warning("No chunks found to generate! Exiting..." );
-		    return Task.CompletedTask;
+		    await GameTask.RunInThreadAsync( () =>
+		    {
+			    chunk.Generate( Settings.HalfWidth, Settings.HalfHeight, this );
+		    } );
+		    
+		    _processedChunks++;
+		    Log.Info( $"({_processedChunks}/{_totalQueueChunks}) Chunk at {chunk.ChunkX},{chunk.ChunkY} after " +
+		              $"{(RealTime.Now - _chunkProcessStartTime):F2}s! Starting render..." );
+		    
+		    // queue the current chunk for rendering in the next frame
+		    _pendingVisualUpdates.Enqueue( chunk );
 	    }
-
-	    Log.Info( $"Allocated {chunksToGenerate.Count()} chunks. Threading to generate..." );
+	    catch ( System.Exception ex )
+	    {
+		    _processedChunks++;
+		    Log.Error( $"Chunk generation failed! Reason: {ex.Message}" );
+	    }
 	    
-	    // compute chunks off the main thread.
-	    return Task.WhenAll( chunksToGenerate );
-
-	    // @TODO trace chunk extents to send to the camera so it can't zoom out more than the extent + a buffer
+	    if ( _processedChunks >= _totalQueueChunks )
+	    {
+		    // empty queue if complete
+		    Log.Info($"Chunk generation batch (size: {_totalQueueChunks}) complete!. Took {(RealTime.Now - _chunkProcessStartTime):F2} s");
+		    _processedChunks = 0;
+		    _totalQueueChunks = 0;
+	    }
     }
     
 	/**

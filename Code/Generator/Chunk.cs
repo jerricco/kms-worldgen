@@ -9,8 +9,11 @@ public class Chunk
 	public int ChunkX;
 	public int ChunkY;
 	public TileData[] Tiles { get; private set; }
+	public bool Generating = false;
+	public bool Generated = false;
 	
 	private int _size;
+	
 	
 	public Chunk(int chunkX, int chunkY, int size)
 	{
@@ -20,21 +23,17 @@ public class Chunk
 		Tiles = new TileData[size * size];
 	}
 
-	public void Generate(int xLimit, int yLimit, MapGenerator generator)
+	public Chunk Generate(int xLimit, int yLimit, MapGenerator generator)
 	{
-		float startTime = RealTime.Now; // @DEBUG
-		// Instead of processing rows sequentially on a single thread, Parallel.For 
-		// automatically distributes rows across all available CPU cores.
-		// @NOTE: I can try this, but disabling the whitelist will disallow me from publishing to S&Box. hmm....
+		Generating = true;
 		for ( int x = 0; x < _size; x++ )
-		{
 			for ( int y = 0; y < _size; y++ )
-			{
 				GenerateTile( x, y, xLimit, yLimit, generator );
-			}
-		};
-		
-		Log.Info($"Generating chunk at {ChunkX},{ChunkY}. Took {RealTime.Now - startTime} s");
+
+		Generating = false;
+		Generated = true;
+
+		return this;
 	}
 
 	public void GenerateTile(float x, float y, int xLimit, int yLimit, MapGenerator generator)

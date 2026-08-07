@@ -288,6 +288,7 @@
           "__enabled": true,
           "Flags": 0,
           "CosA": -0.3032780985345427,
+          "GameRevealer": null,
           "OffsetX": 36061,
           "OffsetY": 77826,
           "OnComponentDestroy": null,
