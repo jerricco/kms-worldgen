@@ -287,6 +287,7 @@
           "__guid": "d0b59c3d-6a60-4224-b8ae-23af8c50a96d",
           "__enabled": true,
           "Flags": 0,
+          "ChunkMaterial": "materials/dev/reflectivity_30.vmat",
           "CosA": -0.3032780985345427,
           "GameRevealer": null,
           "OffsetX": 36061,

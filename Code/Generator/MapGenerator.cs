@@ -4,6 +4,7 @@ using Sandbox.Generation;
 using Sandbox.Ecology;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Sandbox.Generator.Rendering;
 
 namespace Sandbox.Generator;
 
@@ -24,11 +25,12 @@ public sealed class MapGenerator : Component
     
     // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
     // of tile chunks. Or rather, I should test whether that's going to be relevant here.
-    private int _initialRadius = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
+    private int _initialRadius = 2; // => Settings.MaxDimension / Settings.ChunkGridSize;
     private int _totalQueueChunks = 0;
     private int _processedChunks = 0;
     private float _chunkProcessStartTime;
     private ConcurrentQueue<Chunk> _pendingVisualUpdates = new();
+    [Property] public Material ChunkMaterial { get; set; }
     
     // Stores a list of chunks with their GLOBAL Vector2 coordinate as a key
     private Dictionary<Vector2, Chunk> _chunks;
@@ -49,10 +51,13 @@ public sealed class MapGenerator : Component
 
 	    while ( _pendingVisualUpdates.TryDequeue( out Chunk chunk ) )
 	    {
-		    // @TODO: chunk rendering
-		    // BuildChunkVisualMesh( chunk ); 
-		    Log.Info( $"Chunk [{chunk.ChunkX},{chunk.ChunkY}] will render now" ); // @DEBUG
-        
+		    Log.Info( $"Chunk_{chunk.ChunkX}_{chunk.ChunkY} will render now" ); // @DEBUG
+
+		    var chunkRenderGo = new GameObject( true, $"Chunk_{chunk.ChunkX}_{chunk.ChunkY}" );
+		    chunkRenderGo.SetParent( GameObject ); // attach a rendering component to this generator's GameObject
+		    var renderer = chunkRenderGo.Components.Create<ChunkRenderer>();
+		    renderer.RegenerateMesh(chunk, ChunkMaterial); 
+		    
 		    chunksProcessedThisFrame++;
 
 		    // Stop processing for this frame if we hit our budget, 
@@ -144,7 +149,7 @@ public sealed class MapGenerator : Component
 		    
 		    _processedChunks++;
 		    Log.Info( $"({_processedChunks}/{_totalQueueChunks}) Chunk at {chunk.ChunkX},{chunk.ChunkY} after " +
-		              $"{(RealTime.Now - _chunkProcessStartTime):F2}s! Starting render..." );
+		              $"{(RealTime.Now - _chunkProcessStartTime):F2}s!" );
 		    
 		    // queue the current chunk for rendering in the next frame
 		    _pendingVisualUpdates.Enqueue( chunk );
