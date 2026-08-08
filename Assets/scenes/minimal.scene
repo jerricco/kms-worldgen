@@ -153,7 +153,7 @@
       "__guid": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
       "__version": 2,
       "Flags": 0,
-      "Name": "Camera",
+      "Name": "MapCamera",
       "Position": "0,0,100",
       "Rotation": "-0.49999997,0.49999997,0.49999997,0.49999997",
       "Scale": "1,1,1",
@@ -287,7 +287,7 @@
           "__guid": "d0b59c3d-6a60-4224-b8ae-23af8c50a96d",
           "__enabled": true,
           "Flags": 0,
-          "ChunkMaterial": "materials/dev/reflectivity_30.vmat",
+          "ChunkMaterial": "materials/tile_unlit.vmat",
           "CosA": -0.3032780985345427,
           "GameRevealer": null,
           "OffsetX": 36061,
@@ -393,6 +393,19 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "Settings": "default_generation.genconf"
+        },
+        {
+          "__type": "Sandbox.Gameplay.TileInteractionManager",
+          "__guid": "b729d553-8dcc-46f6-825f-21af195f2fac",
+          "__enabled": true,
+          "Flags": 0,
+          "ActiveMapManager": null,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": []

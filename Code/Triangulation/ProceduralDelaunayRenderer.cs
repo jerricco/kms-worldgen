@@ -57,7 +57,7 @@ public sealed class ProceduralDelaunayRenderer : Component
 		{
 			// Lerp between GREEN -> RED as we move away from WorldCenter (0,0,0)
 			var p = delaunayData.Points[i];
-			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 0f );
+			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 1f );
 			float distanceToCenter = Vector3.DistanceBetween( vertexPosition, worldCenter );
 			float t = Math.Clamp( distanceToCenter / Settings.MaxRadius, 0f, 1f );
 			float currentHue = MathX.Lerp( startHue, endHue, t );

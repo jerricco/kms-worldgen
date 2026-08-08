@@ -25,7 +25,7 @@ public sealed class MapGenerator : Component
     
     // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
     // of tile chunks. Or rather, I should test whether that's going to be relevant here.
-    private int _initialRadius = 2; // => Settings.MaxDimension / Settings.ChunkGridSize;
+    private int _initialRadius = 4; // => Settings.MaxDimension / Settings.ChunkGridSize;
     private int _totalQueueChunks = 0;
     private int _processedChunks = 0;
     private float _chunkProcessStartTime;
@@ -69,6 +69,19 @@ public sealed class MapGenerator : Component
 	    }
     }
 
+    public Chunk GetChunkAt( int chunkX, int chunkY )
+    {
+	    Vector2 chunkPos = new Vector2(chunkX * Settings.ChunkGridSize, chunkY * Settings.ChunkGridSize);
+	    if ( _chunks.TryGetValue( chunkPos, out var chunk ) )
+	    {
+		    return chunk;
+	    }
+	    else
+	    {
+		    return null;
+	    }
+    }
+
     // @TODO: Use a dynamic centerpoint instead of 0,0 hardcoded.
     public void Generate()
     {
@@ -103,7 +116,7 @@ public sealed class MapGenerator : Component
 	    GetChunkGenerationTasks(new Vector2(0,0), _initialRadius);
     }
 
-    public void GetChunkGenerationTasks(Vector2 position, int radius = 4)
+    private void GetChunkGenerationTasks(Vector2 position, int radius = 4)
     {
 	    Log.Info($"Finding chunks in circle {radius} chunks wide around {position.x},{position.y}");
 	    var chunkQueue = GameRevealer.EnumerateChunksInside( position, radius );
