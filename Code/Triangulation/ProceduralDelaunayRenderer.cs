@@ -57,7 +57,7 @@ public sealed class ProceduralDelaunayRenderer : Component
 		{
 			// Lerp between GREEN -> RED as we move away from WorldCenter (0,0,0)
 			var p = delaunayData.Points[i];
-			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 1f );
+			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 0f );
 			float distanceToCenter = Vector3.DistanceBetween( vertexPosition, worldCenter );
 			float t = Math.Clamp( distanceToCenter / Settings.MaxRadius, 0f, 1f );
 			float currentHue = MathX.Lerp( startHue, endHue, t );
@@ -125,8 +125,10 @@ public sealed class ProceduralDelaunayRenderer : Component
 		// spawn the scene renderable
 		_sceneObject = new SceneObject( Scene.SceneWorld, _compiledModel, new Transform( WorldPosition ) );
 		_sceneObject.ColorTint = Color.White; // Base tint - individual vertex colours should override here
-		_sceneObject.Attributes.Set( "g_vColorTint", new Vector4( 1f, 1f, 1f, 1f ) );
-		_sceneObject.RenderingEnabled = _enabled;
+		_sceneObject.Attributes.Set( "Layer", "Overlay" ); 
+		_sceneObject.Attributes.Set( "depthtest", "none" );
+		_sceneObject.Attributes.Set( "depthwrite", false );
+		_sceneObject.Attributes.Set( "renderwithouteffects", true );
 		
 		Log.Info( "Mesh geometry created for voronoi information. Toggle 'Show Delaunay' to view" );
 	}

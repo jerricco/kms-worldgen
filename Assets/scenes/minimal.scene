@@ -348,7 +348,7 @@
               "__guid": "22410852-5219-4fb8-9dfe-bcb6de941ce9",
               "__enabled": true,
               "Flags": 0,
-              "BaseMaterial": "materials/default/default_line.vmat",
+              "BaseMaterial": "materials/tile_unlit.vmat",
               "DefaultLineColor": "1,1,1,1",
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,

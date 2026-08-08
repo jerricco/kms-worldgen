@@ -8,5 +8,5 @@ Layer0
 	F_DO_NOT_CAST_SHADOWS 1
 
 	//---- Fog ----
-	g_bFogEnabled "1"
+	g_bFogEnabled "0"
 }
