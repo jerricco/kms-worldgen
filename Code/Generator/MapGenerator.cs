@@ -4,6 +4,7 @@ using Sandbox.Generation;
 using Sandbox.Ecology;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Sandbox.Gameplay;
 using Sandbox.Generator.Rendering;
 
 namespace Sandbox.Generator;
@@ -11,10 +12,19 @@ namespace Sandbox.Generator;
 [Category("Procedural Generation")]
 public sealed class MapGenerator : Component
 {
+	// assets
 	[Property] public GenerationSettings Settings { get; set; }
 	[Property] public ChunkTheme Theme { get; set; }
-	[Property, ReadOnly] public VoronoiFactory Voronoi { get; set; }
-	[Property, ReadOnly] public RevealRadius GameRevealer { get; set; }
+	[Property] public Material ChunkMaterial { get; set; }
+	
+	// gameobjects & components
+	public GameObject VoronoiFactoryGo { get; set; }
+	public VoronoiFactory Voronoi { get; set; }
+	public TileInteractionManager TileInteraction { get; set; }
+	
+	public GameObject ChunkBucketGo { get; set; }
+	private Dictionary<(float x,float y), GameObject> _chunkRenderers;
+	
 	[Property, ReadOnly] public double RandomAngle { get; set; }
     [Property, ReadOnly] public int OffsetX { get; set; }
     [Property, ReadOnly] public int OffsetY { get; set; }
@@ -24,15 +34,11 @@ public sealed class MapGenerator : Component
     public Prng Rng { get; set; }
     public OpenSimplexNoise Noise { get; set; }
     
-    // The cell grid size divisor of the total grid shares a relationship with a viable opening generation size
-    // of tile chunks. Or rather, I should test whether that's going to be relevant here.
-    private int _initialRadius = 16; // => Settings.MaxDimension / Settings.ChunkGridSize;
+    private int _initialRadius = 32; // => Settings.MaxDimension / Settings.ChunkGridSize;
     private int _totalQueueChunks = 0;
     private int _processedChunks = 0;
     private float _chunkProcessStartTime;
     private ConcurrentQueue<Chunk> _pendingVisualUpdates = new();
-    private Dictionary<(float x,float y), GameObject> _chunkRenderers = new();
-    [Property] public Material ChunkMaterial { get; set; }
     
     // Stores a list of chunks with their GLOBAL Vector2 coordinate as a key
     private Dictionary<Vector2, Chunk> _chunks;
@@ -40,8 +46,37 @@ public sealed class MapGenerator : Component
     // @TODO: if a save file exists, we should pass it in and use that in place of raw generation
     protected override void OnStart()
     {
-        Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
-        GameRevealer = new RevealRadius( Settings.ChunkGridSize );
+	    Log.Info("MapGenerator: Getting assets");
+	    // load assets & defaults
+	    Settings = Settings ?? ResourceLibrary.Get<GenerationSettings>("default_generation.genconf");
+	    Theme = Theme ?? ResourceLibrary.Get<ChunkTheme>( "default_theme.gentheme" );
+	    ChunkMaterial = ChunkMaterial ?? Material.Load( "materials/tile_unlit.vmat" );
+	    
+	    Log.Info("MapGenerator: Priming dynamic seeded generation properties");
+	    // component configuration
+	    Rng = new Prng(Settings.SeedText);
+	    Noise = new OpenSimplexNoise(Rng);
+	    RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
+	    CosA = Math.Cos(RandomAngle);
+	    SinA = Math.Sin(RandomAngle);
+	    OffsetX = Rng.NextRange(10000, 90000);
+	    OffsetY = Rng.NextRange(10000, 90000);
+	    
+	    Log.Info("MapGenerator: Creating dependencies");
+	    // Create/Retrieve child components
+	    VoronoiFactoryGo = new GameObject( true, $"VoronoiFactory_{Guid.NewGuid()}" );
+	    VoronoiFactoryGo.SetParent( GameObject );
+        
+	    Voronoi = VoronoiFactoryGo.GetOrAddComponent<VoronoiFactory>(); // retrieves it from VoronoiFactoryGo -> @TODO does this work? or get on demand?
+	    Voronoi.Settings = Settings;
+	    Voronoi.LineMaterial = ChunkMaterial;
+	    Voronoi.Rng = Rng;
+        
+	    ChunkBucketGo = new GameObject(true, $"ChunkBucket_{Guid.NewGuid()}" ); // holds our generated chunks
+	    ChunkBucketGo.SetParent( GameObject );
+	    _chunkRenderers = new();
+	    
+        TileInteraction = GameObject.AddComponent<TileInteractionManager>();
     }
     
     protected override void OnUpdate()
@@ -54,17 +89,18 @@ public sealed class MapGenerator : Component
 
 	    while ( _pendingVisualUpdates.TryDequeue( out Chunk chunk ) )
 	    {
-		    Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} will render now" ); // @DEBUG
+		    // Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} will render now" ); // @DEBUG
 
 		    var chunkRenderGo = new GameObject( true, $"Chunk_{chunk.Position.x}_{chunk.Position.y}" );
-		    chunkRenderGo.SetParent( GameObject ); // attach a rendering component to this generator's GameObject
+		    chunkRenderGo.SetParent( ChunkBucketGo ); // attach a rendering component to this generator's ChunkBucketGo
 		    var renderer = chunkRenderGo.Components.Create<ChunkRenderer>();
-		    renderer.Settings = Settings; // Ensure it gets its value first
-		    renderer.Theme = Theme; // Give a default theme before the component overwrites it
-		    renderer.RegenerateMesh(chunk, ChunkMaterial, Settings, Theme); 
+		    renderer.Settings = Settings;
+		    renderer.Theme = Theme;
+		    renderer.ChunkMaterial = ChunkMaterial;
 		    // add to the chunk renderers so we can alter or destroy later
 		    _chunkRenderers[(chunk.Position.x, chunk.Position.y)] = chunkRenderGo;
 		    
+		    renderer.RegenerateMesh(chunk); 
 		    chunksProcessedThisFrame++;
 
 		    // Stop processing for this frame if we hit our budget, 
@@ -78,14 +114,26 @@ public sealed class MapGenerator : Component
 
     protected override void OnDestroy()
     {
+	    // kill dependencies
+	    TileInteraction.Destroy();
+	    
+	    // Destroy all chunkrenderers
 	    foreach ( var (_, go) in _chunkRenderers )
 	    {
 		    go.Destroy();
 	    }
+	    
+	    // then our bucket
+	    ChunkBucketGo.Destroy();
+	    // kill the voronoi
+	    Voronoi.Destroy();
+	    VoronoiFactoryGo.Destroy();
     }
 
     public Chunk GetChunkAt( int chunkX, int chunkY )
     {
+	    if ( _chunks == null ) return null;
+	    
 	    Vector2 chunkPos = new Vector2(chunkX * Settings.ChunkGridSize, chunkY * Settings.ChunkGridSize);
 	    if ( _chunks.TryGetValue( chunkPos, out var chunk ) )
 	    {
@@ -98,21 +146,8 @@ public sealed class MapGenerator : Component
     }
 
     // @TODO: Use a dynamic centerpoint instead of 0,0 hardcoded.
-    // @DEBUG - Clickable editor button for on-demand map regeneration; Generate is self-cleaning
-    [Button( "Regenerate Map" )]
     public void Generate()
     {
-	    Log.Info("Priming dynamic seeded generation properties");
-	    
-	    // create helpers - future steps of generation will always need to share these
-	    Rng = new Prng(Settings.SeedText);
-	    Noise = new OpenSimplexNoise(Rng);
-	    RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
-	    CosA = Math.Cos(RandomAngle);
-	    SinA = Math.Sin(RandomAngle);
-	    OffsetX = Rng.NextRange(10000, 90000);
-	    OffsetY = Rng.NextRange(10000, 90000);
-	    
         Log.Info($"Starting level generation with seed  {Settings.SeedText}...");
         Log.Info( "===========================================================" );
         Voronoi.GenerateAndRender();
@@ -136,7 +171,7 @@ public sealed class MapGenerator : Component
     private void GetChunkGenerationTasks(Vector2 position, int radius = 4)
     {
 	    Log.Info($"Finding chunks in circle {radius} chunks wide around {position.x},{position.y}");
-	    var chunkQueue = GameRevealer.EnumerateChunksInside( position, radius );
+	    var chunkQueue = EnumerateChunksInside( position, radius );
 
 	    // yields to the loop whenever a chunk is found in the world that needs to generate.
 	    // @TODO: update camera max pan area to the largest extent of all the chunks generated
@@ -166,6 +201,56 @@ public sealed class MapGenerator : Component
 		    // start streaming immediately - fuck the police
 		    _ = StreamChunkGeneration(chunk);
 	    }
+    }
+    
+    /// <summary>
+    /// Scans the circular field and yields the top-left global space coordinate of every 
+    /// grid-aligned chunk that fits completely inside the radius. This function searches grid space
+    /// </summary>
+    private IEnumerable<Vector2> EnumerateChunksInside( Vector2 center, int radius = 4 )
+    {
+	    int squareRadius = radius * radius;
+	    // calculate boundaries purely in CHUNK INDEX coordinates
+	    int minChunkX = (int)center.x - radius;
+	    int maxChunkX = (int)center.x + radius;
+	    int minChunkY = (int)center.y - radius;
+	    int maxChunkY = (int)center.y + radius;
+
+        Log.Warning( $"Chunk box created around {minChunkX},{minChunkY} to {maxChunkX},{maxChunkY} in chunk space" );
+        
+        // loop through chunk indices
+        for ( int cx = minChunkX; cx <= maxChunkX; cx++ )
+        {
+	        for ( int cy = minChunkY; cy <= maxChunkY; cy++ )
+	        {
+		        // Define the 4 corners of this chunk in chunk space
+		        float left = cx;
+		        float right = cx + 1;
+		        float top = cy;
+		        float bottom = cy - 1;
+
+		        // strict containment check (Compare chunk index distances directly to index radius)
+		        float dxCenter = center.x;
+		        float dyCenter = center.y;
+
+		        bool topLeftIn = ((left - dxCenter) * (left - dxCenter)) 
+									+ ((top - dyCenter) * (top - dyCenter)) <= squareRadius;
+		        bool topRightIn = ((right - dxCenter) * (right - dxCenter)) 
+									+ ((top - dyCenter) * (top - dyCenter)) <= squareRadius;
+		        bool bottomLeftIn = ((left - dxCenter) * (left - dxCenter)) 
+		                            + ((bottom - dyCenter) * (bottom - dyCenter)) <= squareRadius;
+		        bool bottomRightIn = ((right - dxCenter) * (right - dxCenter)) 
+									+ ((bottom - dyCenter) * (bottom - dyCenter)) <= squareRadius;
+
+		        // if all four corners fit inside the index radius, convert to global world coordinates and yield
+		        if ( topLeftIn && topRightIn && bottomLeftIn && bottomRightIn )
+		        {
+			        float globalX = cx * Settings.ChunkGridSize;
+			        float globalY = cy * Settings.ChunkGridSize;
+			        yield return new Vector2( globalX, globalY );
+		        }
+	        }
+        }
     }
 
     private async Task StreamChunkGeneration(Chunk chunk)

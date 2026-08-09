@@ -5,25 +5,32 @@ namespace Sandbox.Generator.Rendering;
 
 public class ChunkRenderer : Component
 {
-	
 	[Property] public GenerationSettings Settings { get; set; }
 	[Property] public ChunkTheme Theme { get; set; }
+	[Property] public Material ChunkMaterial { get; set; }
 	[Property] public Color DefaultTileColor { get; set; } = Color.Magenta;
 	
 	private ModelRenderer _modelRenderer;
 	
 	protected override void OnStart()
 	{
-		_modelRenderer = Components.GetOrCreate<ModelRenderer>();
+		Settings = Settings ?? ResourceLibrary.Get<GenerationSettings>("default_generation.genconf");
+		Theme = Theme ?? ResourceLibrary.Get<ChunkTheme>( "default_theme.gentheme" );
+		ChunkMaterial = ChunkMaterial ?? Material.Load( "materials/tile_unlit.vmat" );
 	}
-	
+
+	protected override void OnDestroy()
+	{
+		_modelRenderer.Destroy();
+	}
+
 	// @TODO: Create multiple sceneObjects which each have a different visualisation of the tiles.
 	// This should eventually become the gameview layer system
 	
 	/// <summary>
 	/// Call this method whenever the chunk data is ready or changes.
 	/// </summary>
-	public void RegenerateMesh(Chunk chunk, Material baseMaterial, GenerationSettings settings, ChunkTheme theme)
+	public void RegenerateMesh(Chunk chunk)
 	{
 		if ( chunk.Tiles.Length < 1 )
 		{
@@ -32,13 +39,9 @@ public class ChunkRenderer : Component
 		}
 		
 		// @TODO get chunk container GO and fill that with the chunks. We'll use that GO to manage live chunk state
-		if ( _modelRenderer == null )
-			_modelRenderer = Components.GetOrCreate<ModelRenderer>();
-
-		if ( Settings == null ) Settings = settings;
-		if ( Theme == null ) Theme = theme;
+		//  get default properties if they aren't around
+		_modelRenderer = GameObject.GetOrAddComponent<ModelRenderer>();
 		
-		var meshMaterial = baseMaterial ?? Material.Load( "materials/tile_unlit.vmat" );
 		var worldX = chunk.Position.x * chunk.Size;
 		var worldY = chunk.Position.y * chunk.Size;
 		// Put the chunk into it's place in the world
@@ -164,7 +167,7 @@ public class ChunkRenderer : Component
 		}
 
 		// Create and build the S&Box Mesh object
-		var mesh = new Mesh( meshMaterial );
+		var mesh = new Mesh( ChunkMaterial );
 		mesh.CreateVertexBuffer( vertices.Count, vertices.ToArray() );
 		mesh.CreateIndexBuffer( indices.Count, indices.ToArray() );
 		
@@ -182,7 +185,7 @@ public class ChunkRenderer : Component
 		_modelRenderer.Model = model;
 		_modelRenderer.Enabled = true;
 		
-		Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} has been attached to it's renderer!" );
+		// Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} has been attached to it's renderer!" );
 	}
 
 	private Color GetElevationColour( double elevation )
@@ -196,11 +199,10 @@ public class ChunkRenderer : Component
 		if ( elevation < Settings.DeepOceanLevel ) return Theme.AbyssalOcean;
 		if ( elevation < Settings.OceanLevel ) return Theme.DeepOcean;
 		if ( elevation < Settings.SeaLevel ) return Theme.Ocean;
-		if ( elevation < Settings.BeachLevel ) return Theme.Sea;
-		if ( elevation < Settings.PlainLevel ) return Theme.Beach;
-		if ( elevation < Settings.HillLevel ) return Theme.Plain;
-		if ( elevation < Settings.MountainLevel ) return Theme.Hill;
-		if ( elevation < Settings.PeakLevel ) return Theme.Mountain;
+		if ( elevation < Settings.BeachLevel ) return Theme.Beach;
+		if ( elevation < Settings.PlainLevel ) return Theme.Plain;
+		if ( elevation < Settings.HillLevel ) return Theme.Hill;
+		if ( elevation < Settings.MountainLevel ) return Theme.Mountain;
 		return Theme.Peak; 
 	} 
 }

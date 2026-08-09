@@ -9,22 +9,30 @@ namespace Sandbox.Triangulation;
 public sealed class VoronoiFactory : Component
 {
 	[Property] public GenerationSettings Settings { get; set;  }
-	
+	[Property] public Prng Rng { get; set; }
+	[Property] public ProceduralDelaunayRenderer Renderer { get; set; }
+	[Property] public Material LineMaterial { get; set; }
+
 	public Delaunator Delaunay;
 	public Voronator Voronoi;
 	public List<CurvedSpine> TectonicSpines;
 	// Cache object for handling fast voronoi/delaunay data spatial lookup
 	public static Dictionary<Vector2, List<(int index, Vector2 pos)>> PointGridBuckets = new();
 	public Vector2[] CachedCellCenters;
-	
-	private MapGenerator Generator { get; set;  }
-	
-    protected override void OnStart()
-    {
-		Generator = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
-    }
 
-    public void GenerateAndRender()
+	protected override void OnStart()
+	{
+		Renderer = GameObject.Components.Create<ProceduralDelaunayRenderer>();
+		Renderer.Settings = Settings;
+		Renderer.BaseMaterial = LineMaterial;
+	}
+
+	protected override void OnDestroy()
+	{
+		Renderer.Destroy();
+	}
+
+	public void GenerateAndRender()
     {
 	    float startTime = RealTime.Now;
 
@@ -37,8 +45,7 @@ public sealed class VoronoiFactory : Component
         Log.Info( $"Voronoi generation complete! Took {RealTime.Now - startTime} s" );
         
         // create mesh for drawing the voronoi sites - @TODO: debug flag
-        var pdRenderer = GetComponent<ProceduralDelaunayRenderer>();
-        pdRenderer.RebuildMesh(Delaunay);
+        Renderer.RebuildMesh(Delaunay);
         
         Log.Info( $"Voronoi mesh complete! Took {RealTime.Now - startTime} s" );
     }
@@ -121,20 +128,20 @@ public sealed class VoronoiFactory : Component
     public List<CurvedSpine> GenerateTectonicNetwork()
     {
 	    var networks = new List<CurvedSpine>();
-	    int continentCount = Generator.Rng.NextRange(3, 6);
+	    int continentCount = Rng.NextRange(3, 6);
 	    for ( int c = 0; c < continentCount; c++ )
 	    {
 		    var spine = new CurvedSpine { Nodes = new List<Vector2>() };
-		    int nodeCount = Generator.Rng.NextRange(4, 6);
+		    int nodeCount = Rng.NextRange(4, 6);
 		    
 		    float scatterRange = Settings.HalfWidth * 0.4f; 
 		    Vector2 continentCenter = new Vector2(
-			    Generator.Rng.NextRangeFloat(-scatterRange, scatterRange),
-			    Generator.Rng.NextRangeFloat(-scatterRange, scatterRange)
+			    Rng.NextRangeFloat(-scatterRange, scatterRange),
+			    Rng.NextRangeFloat(-scatterRange, scatterRange)
 		    );
 		    
 		    // Give each continent its own unique orientation vector
-		    float baseAngle = Generator.Rng.NextRangeFloat(0, 360);
+		    float baseAngle = Rng.NextRangeFloat(0, 360);
 		    Vector2 direction = Vector2.FromDegrees(baseAngle);
 		    Vector2 perpendicular = new Vector2(-direction.y, direction.x);
 		    
@@ -221,8 +228,8 @@ public sealed class VoronoiFactory : Component
                 int attemptsPerChunk = 6; 
                 for (int k = 0; k < attemptsPerChunk; k++)
                 {
-                    float sampleX = x + Generator.Rng.NextRangeFloat(0, chunkGridSize);
-                    float sampleY = y + Generator.Rng.NextRangeFloat(0, chunkGridSize);
+                    float sampleX = x + Rng.NextRangeFloat(0, chunkGridSize);
+                    float sampleY = y + Rng.NextRangeFloat(0, chunkGridSize);
                     Vector2 candidate = new Vector2(sampleX, sampleY);
 
                     // Fetch our 0.0 - 1.0 land density ranking
@@ -269,8 +276,8 @@ public sealed class VoronoiFactory : Component
 	    float noiseScale = 0.0005f; 
 	    float noiseStrength = 800f; 
 	    
-	    float offsetX = Generator.Rng.NextRangeFloat(-Settings.HalfWidth * 10, Settings.HalfWidth * 10);
-	    float offsetY = Generator.Rng.NextRangeFloat(-Settings.HalfWidth * 10, Settings.HalfWidth * 10);
+	    float offsetX = Rng.NextRangeFloat(-Settings.HalfWidth * 10, Settings.HalfWidth * 10);
+	    float offsetY = Rng.NextRangeFloat(-Settings.HalfWidth * 10, Settings.HalfWidth * 10);
 
 	    float warpedX = point.x + offsetX * noiseScale;
 	    float warpedY = point.y + offsetY * noiseScale;
