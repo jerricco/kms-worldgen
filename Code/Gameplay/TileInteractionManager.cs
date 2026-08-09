@@ -4,10 +4,8 @@ using Sandbox.Generation;
 
 namespace Sandbox.Gameplay;
 
-// @TODO: Orchestrate this to activating on-demand when tiles are geneated. 
 public class TileInteractionManager : Component
 {
-	// @TODO: split this into the MapManager so that a dedicated component tracks live chunks
 	[Property] public MapGenerator ActiveMapManager { get; set; }
 
 	protected override void OnStart()

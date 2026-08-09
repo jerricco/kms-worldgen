@@ -67,7 +67,7 @@ public sealed class MapGenerator : Component
 	    VoronoiFactoryGo = new GameObject( true, $"VoronoiFactory_{Guid.NewGuid()}" );
 	    VoronoiFactoryGo.SetParent( GameObject );
         
-	    Voronoi = VoronoiFactoryGo.GetOrAddComponent<VoronoiFactory>(); // retrieves it from VoronoiFactoryGo -> @TODO does this work? or get on demand?
+	    Voronoi = VoronoiFactoryGo.GetOrAddComponent<VoronoiFactory>();
 	    Voronoi.Settings = Settings;
 	    Voronoi.LineMaterial = ChunkMaterial;
 	    Voronoi.Rng = Rng;
@@ -156,21 +156,13 @@ public sealed class MapGenerator : Component
         _chunks = new Dictionary<Vector2, Chunk>();
         
         // start initial world chunk generation
-        UpdateChunkRadius(new Vector2(0,0), _initialRadius);
-    }
-
-    // @TODO: enhance this to be able to track the progress of all the chunks it adds so it can chain
-    // more executions once it's done. Think concentric circles generating in sequence so that it shows a minimum area
-    // to get the player playing while further out chunks continue expanding.
-    public void UpdateChunkRadius( Vector2 position, int radius = 4 )
-    {
-	    _chunkProcessStartTime = RealTime.Now; // start timer
-	    GetChunkGenerationTasks(position, radius);
+        GetChunkGenerationTasks(new Vector2(0,0), _initialRadius);
     }
 
     private void GetChunkGenerationTasks(Vector2 position, int radius = 4)
     {
 	    Log.Info($"Finding chunks in circle {radius} chunks wide around {position.x},{position.y}");
+	    _chunkProcessStartTime = RealTime.Now; // start timer
 	    var chunkQueue = EnumerateChunksInside( position, radius );
 
 	    // yields to the loop whenever a chunk is found in the world that needs to generate.

@@ -137,7 +137,6 @@ public sealed class ProceduralDelaunayRenderer : Component
 	{
 		if ( _sceneObject == null ) return;
 
-		// @TODO: ensure this works with the panning script.
 		// Upate the object to translate with the WorldPosition which is altered when panning the camera.
 		_sceneObject.Transform = new Transform( WorldPosition );
 	}

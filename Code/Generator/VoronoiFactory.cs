@@ -44,7 +44,7 @@ public sealed class VoronoiFactory : Component
         
         Log.Info( $"Voronoi generation complete! Took {RealTime.Now - startTime} s" );
         
-        // create mesh for drawing the voronoi sites - @TODO: debug flag
+        // create mesh for drawing the voronoi sites - @TODO: default to false visibility when done with
         Renderer.RebuildMesh(Delaunay);
         
         Log.Info( $"Voronoi mesh complete! Took {RealTime.Now - startTime} s" );

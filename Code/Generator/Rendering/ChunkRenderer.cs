@@ -38,8 +38,6 @@ public class ChunkRenderer : Component
 			return;
 		}
 		
-		// @TODO get chunk container GO and fill that with the chunks. We'll use that GO to manage live chunk state
-		//  get default properties if they aren't around
 		_modelRenderer = GameObject.GetOrAddComponent<ModelRenderer>();
 		
 		var worldX = chunk.Position.x * chunk.Size;
