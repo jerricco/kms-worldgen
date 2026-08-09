@@ -247,7 +247,7 @@
         },
         {
           "__type": "Sandbox.Gameplay.MapCameraController",
-          "__guid": "e89a23bd-1701-4c1d-97bf-1c27a37173f5",
+          "__guid": "d10fac9d-075b-488b-b50d-4fbe34fe3ac0",
           "__enabled": true,
           "Flags": 0,
           "MaxZoom": 10000,
@@ -259,7 +259,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "PanSpeed": 1,
-          "Settings": "default_generation.genconf",
           "ZoomSensitivity": 0.15,
           "ZoomSmoothness": 15
         }
@@ -284,29 +283,53 @@
       "Components": [
         {
           "__type": "Sandbox.Generator.MapGenerator",
-          "__guid": "d0b59c3d-6a60-4224-b8ae-23af8c50a96d",
+          "__guid": "010a3358-9227-4bdf-b2e8-a52cec812f07",
           "__enabled": true,
           "Flags": 0,
           "ChunkMaterial": "materials/tile_unlit.vmat",
-          "CosA": -0.3032780985345427,
+          "CosA": 0,
           "GameRevealer": null,
-          "OffsetX": 36061,
-          "OffsetY": 77826,
+          "OffsetX": 0,
+          "OffsetY": 0,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RandomAngle": 4.404258079758727,
+          "RandomAngle": 0,
           "Settings": "default_generation.genconf",
-          "SinA": -0.9529020909565012,
-          "Voronoi": {
-            "_type": "component",
-            "component_id": "cb220cd7-ca1e-4e88-9a28-f0f4d9fbbe32",
-            "go": "a25de10a-190f-45ae-9c65-569eef0d1a8a",
-            "component_type": "VoronoiFactory"
-          }
+          "SinA": 0,
+          "Theme": "default_theme.gentheme",
+          "Voronoi": null
+        },
+        {
+          "__type": "Sandbox.Generator.Rendering.ChunkRenderer",
+          "__guid": "e806ed2a-34e8-439d-842d-63f3dfaf35d8",
+          "__enabled": true,
+          "Flags": 0,
+          "DefaultTileColor": "1,0,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Settings": "default_generation.genconf",
+          "Theme": "default_theme.gentheme"
+        },
+        {
+          "__type": "Sandbox.Gameplay.TileInteractionManager",
+          "__guid": "79a8b787-876c-4362-84a7-773a59f9fd87",
+          "__enabled": true,
+          "Flags": 0,
+          "ActiveMapManager": null,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": [
@@ -328,13 +351,9 @@
           "Components": [
             {
               "__type": "Sandbox.Triangulation.VoronoiFactory",
-              "__guid": "cb220cd7-ca1e-4e88-9a28-f0f4d9fbbe32",
+              "__guid": "23f9b4b5-312a-4366-9f04-8dc48b8fbd86",
               "__enabled": true,
               "Flags": 0,
-              "ContinentalFragmentationFactor": 0,
-              "Generator": null,
-              "MacroBayFrequency": 0,
-              "MacroBayIntensity": 0,
               "OnComponentDestroy": null,
               "OnComponentDisabled": null,
               "OnComponentEnabled": null,
@@ -345,7 +364,7 @@
             },
             {
               "__type": "Sandbox.Triangulation.ProceduralDelaunayRenderer",
-              "__guid": "22410852-5219-4fb8-9dfe-bcb6de941ce9",
+              "__guid": "f0cccc42-d8da-4665-b5d5-de8278b97f4e",
               "__enabled": true,
               "Flags": 0,
               "BaseMaterial": "materials/tile_unlit.vmat",
@@ -382,7 +401,7 @@
       "Components": [
         {
           "__type": "Sandbox.LevelBootstrap",
-          "__guid": "f059181b-8f91-48cc-87c1-6cec4fc230c8",
+          "__guid": "89540072-0fb9-4f39-8560-2d6cba26c412",
           "__enabled": true,
           "Flags": 0,
           "Generator": null,
@@ -393,19 +412,6 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "Settings": "default_generation.genconf"
-        },
-        {
-          "__type": "Sandbox.Gameplay.TileInteractionManager",
-          "__guid": "b729d553-8dcc-46f6-825f-21af195f2fac",
-          "__enabled": true,
-          "Flags": 0,
-          "ActiveMapManager": null,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null
         }
       ],
       "Children": []

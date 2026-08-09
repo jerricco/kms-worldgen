@@ -8,13 +8,11 @@ namespace Sandbox.Gameplay;
 [Category("Game Control")]
 public sealed class MapCameraController : Component
 {
-	[Property] public GenerationSettings Settings { get; set; }
-	
 	// @TODO: Data-driven controls so that multiple cameras can inherit these values.
 	[Property, Header( "Zoom Settings" )] 
 	public float MinZoom { get; set; } = 100f;
 	[Property] 
-	public float MaxZoom { get; set; } = 10000f;
+	public float MaxZoom { get; set; } = 15000f;
 	[Property]
 	public float ZoomSensitivity { get; set; } = 0.15f;
 	[Property]

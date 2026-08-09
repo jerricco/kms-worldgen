@@ -13,7 +13,12 @@ public partial class GenerationSettings : GameResource
     [Property] public int WorldWidth    { get; set; } = 12800;
     [Property] public int WorldHeight   { get; set; } = 12800;
     [Property] public int CellGridSize  { get; set; } = 400;
+    [Property] public int CellGridColumns => WorldWidth / CellGridSize; // e.g., 12800 / 400 = 32
+    [Property] public int CellGridRows => WorldHeight / CellGridSize; 
     [Property] public int ChunkGridSize { get; set; } = 50;
+    [Property] public int ChunksX => MathX.CeilToInt((float)CellGridColumns / ChunkGridSize);
+    [Property] public int ChunksY => MathX.CeilToInt((float)CellGridRows / ChunkGridSize);
+    [Property] public int TotalChunks => ChunksX * ChunksY;
     
     // Map generation modifiers
     [Property] public float OceanClamp  { get; set; } = 0.85f;
@@ -40,7 +45,6 @@ public partial class GenerationSettings : GameResource
     [Property] public int TotalTiles => WorldWidth * WorldHeight;
     [Property] public int MaxDimension => Math.Max(WorldWidth, WorldHeight);
     [Property] public float MaxRadius => MathF.Sqrt( (HalfWidth * HalfWidth) + (HalfHeight * HalfHeight) );
-    [Property] public int TotalChunks => TotalTiles / ChunkGridSize;
     [Property] public int HalfWidth => WorldWidth / 2;
     [Property] public int HalfHeight => WorldHeight / 2;
     

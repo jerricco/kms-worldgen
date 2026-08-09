@@ -5,6 +5,9 @@ namespace Sandbox.Generator.Rendering;
 
 public class ChunkRenderer : Component
 {
+	
+	[Property] public GenerationSettings Settings { get; set; }
+	[Property] public ChunkTheme Theme { get; set; }
 	[Property] public Color DefaultTileColor { get; set; } = Color.Magenta;
 	
 	private ModelRenderer _modelRenderer;
@@ -20,21 +23,24 @@ public class ChunkRenderer : Component
 	/// <summary>
 	/// Call this method whenever the chunk data is ready or changes.
 	/// </summary>
-	public void RegenerateMesh(Chunk chunk, Material baseMaterial)
+	public void RegenerateMesh(Chunk chunk, Material baseMaterial, GenerationSettings settings, ChunkTheme theme)
 	{
 		if ( chunk.Tiles.Length < 1 )
 		{
-			Log.Error( $"Chunk_{chunk.ChunkX}_{chunk.ChunkY}: Not enough tiles for rendering! Exiting..." );
+			Log.Error( $"Chunk_{chunk.Position.x}_{chunk.Position.y}: Not enough tiles for rendering! Exiting..." );
 			return;
 		}
 		
 		// @TODO get chunk container GO and fill that with the chunks. We'll use that GO to manage live chunk state
 		if ( _modelRenderer == null )
 			_modelRenderer = Components.GetOrCreate<ModelRenderer>();
+
+		if ( Settings == null ) Settings = settings;
+		if ( Theme == null ) Theme = theme;
 		
 		var meshMaterial = baseMaterial ?? Material.Load( "materials/tile_unlit.vmat" );
-		var worldX = chunk.ChunkX * chunk.Size;
-		var worldY = chunk.ChunkY * chunk.Size;
+		var worldX = chunk.Position.x * chunk.Size;
+		var worldY = chunk.Position.y * chunk.Size;
 		// Put the chunk into it's place in the world
 		WorldPosition = new Vector3( worldX, worldY, 0f );
 		
@@ -176,18 +182,25 @@ public class ChunkRenderer : Component
 		_modelRenderer.Model = model;
 		_modelRenderer.Enabled = true;
 		
-		Log.Info( $"Chunk_{chunk.ChunkX}_{chunk.ChunkY} has been attached to it's renderer!" );
+		Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} has been attached to it's renderer!" );
 	}
 
-	private Color GetElevationColour( double elevation)
+	private Color GetElevationColour( double elevation )
 	{
 		// If out of elevation bounds, express as the default Color
 		if ( elevation < -1.0D || elevation > 1.0D ) return DefaultTileColor;
 		
-		// @TODO: fiddle here properly
-		if ( elevation < 0.0D ) return Color.Blue;       // Water
-		if ( elevation < 0.2D ) return Color.Yellow;     // Sand
-		if ( elevation < 0.7D ) return Color.Green;      // Grass
-		return Color.Gray; 
+		// @TODO: fiddle here more
+		if ( elevation == Settings.AbyssalLevel ) return Theme.Void;
+		if ( elevation < Settings.TrenchLevel ) return Theme.CrustFloor;
+		if ( elevation < Settings.DeepOceanLevel ) return Theme.AbyssalOcean;
+		if ( elevation < Settings.OceanLevel ) return Theme.DeepOcean;
+		if ( elevation < Settings.SeaLevel ) return Theme.Ocean;
+		if ( elevation < Settings.BeachLevel ) return Theme.Sea;
+		if ( elevation < Settings.PlainLevel ) return Theme.Beach;
+		if ( elevation < Settings.HillLevel ) return Theme.Plain;
+		if ( elevation < Settings.MountainLevel ) return Theme.Hill;
+		if ( elevation < Settings.PeakLevel ) return Theme.Mountain;
+		return Theme.Peak; 
 	} 
 }

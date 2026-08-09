@@ -1,60 +1,70 @@
 ﻿using Sandbox.Ecology;
 using Sandbox.Generation;
 using Sandbox.Triangulation;
+using Sandbox.Utility;
+using System;
 
 namespace Sandbox.Generator;
 
 public class Chunk
 {
-	public int ChunkX;
-	public int ChunkY;
+	public Vector2 Position { get; set; }
+	public Vector2 GlobalPosition { get; private set; }
+	
 	public TileData[] Tiles { get; private set; }
 	public bool Generating;
 	public bool Generated;
 	public int Size;
+	public float TileSize = 1f; // @TODO: increase physical tile size? Will be a big refactor
 	
 	
-	public Chunk(int chunkX, int chunkY, int size)
+	public Chunk(Vector2 chunkPosition, int size)
 	{
 		Size = size;
-		ChunkX = chunkX;
-		ChunkY = chunkY;
+		
+		// All positions refer to the chunks top-left corner
+		Position = new Vector2( chunkPosition.x, chunkPosition.y );
+		GlobalPosition = new Vector2( Position.x * Size * TileSize, Position.y * Size * TileSize );
+		
 		Tiles = new TileData[size * size];
 	}
 
-	public Chunk Generate(int xLimit, int yLimit, MapGenerator generator)
+	public void Generate(int xLimit, int yLimit, MapGenerator generator)
 	{
 		Generating = true;
 		for ( int x = 0; x < Size; x++ )
+		{
 			for ( int y = 0; y < Size; y++ )
+			{
 				GenerateTile( x, y, xLimit, yLimit, generator );
-
+			}
+		}
+		
 		Generating = false;
 		Generated = true;
-
-		return this;
 	}
 
 	public void GenerateTile(float x, float y, int xLimit, int yLimit, MapGenerator generator)
 	{
-		// get local vector coords
-		Vector2 global = new Vector2( ChunkX * Size + x, ChunkY * Size + y );
+		// get global tile location
+		Vector2 global = new Vector2( GlobalPosition.x + x, GlobalPosition.y + y );
 		
 		// ignore parts of the chunk that extend past the world border.
 		if ( global.x > xLimit || global.y > yLimit || global.x < -xLimit || global.y < -yLimit )
 			return;
-		
+
+		// create tile
+		TileData tile = new TileData();
+		tile.GlobalPosition = global;
+				
 		// generate tile properties
-		DelaunayNeighbors neighbors = generator.Voronoi.GetVoronoiSiteCandidates( global.x, global.y );
-		double elevation            = generator.GetTileElevation( global.x, global.y, neighbors );
-		RegionId regionId           = generator.GetTileRegion( elevation );
-		double humidity             = 0d;
-		double temperature          = 0d;
-		int materialId              = 0;
-		SubterraneanLayer geology   = generator.GetTileGeology( global.x, global.y, elevation );
+		tile.GenerateElevation(generator);
+		tile.GenerateGeology();
+		tile.GenerateRegion();
+		
 		// load data to chunk
-		uint tileIndex = LocalIndex(0, 0);
-		Tiles[tileIndex] = new TileData(elevation, humidity, temperature, materialId, regionId, geology, neighbors );
+		uint tileIndex = LocalIndex((int)x, (int)y);
+		Tiles[tileIndex] = tile;
 	}
 	
 	// Fast inline index helper mapping local 2D space to 1D space

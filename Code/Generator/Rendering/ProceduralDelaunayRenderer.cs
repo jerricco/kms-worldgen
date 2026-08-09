@@ -53,11 +53,11 @@ public sealed class ProceduralDelaunayRenderer : Component
 		float startHue = 120f; 
 		float endHue = 0f; // Driving upward to 360 shifts Cyan -> Blue -> Magenta -> Red
 		
-		for ( int i = 0; i < delaunayData.Points.Length; i++ )
+		for ( int i = 0; i < delaunayData.Points.Count; i++ )
 		{
 			// Lerp between GREEN -> RED as we move away from WorldCenter (0,0,0)
 			var p = delaunayData.Points[i];
-			Vector3 vertexPosition = new Vector3( (float)p.X, (float)p.Y, 0f );
+			Vector3 vertexPosition = new Vector3( (float)p.x, (float)p.y, 0f );
 			float distanceToCenter = Vector3.DistanceBetween( vertexPosition, worldCenter );
 			float t = Math.Clamp( distanceToCenter / Settings.MaxRadius, 0f, 1f );
 			float currentHue = MathX.Lerp( startHue, endHue, t );
@@ -71,8 +71,8 @@ public sealed class ProceduralDelaunayRenderer : Component
 				Tangent = new Vector4( Vector3.Right, 1f ),
 				// correct UV mapping to shift the negative bounds back into a 0.0 -> 1.0 space
 				TexCoord0 = new Vector2( 
-					((float)p.X + Settings.HalfWidth) / Settings.WorldWidth, 
-					((float)p.Y + Settings.HalfHeight) / Settings.WorldHeight 
+					((float)p.x + Settings.HalfWidth) / Settings.WorldWidth, 
+					((float)p.y + Settings.HalfHeight) / Settings.WorldHeight 
 				),
 				Color = rainbowColor
 			});

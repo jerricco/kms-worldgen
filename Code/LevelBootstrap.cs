@@ -11,7 +11,7 @@ public sealed class LevelBootstrap : Component
     [Property] public MapGenerator Generator { get; set; }
 
     [Property] public GenerationSettings Settings { get; set; }
-    protected override async void OnStart()
+    protected override void OnStart()
     {
 	    if (Settings == null) {
 		    throw new InvalidOperationException("Critical GenerationSettings object could not be loaded");

@@ -11,6 +11,8 @@ namespace Sandbox.Triangulation
 
         /// <summary>
         /// One value per half-edge, containing the point index of where a given half edge starts.
+        /// Half-edges are stored in triplets for each triangle in the triangulation,
+        /// so this is essentially a list of triangle points flattened into a single array.
         /// </summary>
         public int[] Triangles { get; private set; }
 
@@ -22,7 +24,8 @@ namespace Sandbox.Triangulation
         /// <summary>
         /// The initial points Delaunator was constructed with.
         /// </summary>
-        public IPoint[] Points { get; private set; }
+        public IList<Vector2> Points { get; private set; }
+
 
         /// <summary>
         /// A list of point indices that traverses the hull of the points.
@@ -35,33 +38,28 @@ namespace Sandbox.Triangulation
         private readonly int[] hullTri;
         private readonly int[] hullHash;
 
-        private double cx;
-        private double cy;
+        private float cx;
+        private float cy;
 
         private int trianglesLen;
-        private readonly double[] coords;
+        private readonly float[] coords;
         private readonly int hullStart;
         private readonly int hullSize;
 
-        public Delaunator(IPoint[] points)
+        public Delaunator(IList<Vector2> points)
         {
-            if (points.Length < 3)
-            {
-                throw new ArgumentOutOfRangeException("Need at least 3 points");
-            }
-
             Points = points;
-            coords = new double[Points.Length * 2];
+            coords = new float[Points.Count * 2];
 
-            for (var i = 0; i < Points.Length; i++)
+            for (var i = 0; i < Points.Count; i++)
             {
                 var p = Points[i];
-                coords[2 * i] = p.X;
-                coords[2 * i + 1] = p.Y;
+                coords[2 * i] = p.x;
+                coords[2 * i + 1] = p.y;
             }
 
-            var n = points.Length;
-            var maxTriangles = 2 * n - 5;
+            var n = points.Count;
+            var maxTriangles = Math.Max(2 * n - 5, 0);
 
             Triangles = new int[maxTriangles * 3];
 
@@ -75,10 +73,10 @@ namespace Sandbox.Triangulation
 
             var ids = new int[n];
 
-            var minX = double.PositiveInfinity;
-            var minY = double.PositiveInfinity;
-            var maxX = double.NegativeInfinity;
-            var maxY = double.NegativeInfinity;
+            var minX = float.PositiveInfinity;
+            var minY = float.PositiveInfinity;
+            var maxX = float.NegativeInfinity;
+            var maxY = float.NegativeInfinity;
 
             for (var i = 0; i < n; i++)
             {
@@ -147,7 +145,32 @@ namespace Sandbox.Triangulation
 
             if (minRadius == double.PositiveInfinity)
             {
-                throw new Exception("No Delaunay triangulation exists for this input.");
+                // All points are collinear (or there's only 1 or 2 points)
+                // order collinear points by dx (or dy if all x are identical)
+                // and return the list as a hull
+                var primaryCoords = new double[n];
+                for (var i = 0; i < n; i++)
+                {
+                    primaryCoords[i] = (coords[2 * i] - coords[0]) == 0 ? (coords[2 * i + 1] - coords[1]) : (coords[2 * i] - coords[0]);
+                }
+                Quicksort(ids, primaryCoords, 0, n - 1);
+                // Trim duplicate points from hull
+                var hull = new int[n];
+                var j = 0;
+                var d0 = double.NegativeInfinity;
+                for (var i = 0; i < n; i++)
+                {
+                    var id = ids[i];
+                    if (primaryCoords[id] > d0)
+                    {
+                        hull[j++] = id;
+                        d0 = primaryCoords[id];
+                    }
+                }
+                Hull = new ArraySegment<int>(hull, 0, j).ToArray();
+                Triangles = new int[0];
+                Halfedges = new int[0];
+                return;
             }
 
             if (Orient(i0x, i0y, i1x, i1y, i2x, i2y))
@@ -164,13 +187,13 @@ namespace Sandbox.Triangulation
             }
 
             var center = Circumcenter(i0x, i0y, i1x, i1y, i2x, i2y);
-            this.cx = center.X;
-            this.cy = center.Y;
+            this.cx = center.x;
+            this.cy = center.y;
 
             var dists = new double[n];
             for (var i = 0; i < n; i++)
             {
-                dists[i] = Dist(coords[2 * i], coords[2 * i + 1], center.X, center.Y);
+                dists[i] = Dist(coords[2 * i], coords[2 * i + 1], center.x, center.y);
             }
 
             // sort the points by distance from the seed triangle circumcenter
@@ -495,7 +518,12 @@ namespace Sandbox.Triangulation
             arr[i] = arr[j];
             arr[j] = tmp;
         }
-        private static bool Orient(double px, double py, double qx, double qy, double rx, double ry) => (qy - py) * (rx - qx) - (qx - px) * (ry - qy) < 0;
+        private static bool Orient(double px, double py, double qx, double qy, double rx, double ry)
+        {
+            // Non-robust orientation
+            //return (qy - py) * (rx - qx) - (qx - px) * (ry - qy) < 0;
+            return GeometricPredicates.Orient2D(px, py, qx, qy, rx, ry) > 0;
+        }
         private static double Circumradius(double ax, double ay, double bx, double by, double cx, double cy)
         {
             var dx = bx - ax;
@@ -509,7 +537,7 @@ namespace Sandbox.Triangulation
             var y = (dx * cl - ex * bl) * d;
             return x * x + y * y;
         }
-        private static Point Circumcenter(double ax, double ay, double bx, double by, double cx, double cy)
+        private static Vector2 Circumcenter(float ax, float ay, float bx, float by, float cx, float cy)
         {
             var dx = bx - ax;
             var dy = by - ay;
@@ -517,13 +545,13 @@ namespace Sandbox.Triangulation
             var ey = cy - ay;
             var bl = dx * dx + dy * dy;
             var cl = ex * ex + ey * ey;
-            var d = 0.5 / (dx * ey - dy * ex);
+            var d = 0.5f / (dx * ey - dy * ex);
             var x = ax + (ey * bl - dy * cl) * d;
             var y = ay + (dx * cl - ex * bl) * d;
 
-            return new Point(x, y);
+            return new Vector2(x, y);
         }
-        private static double Dist(double ax, double ay, double bx, double by)
+        private static double Dist(float ax, float ay, float bx, float by)
         {
             var dx = ax - bx;
             var dy = ay - by;
@@ -532,235 +560,135 @@ namespace Sandbox.Triangulation
         #endregion CreationLogic
 
         #region GetMethods
-        public IEnumerable<ITriangle> GetTriangles()
+        /// <summary>
+        /// Gets a triangle with the three points around a given triangle index.
+        /// </summary>
+        public Triangle GetTriangle(int t)
+        {
+            var vertices = PointsAroundTriangle(t);
+            return new Triangle(t, vertices.Item1, vertices.Item2, vertices.Item3);
+        }
+
+        /// <summary>
+        /// Returns the points of all triangles in the Delaunay triangulation
+        /// </summary>
+        public IEnumerable<Triangle> GetTriangles()
         {
             for (var t = 0; t < Triangles.Length / 3; t++)
             {
-                yield return new Triangle(t, GetTrianglePoints(t));
+                yield return GetTriangle(t);
             }
         }
-        public IEnumerable<IEdge> GetEdges()
+
+        /// <summary>
+        /// Returns the pair of points for an edge by a given halfedge index.
+        /// </summary>
+        public (Vector2, Vector2) GetEdge(int e)
+        {
+            var p = Points[Triangles[e]];
+            var q = Points[Triangles[NextHalfedge(e)]];
+            return (p, q);
+        }
+
+        /// <summary>
+        /// Returns all edges in the triangulation.
+        /// Each edge is only represented once, even if there is a triangle on either side.
+        /// </summary>
+        public IEnumerable<(Vector2, Vector2)> GetEdges()
         {
             for (var e = 0; e < Triangles.Length; e++)
             {
                 if (e > Halfedges[e])
                 {
-                    var p = Points[Triangles[e]];
-                    var q = Points[Triangles[NextHalfedge(e)]];
-                    yield return new Edge(e, p, q);
-                }
-            }
-        }
-        public IEnumerable<IEdge> GetVoronoiEdges(Func<int, IPoint> triangleVerticeSelector = null)
-        {
-            if (triangleVerticeSelector == null) triangleVerticeSelector = x => GetCentroid(x);
-            for (var e = 0; e < Triangles.Length; e++)
-            {
-                if (e < Halfedges[e])
-                {
-                    var p = triangleVerticeSelector(TriangleOfEdge(e));
-                    var q = triangleVerticeSelector(TriangleOfEdge(Halfedges[e]));
-                    yield return new Edge(e, p, q);
+                    yield return GetEdge(e);
                 }
             }
         }
 
-        public IEnumerable<IEdge> GetVoronoiEdgesBasedOnCircumCenter() => GetVoronoiEdges(GetTriangleCircumcenter);
-        public IEnumerable<IEdge> GetVoronoiEdgesBasedOnCentroids() => GetVoronoiEdges(GetCentroid);
+        public IEnumerable<(Vector2, Vector2)> GetHullEdges() => CreateHull(GetHullPoints());
 
-        public IEnumerable<IVoronoiCell> GetVoronoiCells(Func<int, IPoint> triangleVerticeSelector = null)
+        public IEnumerable<Vector2> GetHullPoints() => Hull.Select(x => Points[x]);
+
+        public Triple<Vector2> PointsAroundTriangle(int t)
         {
-            if (triangleVerticeSelector == null) triangleVerticeSelector = x => GetCentroid(x);
-
-            var seen = new HashSet<int>();
-            var vertices = new List<IPoint>(10);    // Keep it outside the loop, reuse capacity, less resizes.
-
-            for (var e = 0; e < Triangles.Length; e++)
-            {
-                var pointIndex = Triangles[NextHalfedge(e)];
-                // True if element was added, If resize the set? O(n) : O(1)
-                if (seen.Add(pointIndex))
-                {
-                    foreach (var edge in EdgesAroundPoint(e))
-                    {
-                        // triangleVerticeSelector cant be null, no need to check before invoke (?.).
-                        vertices.Add(triangleVerticeSelector.Invoke(TriangleOfEdge(edge)));
-                    }
-                    yield return new VoronoiCell(pointIndex, vertices.ToArray());
-                    vertices.Clear();   // Clear elements, keep capacity
-                }
-            }
+            var pointIndicies = PointIndiciesAroundTriangle(t);
+            return (
+                Points[pointIndicies.Item1],
+                Points[pointIndicies.Item2],
+                Points[pointIndicies.Item3]
+                );
         }
 
-        public IEnumerable<IVoronoiCell> GetVoronoiCellsBasedOnCircumcenters() => GetVoronoiCells(GetTriangleCircumcenter);
-        public IEnumerable<IVoronoiCell> GetVoronoiCellsBasedOnCentroids() => GetVoronoiCells(GetCentroid);
-
-        public IEnumerable<IEdge> GetHullEdges() => CreateHull(GetHullPoints());
-
-        public IPoint[] GetHullPoints() => Array.ConvertAll<int, IPoint>(Hull, (x) => Points[x]);
-
-        public IPoint[] GetTrianglePoints(int t)
+        public Triple<(Vector2, Vector2)> EdgesAroundTriangle(int t)
         {
-            var points = new List<IPoint>();
-            foreach (var p in PointsOfTriangle(t))
-            {
-                points.Add(Points[p]);
-            }
-            return points.ToArray();
+            var edgeIndices = EdgeIndicesAroundTriangle(t);
+            return (
+                GetEdge(edgeIndices.Item1),
+                GetEdge(edgeIndices.Item2),
+                GetEdge(edgeIndices.Item3)
+                );
         }
 
-        public IPoint[] GetRellaxedPoints()
+        private static IEnumerable<(Vector2, Vector2)> CreateHull(IEnumerable<Vector2> points) => points.Zip(points.Skip(1).Append(points.FirstOrDefault()), (a, b) => (a, b));
+        public Vector2 GetTriangleCircumcenter(int t)
         {
-            var points = new List<IPoint>();
-            foreach (var cell in GetVoronoiCellsBasedOnCircumcenters())
-            {
-                points.Add(GetCentroid(cell.Points));
-            }
-            return points.ToArray();
+            var vertices = PointsAroundTriangle(t);
+            return GetCircumcenter(vertices.Item1, vertices.Item2, vertices.Item3);
+        }
+        public Vector2 GetCentroid(int t)
+        {
+            var vertices = PointsAroundTriangle(t);
+            return GetCentroid(vertices.Item1, vertices.Item2, vertices.Item3);
         }
 
-        public IEnumerable<IEdge> GetEdgesOfTriangle(int t) => CreateHull(EdgesOfTriangle(t).Select(e => Points[Triangles[e]]));
-        public static IEnumerable<IEdge> CreateHull(IEnumerable<IPoint> points) => points.Zip(points.Skip(1).Append(points.FirstOrDefault()), (a, b) => new Edge(0, a, b)).OfType<IEdge>();
-        public IPoint GetTriangleCircumcenter(int t)
-        {
-            var vertices = GetTrianglePoints(t);
-            return GetCircumcenter(vertices[0], vertices[1], vertices[2]);
-        }
-        public IPoint GetCentroid(int t)
-        {
-            var vertices = GetTrianglePoints(t);
-            return GetCentroid(vertices);
-        }
-        public static IPoint GetCircumcenter(IPoint a, IPoint b, IPoint c) => Circumcenter(a.X, a.Y, b.X, b.Y, c.X, c.Y);
+        public static Vector2 GetCentroid(Vector2 a, Vector2 b, Vector2 c) => (a + b + c) / 3;
 
-        public static IPoint GetCentroid(IPoint[] points)
-        {
-            double accumulatedArea = 0.0f;
-            double centerX = 0.0f;
-            double centerY = 0.0f;
-
-            for (int i = 0, j = points.Length - 1; i < points.Length; j = i++)
-            {
-                var temp = points[i].X * points[j].Y - points[j].X * points[i].Y;
-                accumulatedArea += temp;
-                centerX += (points[i].X + points[j].X) * temp;
-                centerY += (points[i].Y + points[j].Y) * temp;
-            }
-
-            if (Math.Abs(accumulatedArea) < 1E-7f)
-                return new Point();
-
-            accumulatedArea *= 3f;
-            return new Point(centerX / accumulatedArea, centerY / accumulatedArea);
-        }
+        public static Vector2 GetCircumcenter(Vector2 a, Vector2 b, Vector2 c) => Circumcenter(a.x, a.y, b.x, b.y, c.x, c.y);
 
         #endregion GetMethods
 
-        #region ForEachMethods
-        public void ForEachTriangle(Action<ITriangle> callback)
-        {
-            foreach (var triangle in GetTriangles())
-            {
-                callback?.Invoke(triangle);
-            }
-        }
-        public void ForEachTriangleEdge(Action<IEdge> callback)
-        {
-            foreach (var edge in GetEdges())
-            {
-                callback?.Invoke(edge);
-            }
-        }
-        public void ForEachVoronoiEdge(Action<IEdge> callback)
-        {
-            foreach (var edge in GetVoronoiEdges())
-            {
-                callback?.Invoke(edge);
-            }
-        }
-        public void ForEachVoronoiCellBasedOnCentroids(Action<IVoronoiCell> callback)
-        {
-            foreach (var cell in GetVoronoiCellsBasedOnCentroids())
-            {
-                callback?.Invoke(cell);
-            }
-        }
-
-        public void ForEachVoronoiCellBasedOnCircumcenters(Action<IVoronoiCell> callback)
-        {
-            foreach (var cell in GetVoronoiCellsBasedOnCircumcenters())
-            {
-                callback?.Invoke(cell);
-            }
-        }
-
-        public void ForEachVoronoiCell(Action<IVoronoiCell> callback, Func<int, IPoint> triangleVertexSelector = null)
-        {
-            foreach (var cell in GetVoronoiCells(triangleVertexSelector))
-            {
-                callback?.Invoke(cell);
-            }
-        }
-
-        #endregion ForEachMethods
 
         #region Methods based on index
+
         /// <summary>
         /// Returns the half-edges that share a start point with the given half edge, in order.
         /// </summary>
-        public IEnumerable<int> EdgesAroundPoint(int start)
+        internal IEnumerable<int> EdgeIndiciesAroundPoint(int halfEdge)
         {
-            var incoming = start;
+            var incoming = halfEdge;
             do
             {
                 yield return incoming;
                 var outgoing = NextHalfedge(incoming);
                 incoming = Halfedges[outgoing];
-            } while (incoming != -1 && incoming != start);
+            } while (incoming != -1 && incoming != halfEdge);
         }
 
-        /// <summary>
-        /// Returns the three point indices of a given triangle id.
-        /// </summary>
-        public IEnumerable<int> PointsOfTriangle(int t)
+        public Triple<int> PointIndiciesAroundTriangle(int t)
         {
-            foreach (var edge in EdgesOfTriangle(t))
-            {
-                yield return Triangles[edge];
-            }
+            var edgeIndicies = EdgeIndicesAroundTriangle(t);
+            return (
+                Triangles[edgeIndicies.Item1],
+                Triangles[edgeIndicies.Item2],
+                Triangles[edgeIndicies.Item3]
+                );
         }
-
-        /// <summary>
-        /// Returns the triangle ids adjacent to the given triangle id.
-        /// Will return up to three values.
-        /// </summary>
         public IEnumerable<int> TrianglesAdjacentToTriangle(int t)
         {
-            var adjacentTriangles = new List<int>();
-            var triangleEdges = EdgesOfTriangle(t);
-            foreach (var e in triangleEdges)
-            {
-                var opposite = Halfedges[e];
-                if (opposite >= 0)
-                {
-                    adjacentTriangles.Add(TriangleOfEdge(opposite));
-                }
-            }
-            return adjacentTriangles;
+            var triangleEdges = EdgeIndicesAroundTriangle(t);
+            int opposite;
+            if ((opposite = Halfedges[triangleEdges.Item1]) >= 0)
+                yield return EdgeIndexToTriangleIndex(opposite);
+            if ((opposite = Halfedges[triangleEdges.Item2]) >= 0)
+                yield return EdgeIndexToTriangleIndex(opposite);
+            if ((opposite = Halfedges[triangleEdges.Item3]) >= 0)
+                yield return EdgeIndexToTriangleIndex(opposite);
         }
 
         public static int NextHalfedge(int e) => (e % 3 == 2) ? e - 2 : e + 1;
         public static int PreviousHalfedge(int e) => (e % 3 == 0) ? e + 2 : e - 1;
-
-        /// <summary>
-        /// Returns the three half-edges of a given triangle id.
-        /// </summary>
-        public static int[] EdgesOfTriangle(int t) => new int[] { 3 * t, 3 * t + 1, 3 * t + 2 };
-
-        /// <summary>
-        /// Returns the triangle id of a given half-edge.
-        /// </summary>
-        public static int TriangleOfEdge(int e) { return e / 3; }
+        public static Triple<int> EdgeIndicesAroundTriangle(int t) => (3 * t, 3 * t + 1, 3 * t + 2);
+        public static int EdgeIndexToTriangleIndex(int e) { return e / 3; }
         #endregion Methods based on index
     }
 }
