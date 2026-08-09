@@ -1,0 +1,48 @@
+{
+  "IsSubgraph": false,
+  "Path": "shaders/vertex_color_lit.shdrgrph",
+  "Model": null,
+  "Title": null,
+  "Description": "",
+  "Category": null,
+  "Icon": null,
+  "AddToNodeLibrary": false,
+  "BlendMode": "Masked",
+  "ShadingModel": "Unlit",
+  "Domain": "Surface",
+  "PreviewSettings": {
+    "RenderBackfaces": false,
+    "EnableShadows": true,
+    "ShowGround": false,
+    "ShowSkybox": true,
+    "BackgroundColor": "0,0,0,1",
+    "Tint": "1,1,1,1"
+  },
+  "Version": 1,
+  "nodes": [
+    {
+      "_class": "Result",
+      "DefaultOpacity": 1,
+      "DefaultRoughness": 0,
+      "DefaultMetalness": 0,
+      "DefaultAmbientOcclusion": 0,
+      "Identifier": "0",
+      "Position": "156,-96",
+      "HandleOffsets": {},
+      "Albedo": {
+        "Identifier": "1",
+        "Output": "RGB"
+      },
+      "Opacity": {
+        "Identifier": "1",
+        "Output": "Alpha"
+      }
+    },
+    {
+      "_class": "VertexColor",
+      "Identifier": "1",
+      "Position": "-240,-96",
+      "HandleOffsets": {}
+    }
+  ]
+}

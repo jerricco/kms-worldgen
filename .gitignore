@@ -1,24 +1,29 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# This file describes files and paths that should not be tracked by Git version control
+# https://git-scm.com/docs/gitignore
 
-# Editor directories and files
+# Auto-generated code editor files
+.vs/*
 .vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
+*.csproj
+obj
+bin
+Properties/*
+code/obj/*
+code/Properties/*
+
+# Auto-generated asset related files
+.sbox/*
+*.generated.*
+*.*_c
+!*.shader_c
+*.los
+*.vpk
+*launchSettings.json
 *.sln
-*.sw?
+*.slnx
+
+*idea
+
+# Exported / standalone games
+Exports/
