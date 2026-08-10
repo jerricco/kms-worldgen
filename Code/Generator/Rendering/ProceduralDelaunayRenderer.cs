@@ -1,5 +1,6 @@
 using Sandbox.Generation;
 using System;
+using Sandbox.GameData;
 
 namespace Sandbox.Triangulation;
 

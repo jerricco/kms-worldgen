@@ -1,4 +1,4 @@
-﻿namespace Sandbox.Generator.Rendering;
+﻿namespace Sandbox.GameData;
 
 [AssetType(Name = "Chunk Theme", Extension = "gentheme", Category = "Theme")]
 public class ChunkTheme : GameResource

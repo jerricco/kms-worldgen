@@ -1,8 +1,6 @@
-﻿using Sandbox.Ecology;
+﻿using Sandbox.GameObjectSystems.Map;
 using Sandbox.Generation;
 using Sandbox.Triangulation;
-using Sandbox.Utility;
-using System;
 
 namespace Sandbox.Generator;
 
@@ -29,14 +27,14 @@ public class Chunk
 		Tiles = new TileData[size * size];
 	}
 
-	public void Generate(int xLimit, int yLimit, MapGenerator generator)
+	public void Generate(int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
 		Generating = true;
 		for ( int x = 0; x < Size; x++ )
 		{
 			for ( int y = 0; y < Size; y++ )
 			{
-				GenerateTile( x, y, xLimit, yLimit, generator );
+				GenerateTile( x, y, xLimit, yLimit, spines );
 			}
 		}
 		
@@ -44,21 +42,20 @@ public class Chunk
 		Generated = true;
 	}
 
-	public void GenerateTile(float x, float y, int xLimit, int yLimit, MapGenerator generator)
+	public void GenerateTile(float x, float y, int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
-		// get global tile location
-		Vector2 global = new Vector2( GlobalPosition.x + x, GlobalPosition.y + y );
+		Vector2 global = new Vector2( GlobalPosition.x + x, GlobalPosition.y + y ); // get global tile location
 		
 		// ignore parts of the chunk that extend past the world border.
 		if ( global.x > xLimit || global.y > yLimit || global.x < -xLimit || global.y < -yLimit )
 			return;
-
+		
 		// create tile
 		TileData tile = new TileData();
 		tile.GlobalPosition = global;
 				
 		// generate tile properties
-		tile.GenerateElevation(generator);
+		tile.GenerateElevation(MapGeneratorSystem.Current.Settings, spines);
 		tile.GenerateGeology();
 		tile.GenerateRegion();
 		

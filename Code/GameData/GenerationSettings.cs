@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Sandbox.Generation;
+namespace Sandbox.GameData;
 
 [AssetType(Name = "Generation Settings", Extension = "genconf", Category = "Configuration")]
 public partial class GenerationSettings : GameResource
