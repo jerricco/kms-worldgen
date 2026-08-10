@@ -1,4 +1,5 @@
 ﻿using System;
+using Sandbox.GameData;
 using Sandbox.Generation;
 
 namespace Sandbox.Generator.Rendering;

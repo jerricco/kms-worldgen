@@ -1,21 +1,15 @@
 ﻿using Sandbox.Generator;
 using System;
+using Sandbox.GameObjectSystems.Map;
 using Sandbox.Generation;
 
 namespace Sandbox.Gameplay;
 
 public class TileInteractionManager : Component
 {
-	[Property] public MapGenerator ActiveMapManager { get; set; }
-
-	protected override void OnStart()
-	{
-		ActiveMapManager = Scene.GetAllComponents<MapGenerator>().FirstOrDefault();
-	}
-
 	protected override void OnUpdate()
 	{
-		if ( ActiveMapManager == null ) return;
+		if ( MapGeneratorSystem.Current == null ) return;
 		HoverForTileTooltip();
 	}
 
@@ -38,7 +32,7 @@ public class TileInteractionManager : Component
 			int globalTileY = (int)MathF.Floor( intersectPoint.y );
 
 			// 5. Chunk space indexing breakdowns (Assuming 50x50 chunk dimensions)
-			int chunkSize = ActiveMapManager.Settings.ChunkGridSize; 
+			int chunkSize = MapGeneratorSystem.Current.Settings.ChunkGridSize; 
 			int chunkX = (int)MathF.Floor( (float)globalTileX / chunkSize );
 			int chunkY = (int)MathF.Floor( (float)globalTileY / chunkSize );
 
@@ -47,7 +41,7 @@ public class TileInteractionManager : Component
 			int localTileY = globalTileY - (chunkY * chunkSize);
 
 			// check the chunk & draw its tooltip if we can find it
-			Chunk targetChunk = ActiveMapManager.GetChunkAt( chunkX, chunkY );
+			Chunk targetChunk = MapGeneratorSystem.Current.GetChunkAt( chunkX, chunkY );
 			if ( targetChunk != null && targetChunk.Tiles != null )
 			{
 				uint localIndex = targetChunk.LocalIndex( localTileX, localTileY );

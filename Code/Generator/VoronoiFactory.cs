@@ -1,5 +1,5 @@
 using System;
-using Sandbox.Generator;
+using Sandbox.GameData;
 using Sandbox.Generation;
 using Sandbox.Utility;
 

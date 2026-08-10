@@ -1,38 +1,65 @@
-using Sandbox.Generation;
-using Sandbox.Generator;
-using System;
-using System.Threading.Tasks;
+using Sandbox.Gameplay;
+using Sandbox.GameObjectSystems.Map;
+using Sandbox.Triangulation;
 
 namespace Sandbox;
 
 [Category("Scene Orchestration")]
 public sealed class LevelBootstrap : Component
 {
-	[Property] public GenerationSettings Settings { get; set; }
-	public GameObject MapManagerGo { get; set; }
-    public MapGenerator Generator { get; set; }
+	public GameObject VoronoiFactoryGo { get; set; }
+	public GameObject MapInteractionGo {  get; set; }
+	
+	[Property, ReadOnly] public bool GenerationReady = false;
 
-    protected async override void OnStart()
-    {
-	    if (Settings == null) {
-		    throw new InvalidOperationException("Critical GenerationSettings object could not be loaded");
-	    }
-	    
-	    Log.Info($"Scene for seed '{Settings.SeedText}' starting...");
-	    MapManagerGo = new GameObject(true, "MapManager");
-        Generator = MapManagerGo.Components.Create<MapGenerator>();
-    }
+	protected override void OnStart()
+	{
+		var mapSystem = MapGeneratorSystem.Current;
+		mapSystem.InitializeScene( mapSystem.Settings.SeedText );
+		
+		// Attach gameObjects
+		VoronoiFactoryGo = new GameObject( true, "VoronoiFactory" );
+		MapInteractionGo = new GameObject( true, "MapInteraction" );
+		
+		// attach components
+		MapInteractionGo.AddComponent<TileInteractionManager>();
+		var voronoiFactory = VoronoiFactoryGo.GetOrAddComponent<VoronoiFactory>();
+		voronoiFactory.Settings = mapSystem.Settings;
+		voronoiFactory.LineMaterial = mapSystem.VoronoiLineMaterial;
+		voronoiFactory.Rng = mapSystem.Rng;
+		
+		GenerationReady = true; // @TODO: This will later orchestrate proper world generation
+	}
 
-    protected override void OnDestroy()
-    {
-	    Generator.Destroy();
-	    MapManagerGo.Destroy();
-    }
-    
+	protected override void OnDestroy()
+	{
+		MapGeneratorSystem.Current.Cleanup();
+		CleanupScene();
+	}
+
+	/// <summary>
+	/// Cleans up the artifacts of this GameObjectSystem so that it can be reinitialized in the Scene.
+	/// </summary>
+	public void CleanupScene()
+	{
+		// @TODO: stop queue?
+		// remove gameobjects
+		if (VoronoiFactoryGo.IsValid) VoronoiFactoryGo.DestroyImmediate();
+		if (MapInteractionGo.IsValid) MapInteractionGo.DestroyImmediate();
+	}
+	
     [Button( "Regenerate Map" )]
     public void GenerateMap()
     {
-	    if ( Generator == null ) return;
-		Generator.Generate();    
+	    GenerationReady = false;
+	    Log.Info($"Scene for seed '{MapGeneratorSystem.Current.Settings.SeedText}' starting...");
+	    var voronoi = VoronoiFactoryGo.GetComponent<VoronoiFactory>();
+	    MapGeneratorSystem.Current.GenerateWorld( new Vector2( 0, 0 ), 16, voronoi );
+	    GenerationReady = true;
+    }
+
+    public bool CanGenerateMap()
+    {
+	    return !GenerationReady;
     }
 }
