@@ -29,7 +29,7 @@ public class Chunk
 
 	public void Generate(int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
-		Generating = true;
+		if (!Generating) Generating = true;
 		for ( int x = 0; x < Size; x++ )
 		{
 			for ( int y = 0; y < Size; y++ )

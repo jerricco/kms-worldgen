@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Sandbox.Gameplay;
 using Sandbox.GameObjectSystems.Map;
 using Sandbox.Triangulation;
@@ -9,8 +10,10 @@ public sealed class LevelBootstrap : Component
 {
 	public GameObject VoronoiFactoryGo { get; set; }
 	public GameObject MapInteractionGo {  get; set; }
-	
+
+	[Property] public int RevealRadius = 8;
 	[Property, ReadOnly] public bool GenerationReady = false;
+	[Property, ReadOnly] public bool GenerationComplete = false;
 
 	protected override void OnStart()
 	{
@@ -44,18 +47,71 @@ public sealed class LevelBootstrap : Component
 	{
 		// @TODO: stop queue?
 		// remove gameobjects
-		if (VoronoiFactoryGo.IsValid) VoronoiFactoryGo.DestroyImmediate();
-		if (MapInteractionGo.IsValid) MapInteractionGo.DestroyImmediate();
+		if (VoronoiFactoryGo != null && VoronoiFactoryGo.IsValid) VoronoiFactoryGo.DestroyImmediate();
+		if (MapInteractionGo != null && MapInteractionGo.IsValid) MapInteractionGo.DestroyImmediate();
+	}
+
+	[Button( "Generate More Radius" )]
+	public void PushRevealRadius()
+	{
+		if ( !GenerationReady || !GenerationComplete )
+		{
+			Log.Warning( "Can't push new chunks! Exiting..." );
+			return;
+		}
+
+		GenerationComplete = false;
+		GenerationReady = false;
+		
+		Log.Info($"Queueing a radius of {RevealRadius} chunks...");
+		MapGeneratorSystem.Current.GetChunkGenerationTasks( new Vector2( 0, 0 ), RevealRadius );
+		
+		GenerationReady = true;
+		GenerationComplete = true;
 	}
 	
     [Button( "Regenerate Map" )]
-    public void GenerateMap()
+    public async Task GenerateMap()
     {
-	    GenerationReady = false;
+	    if ( !GenerationReady )
+	    {
+		    Log.Warning( "Generating in progress! Exiting..." );
+		    return;
+	    }
+
+	    if ( GenerationComplete )
+	    {
+		    OnDestroy();
+		    await Task.Frame();
+		    OnStart();
+		    await Task.Frame();
+		    GenerationComplete = false;
+	    }
+	    
 	    Log.Info($"Scene for seed '{MapGeneratorSystem.Current.Settings.SeedText}' starting...");
 	    var voronoi = VoronoiFactoryGo.GetComponent<VoronoiFactory>();
-	    MapGeneratorSystem.Current.GenerateWorld( new Vector2( 0, 0 ), 16, voronoi );
+	    MapGeneratorSystem.Current.GenerateWorld( new Vector2( 0, 0 ), RevealRadius, voronoi );
 	    GenerationReady = true;
+	    GenerationComplete = true;
+    }
+
+    [Button( "Clear Map Generation" )]
+    public async Task ClearMap()
+    {
+	    if ( !GenerationReady || !GenerationComplete )
+	    {
+		    Log.Warning( "No generation to clear! Exiting..." );
+		    return;
+	    }
+	    GenerationReady = false;
+	    
+	    OnDestroy();
+	    await Task.Frame();
+	    OnStart();
+	    await Task.Frame();
+	    
+	    GenerationReady = true;
+	    GenerationComplete = false;
     }
 
     public bool CanGenerateMap()

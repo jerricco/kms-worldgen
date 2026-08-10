@@ -286,14 +286,15 @@
           "__guid": "89540072-0fb9-4f39-8560-2d6cba26c412",
           "__enabled": true,
           "Flags": 0,
-          "Generator": null,
+          "GenerationComplete": false,
+          "GenerationReady": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Settings": "default_generation.genconf"
+          "RevealRadius": 8
         }
       ],
       "Children": []
@@ -326,6 +327,12 @@
           "$blob": "64db792e-5935-8fbc-8cfa-050cd49fa7fd",
           "$refs": []
         }
+      },
+      "Sandbox.GameObjectSystems.Map.MapGeneratorSystem": {
+        "ElevationHeightmapMaterial": "materials/tile_unlit.vmat",
+        "Settings": "default_generation.genconf",
+        "Theme": "default_theme.gentheme",
+        "VoronoiLineMaterial": "materials/tile_unlit.vmat"
       },
       "Sandbox.SelectionSetsSystem": {
         "Data": {

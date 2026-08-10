@@ -13,16 +13,17 @@ public partial class GenerationSettings : GameResource
     [Property] public int WorldWidth    { get; set; } = 12800;
     [Property] public int WorldHeight   { get; set; } = 12800;
     [Property] public int CellGridSize  { get; set; } = 400;
-    [Property] public int CellGridColumns => WorldWidth / CellGridSize; // e.g., 12800 / 400 = 32
-    [Property] public int CellGridRows => WorldHeight / CellGridSize; 
+    [Property] public int CellGridColumns => WorldHeight / CellGridSize; // e.g., 12800 / 400 = 32
+    [Property] public int CellGridRows => WorldWidth / CellGridSize; 
     [Property] public int ChunkGridSize { get; set; } = 50;
-    [Property] public int ChunksX => MathX.CeilToInt((float)CellGridColumns / ChunkGridSize);
-    [Property] public int ChunksY => MathX.CeilToInt((float)CellGridRows / ChunkGridSize);
+    [Property] public int ChunksX => WorldWidth / ChunkGridSize;
+    [Property] public int ChunksY => WorldHeight / ChunkGridSize;
     [Property] public int TotalChunks => ChunksX * ChunksY;
     
     // Map generation modifiers
     [Property] public float OceanClamp  { get; set; } = 0.85f;
-    [Property] public float MacroScale  { get; set; } = 0.0045f;
+    [Property] public float MacroScale  { get; set; } = 0.00015f;
+    [Property] public float MicroScale  { get; set; } = 0.0015f;
     [Property] public float SquishFactor{ get; set; } = 1.0f;
     [Property] public float StretchX    { get; set; } = 0.7f;
     [Property] public float StretchY    { get; set; } = 1.3f;

@@ -21,13 +21,6 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	public GameObject ChunkBucketGo { get; set; }
 	public List<GameObject> ChunkRenderers;
 	
-	// generated values
-	[Property] public double RandomAngle { get; set; }
-	[Property] public int OffsetX { get; set; }
-	[Property] public int OffsetY { get; set; }
-	[Property] public double CosA { get; set; }
-	[Property] public double SinA { get; set; }
-	
 	// data storage
 	// Stores a list of chunks with their GLOBAL Vector2 coordinate as a key
 	private Dictionary<Vector2, Chunk> _chunks;
@@ -43,6 +36,15 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	public OpenSimplexNoise Noise { get; set; }
 	public bool SceneReady = false;
 	public List<VoronoiFactory.CurvedSpine> TectonicSpines;
+	
+	// seeded generation properties
+	[Property, ReadOnly] public double RandomAngle { get; set; }
+	[Property, ReadOnly] public int OffsetX { get; set; }
+	[Property, ReadOnly] public int OffsetY { get; set; }
+	[Property, ReadOnly] public double CosA { get; set; }
+	[Property, ReadOnly] public double SinA { get; set; }
+	
+	// @TODO: Create a way to generate individual chunk(s) on demand regardless if they are already generated or not.
 	
 	// constructor
 	public MapGeneratorSystem( Scene scene ) : base( scene )
@@ -73,13 +75,18 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		_queuedChunks = 0;
 		_processedChunks = 0;
 		
+		_chunks = new Dictionary<Vector2, Chunk>(); // new chunk register started
+		
 		Settings.SeedText = seed; // update seed.
 		
 		// set up helpers
 		Rng = new Prng(seed);
 		Noise = new OpenSimplexNoise(Rng);
 		
-		// configure self
+		Log.Info("MapGenerator: Priming dynamic seeded generation properties");
+		// component configuration
+		Rng = new Prng(Settings.SeedText);
+		Noise = new OpenSimplexNoise(Rng);
 		RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
 		CosA = Math.Cos(RandomAngle);
 		SinA = Math.Sin(RandomAngle);
@@ -114,9 +121,6 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		voronoi.GenerateAndRender();
 		TectonicSpines = voronoi.TectonicSpines;
         
-		// clear existing chunks explicitly since Generate always starts from the beginning with the seed.
-		_chunks = new Dictionary<Vector2, Chunk>();
-        
 		// start initial world chunk generation
 		GetChunkGenerationTasks(startPos, radius);
 	}
@@ -126,7 +130,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// </summary>
 	/// <param name="position"></param>
 	/// <param name="radius"></param>
-	private void GetChunkGenerationTasks(Vector2? position, int radius = 4)
+	public void GetChunkGenerationTasks(Vector2? position, int radius = 4)
 	{
 		if (position == null) throw new ArgumentNullException("No position given for chunk generation queue!");
 		
@@ -134,13 +138,13 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		_currentChunkProcessStartTime = RealTime.Now; // start timer
 		
 		// get the chunks inside the bounding radius
+		// @TODO store completed entire Settings.CellGridSize for skipping when every chunk in it is generated.
 		var chunkQueue = EnumerateChunkSpaceInside( position, radius );
 
 		// yields to the loop whenever a chunk is found in the world that needs to generate.
 		// @TODO: update camera max pan area to the largest extent of all the chunks generated
-		foreach ( Vector2 globalPos in chunkQueue )
+		foreach ( Vector2 chunkPos in chunkQueue )
 		{
-			var chunkPos = new Vector2( globalPos.x / Settings.ChunkGridSize, globalPos.y / Settings.ChunkGridSize );
 			// get or create a chunk
 			if ( _chunks.TryGetValue( chunkPos, out var chunk ) )
 			{
@@ -148,18 +152,19 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 				if ( chunk.Generated || chunk.Generating )
 				{
 					var notice = chunk.Generating ? "generating" : "already generated";
-					Log.Warning( $"Chunk at {globalPos.x},{globalPos.y} {notice}!" );
+					Log.Warning( $"Chunk at (chunkspace){chunkPos.x},{chunkPos.y} {notice}!" );
 					continue;
 				}
 			}
 			else
 			{
 				chunk = new Chunk(chunkPos, Settings.ChunkGridSize);
+				chunk.Generating = true; // immediately flag it so we never reprocess this chunk until it's finished
 			}
 
 			_queuedChunks++;
-			_chunks[globalPos] = chunk; // put it in the box
-			Log.Info( $"Queued chunk [{globalPos.x},{globalPos.y}]" );
+			_chunks[chunkPos] = chunk; // put it in the box
+			Log.Info( $"Queued chunk [(chunkspace){chunkPos.x},{chunkPos.y}]" );
 
 			// start streaming immediately - fuck the police
 			_ = StreamChunkGeneration(chunk);
@@ -238,8 +243,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 			renderer.RegenerateMesh(chunk); 
 			chunksProcessedThisFrame++;
 
-			// Stop processing for this frame if we hit our budget, 
-			// letting CSwapChainBase present the frame successfully!
+			// Stop processing for this frame if we hit our budget
 			if ( chunksProcessedThisFrame >= maxChunksPerFrame )
 			{
 				break; 
@@ -256,10 +260,14 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		Noise = null;
 		Rng = null;
 		// destroy all chunk renderers
-		foreach ( var rendererGo in ChunkRenderers )
+		if ( ChunkRenderers != null )
 		{
-			if (rendererGo.IsValid) rendererGo.DestroyImmediate();
+			foreach ( var rendererGo in ChunkRenderers )
+			{
+				if (rendererGo.IsValid) rendererGo.DestroyImmediate();
+			}	
 		}
+		
 		
 		// destroy bucket
 		if (ChunkBucketGo != null && ChunkBucketGo.IsValid) ChunkBucketGo.DestroyImmediate();
@@ -275,7 +283,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	{
 		if ( _chunks == null ) return null;
 	    
-		Vector2 chunkPos = new Vector2(chunkX * Settings.ChunkGridSize, chunkY * Settings.ChunkGridSize);
+		Vector2 chunkPos = new Vector2(chunkX, chunkY);
 		if ( _chunks.TryGetValue( chunkPos, out var chunk ) )
 		{
 			return chunk;
@@ -298,6 +306,15 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	    int maxChunkX = (int)center?.x + radius;
 	    int minChunkY = (int)center?.y - radius;
 	    int maxChunkY = (int)center?.y + radius;
+	    
+	    // clamp the boundaries to the edge of the world (as a divisor of the chunk size)
+	    minChunkX = Math.Clamp(minChunkX, -Settings.ChunksX, Settings.ChunksX);
+	    maxChunkX = Math.Clamp(maxChunkX, -Settings.ChunksX, Settings.ChunksX);
+	    
+	    minChunkY = Math.Clamp(minChunkY, -Settings.ChunksY, Settings.ChunksY);
+	    maxChunkY = Math.Clamp(maxChunkY, -Settings.ChunksY, Settings.ChunksY);
+
+	    if ( minChunkX == maxChunkX || minChunkY == maxChunkY ) yield break;
 
         Log.Warning( $"Chunk box created around {minChunkX},{minChunkY} to {maxChunkX},{maxChunkY} in chunk space" );
         
@@ -325,32 +342,12 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		        bool bottomRightIn = ((right - dxCenter) * (right - dxCenter)) 
 									+ ((bottom - dyCenter) * (bottom - dyCenter)) <= squareRadius;
 
-		        // if all four corners fit inside the index radius, convert to global world coordinates and yield
+		        // if all four corners fit inside the index radius yield
 		        if ( topLeftIn && topRightIn && bottomLeftIn && bottomRightIn )
 		        {
-			        float globalX = cx * Settings.ChunkGridSize;
-			        float globalY = cy * Settings.ChunkGridSize;
-			        yield return new Vector2( globalX, globalY );
+			        yield return new Vector2( cx, cy );
 		        }
 	        }
         }
     }
-	
-	/// <summary>
-	/// Sample Perlin data from the noise landscape at a location
-	/// </summary>
-	/// <param name="x"></param>
-	/// <param name="y"></param>
-	/// <returns></returns>
-	public Vector2 SampleWarpedDomain(float x, float y)
-	{
-		// Do we care about double precision here? Probably not.
-		float warpX = (float)Noise.Evaluate((x + 200f) * 0.018f, (y + 200f) * 0.018f) * 45f;
-		float warpY = (float)Noise.Evaluate((x - 200f) * 0.018f, (y - 200f) * 0.018f) * 45f;
-
-		float sampleX = (x + OffsetX + warpX) * Settings.MacroScale;
-		float sampleY = (y + OffsetY + warpY) * Settings.MacroScale;
-
-		return new Vector2(sampleX, sampleY);
-	}
 }

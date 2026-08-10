@@ -10,7 +10,7 @@ public sealed class MapCameraController : Component
 {
 	// @TODO: Data-driven controls so that multiple cameras can inherit these values.
 	[Property, Header( "Zoom Settings" )] 
-	public float MinZoom { get; set; } = 100f;
+	public float MinZoom { get; set; } = 10f;
 	[Property] 
 	public float MaxZoom { get; set; } = 15000f;
 	[Property]
@@ -57,7 +57,7 @@ public sealed class MapCameraController : Component
 		if ( MathF.Abs( scrollDelta ) > 0.001f )
 		{
 			_targetZoom -= scrollDelta * _targetZoom * ZoomSensitivity;
-			_targetZoom = _targetZoom.Clamp( MinZoom, MaxZoom );
+			_targetZoom = _targetZoom.Clamp( MinZoom, MaxZoom * 1.1f );
 		}
 		
 		_camera.OrthographicHeight = MathX.Lerp( _camera.OrthographicHeight, _targetZoom, RealTime.Delta * ZoomSmoothness );
