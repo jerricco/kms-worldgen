@@ -10,7 +10,6 @@ namespace Sandbox.Triangulation;
 public sealed class VoronoiFactory : Component
 {
 	[Property] public GenerationSettings Settings { get; set;  }
-	[Property] public Prng Rng { get; set; }
 	[Property] public ProceduralDelaunayRenderer Renderer { get; set; }
 	[Property] public Material LineMaterial { get; set; }
 
@@ -23,7 +22,7 @@ public sealed class VoronoiFactory : Component
 
 	protected override void OnStart()
 	{
-		Renderer = GameObject.Components.Create<ProceduralDelaunayRenderer>();
+		Renderer = GameObject.GetOrAddComponent<ProceduralDelaunayRenderer>();
 		Renderer.Settings = Settings;
 		Renderer.BaseMaterial = LineMaterial;
 	}
@@ -88,21 +87,22 @@ public sealed class VoronoiFactory : Component
 
     public List<CurvedSpine> GenerateTectonicNetwork()
     {
+	    var mapManager = MapGeneratorSystem.Current;
 	    var networks = new List<CurvedSpine>();
-	    int continentCount = Rng.NextRange(3, 6);
+	    int continentCount = mapManager.Rng.NextRange(3, 6);
 	    for ( int c = 0; c < continentCount; c++ )
 	    {
 		    var spine = new CurvedSpine { Nodes = new List<Vector2>() };
-		    int nodeCount = Rng.NextRange(4, 6);
+		    int nodeCount = mapManager.Rng.NextRange(4, 6);
 		    
 		    float scatterRange = Settings.HalfWidth * 0.4f; 
 		    Vector2 continentCenter = new Vector2(
-			    Rng.NextRangeFloat(-scatterRange, scatterRange),
-			    Rng.NextRangeFloat(-scatterRange, scatterRange)
+			    mapManager.Rng.NextRangeFloat(-scatterRange, scatterRange),
+			    mapManager.Rng.NextRangeFloat(-scatterRange, scatterRange)
 		    );
 		    
 		    // Give each continent its own unique orientation vector
-		    float baseAngle = Rng.NextRangeFloat(0, 360);
+		    float baseAngle = mapManager.Rng.NextRangeFloat(0, 360);
 		    Vector2 direction = Vector2.FromDegrees(baseAngle);
 		    Vector2 perpendicular = new Vector2(-direction.y, direction.x);
 		    
@@ -117,8 +117,8 @@ public sealed class VoronoiFactory : Component
 			    Vector2 basePoint = continentCenter + (direction * progress);
 
 			    float varianceScale = Settings.HalfWidth * 0.1f; 
-			    float lateralOffset = Rng.NextRangeFloat(-varianceScale, varianceScale);
-			    float forwardOffset = Rng.NextRangeFloat(-stepSize * 0.2f, stepSize * 0.2f);
+			    float lateralOffset = mapManager.Rng.NextRangeFloat(-varianceScale, varianceScale);
+			    float forwardOffset = mapManager.Rng.NextRangeFloat(-stepSize * 0.2f, stepSize * 0.2f);
 
 			    Vector2 finalizedNode = basePoint + (direction * forwardOffset) + (perpendicular * lateralOffset);
 			    spine.Nodes.Add(finalizedNode);
@@ -173,6 +173,7 @@ public sealed class VoronoiFactory : Component
     /// </summary>
     public List<Vector2> SampleDensityPoints()
     {
+	    var mapManager = MapGeneratorSystem.Current;
         var points = new List<Vector2>();
         
         // Configuration settings for your cell sizes
@@ -189,8 +190,8 @@ public sealed class VoronoiFactory : Component
                 int attemptsPerChunk = 6; 
                 for (int k = 0; k < attemptsPerChunk; k++)
                 {
-                    float sampleX = x + Rng.NextRangeFloat(0, chunkGridSize);
-                    float sampleY = y + Rng.NextRangeFloat(0, chunkGridSize);
+                    float sampleX = x + mapManager.Rng.NextRangeFloat(0, chunkGridSize);
+                    float sampleY = y + mapManager.Rng.NextRangeFloat(0, chunkGridSize);
                     Vector2 candidate = new Vector2(sampleX, sampleY);
 
                     // Fetch our 0.0 - 1.0 land density ranking

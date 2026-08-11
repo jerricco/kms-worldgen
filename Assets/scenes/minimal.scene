@@ -261,6 +261,18 @@
           "PanSpeed": 1,
           "ZoomSensitivity": 0.15,
           "ZoomSmoothness": 15
+        },
+        {
+          "__type": "Sandbox.Gameplay.TileInteractionManager",
+          "__guid": "5bb0492c-082e-496f-baa8-96aefa24f37f",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": []
@@ -283,18 +295,75 @@
       "Components": [
         {
           "__type": "Sandbox.LevelBootstrap",
-          "__guid": "89540072-0fb9-4f39-8560-2d6cba26c412",
+          "__guid": "4f135304-c252-41e5-aa31-129074ba8ebd",
           "__enabled": true,
           "Flags": 0,
+          "GeneratePosition": "0,0",
           "GenerationComplete": false,
-          "GenerationReady": false,
+          "GenerationReady": true,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "RevealRadius": 8
+          "RevealRadius": 8,
+          "Seed": "aborio rice"
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "f767a273-c939-43f8-8fc3-3f711791c505",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "VoronoiFactory",
+      "Position": "6.00005913,-12.0000229,2371.50269",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.Triangulation.VoronoiFactory",
+          "__guid": "9121d3f9-9e11-4533-b69b-80d43468f0d9",
+          "__enabled": true,
+          "Flags": 0,
+          "LineMaterial": "materials/tile_unlit.vmat",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Renderer": {
+            "_type": "component",
+            "component_id": "3c9ac5dc-57e3-4bf8-9f8c-fa3f96cbda3a",
+            "go": "f767a273-c939-43f8-8fc3-3f711791c505",
+            "component_type": "ProceduralDelaunayRenderer"
+          },
+          "Settings": "default_generation.genconf"
+        },
+        {
+          "__type": "Sandbox.Triangulation.ProceduralDelaunayRenderer",
+          "__guid": "3c9ac5dc-57e3-4bf8-9f8c-fa3f96cbda3a",
+          "__enabled": true,
+          "Flags": 0,
+          "BaseMaterial": "materials/tile_unlit.vmat",
+          "DefaultLineColor": "1,1,1,1",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Settings": "default_generation.genconf",
+          "ShowDelaunay": true
         }
       ],
       "Children": []

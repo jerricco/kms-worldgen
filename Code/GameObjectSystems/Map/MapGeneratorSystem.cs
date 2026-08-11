@@ -86,7 +86,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// </summary>
 	/// <param name="startPos"></param>
 	/// <param name="radius"></param>
-	public async void GenerateWorld( Vector2? startPos = null, int radius = 4, string seed = null)
+	public void GenerateWorld( Vector2? startPos = null, int radius = 4, string seed = null)
 	{
 		VoronoiFactory voronoiFactory = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
 		if (voronoiFactory == null) throw new NullReferenceException( "No VoronoiFactory component found in the scene!");
@@ -204,7 +204,6 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 			for (int i = 0; i < chunksToProcess.Count; i++)
 			{
 				Chunk chunk = chunksToProcess[i];
-            
 				try
 				{
 					// Generate the chunk data completely off-thread
@@ -327,9 +326,9 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	    int squareRadius = radius * radius;
 
 	    // clamp chunk boundaries
-	    int minChunkY = Math.Clamp((int)Math.Floor(cyCenter - radius), -Settings.ChunksY, Settings.ChunksY);
-	    int maxChunkY = Math.Clamp((int)Math.Ceiling(cyCenter + radius), -Settings.ChunksY, Settings.ChunksY);
-
+	    int minChunkY = Math.Clamp((int)Math.Floor(cyCenter - radius), -Settings.ChunksY +1, Settings.ChunksY -1);
+	    int maxChunkY = Math.Clamp((int)Math.Ceiling(cyCenter + radius), -Settings.ChunksY +1, Settings.ChunksY -1);
+	    
 	    if (minChunkY >= maxChunkY) return Array.Empty<Vector2>();
 
 	    // count the valid chunks so we can size the array
@@ -354,8 +353,8 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	        int maxX = (int)Math.Floor(cxCenter + maxDistX) - 1;
 
 	        // Clamp to world bounds
-	        minX = Math.Clamp(minX, -Settings.ChunksX, Settings.ChunksX);
-	        maxX = Math.Clamp(maxX, -Settings.ChunksX, Settings.ChunksX);
+	        minX = Math.Clamp(minX, -Settings.ChunksX + 1, Settings.ChunksX -1);
+	        maxX = Math.Clamp(maxX, -Settings.ChunksX + 1, Settings.ChunksX -1);
 
 	        if (minX <= maxX)
 	        {
@@ -378,8 +377,8 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	        if (yDistSq >= squareRadius) continue;
 
 	        float maxDistX = MathF.Sqrt(squareRadius - yDistSq);
-	        int minX = Math.Clamp((int)Math.Ceiling(cxCenter - maxDistX), -Settings.ChunksX, Settings.ChunksX);
-	        int maxX = Math.Clamp((int)Math.Floor(cxCenter + maxDistX) - 1, -Settings.ChunksX, Settings.ChunksX);
+	        int minX = Math.Clamp((int)Math.Ceiling(cxCenter - maxDistX), -Settings.ChunksX +1, Settings.ChunksX -1);
+	        int maxX = Math.Clamp((int)Math.Floor(cxCenter + maxDistX) - 1, -Settings.ChunksX +1, Settings.ChunksX -1);
 
 	        // Fill the pre-allocated array linearly
 	        for (int cx = minX; cx <= maxX; cx++)

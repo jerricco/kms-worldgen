@@ -1,5 +1,4 @@
 using System.Threading.Tasks;
-using Sandbox.Gameplay;
 using Sandbox.GameObjectSystems.Map;
 using Sandbox.Triangulation;
 
@@ -8,15 +7,11 @@ namespace Sandbox;
 [Category("Scene Orchestration")]
 public sealed class LevelBootstrap : Component
 {
-	public GameObject VoronoiFactoryGo { get; set; }
-	public GameObject MapInteractionGo {  get; set; }
-
 	// editor properties for updating generation
-	[Property] public string Seed;
+	[Property] public string Seed = "aborio rice";
 	[Property] public Vector2 GeneratePosition = new Vector2( 0, 0 );
 	[Property] public int RevealRadius = 8;
-	// debug orchestration
-	[Property, ReadOnly] public bool GenerationReady = false;
+	[Property, ReadOnly] public bool GenerationReady = true;
 	[Property, ReadOnly] public bool GenerationComplete = false;
 
 	protected override void OnStart()
@@ -24,38 +19,20 @@ public sealed class LevelBootstrap : Component
 		var mapSystem = MapGeneratorSystem.Current;
 		
 		if (Seed == null) Seed = MapGeneratorSystem.Current.Settings.SeedText;
-		
-		mapSystem.InitializeScene( Seed );
-		
-		// Attach gameObjects
-		VoronoiFactoryGo = new GameObject( true, "VoronoiFactory" );
-		MapInteractionGo = new GameObject( true, "MapInteraction" );
-		
-		// attach components
-		MapInteractionGo.AddComponent<TileInteractionManager>();
-		var voronoiFactory = VoronoiFactoryGo.GetOrAddComponent<VoronoiFactory>();
+		// attach component with system configuration
+		var voronoiFactory = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
 		voronoiFactory.Settings = mapSystem.Settings;
 		voronoiFactory.LineMaterial = mapSystem.VoronoiLineMaterial;
-		voronoiFactory.Rng = mapSystem.Rng;
-		
-		GenerationReady = true; // @TODO: This will later orchestrate proper world generation
+
+		if ( !mapSystem.SceneReady )
+		{
+			mapSystem.InitializeScene( Seed );
+		}
 	}
 
 	protected override void OnDestroy()
 	{
 		MapGeneratorSystem.Current.Cleanup();
-		CleanupScene();
-	}
-
-	/// <summary>
-	/// Cleans up the artifacts of this GameObjectSystem so that it can be reinitialized in the Scene.
-	/// </summary>
-	public void CleanupScene()
-	{
-		// @TODO: stop queue?
-		// remove gameobjects
-		if (VoronoiFactoryGo != null && VoronoiFactoryGo.IsValid) VoronoiFactoryGo.DestroyImmediate();
-		if (MapInteractionGo != null && MapInteractionGo.IsValid) MapInteractionGo.DestroyImmediate();
 	}
 
 	[Button, Title("Generate Radius"), Description("Queue chunks to generate with a Reveal Radius from the above inspector field.")]
@@ -86,6 +63,14 @@ public sealed class LevelBootstrap : Component
     [Button( "Regenerate Map" )]
     public async Task GenerateMap()
     {
+	    // Try get a mapManager and start it
+	    if (!MapGeneratorSystem.Current.SceneReady)
+	    {
+		    Log.Warning( "A MapGeneratorSystem wasn't initialised! It was probably in the editor, " +
+		                 "so if you see this message in-game, panic" );
+		    MapGeneratorSystem.Current.InitializeScene( Seed );
+	    }
+
 	    if ( !GenerationReady )
 	    {
 		    Log.Warning( "Generating in progress! Exiting..." );
@@ -126,10 +111,5 @@ public sealed class LevelBootstrap : Component
 	    await Task.Frame();
 	    
 	    GenerationReady = true;
-    }
-
-    public bool CanGenerateMap()
-    {
-	    return !GenerationReady;
     }
 }

@@ -22,7 +22,10 @@ public class ChunkRenderer : Component
 
 	protected override void OnDestroy()
 	{
-		_modelRenderer.Destroy();
+		if ( _modelRenderer != null && _modelRenderer.IsValid )
+		{
+			_modelRenderer.Destroy();	
+		}
 	}
 
 	// @TODO: Create multiple sceneObjects which each have a different visualisation of the tiles.

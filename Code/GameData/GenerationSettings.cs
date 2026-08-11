@@ -16,8 +16,8 @@ public partial class GenerationSettings : GameResource
     [Property] public int CellGridColumns => WorldHeight / CellGridSize; // e.g., 12800 / 400 = 32
     [Property] public int CellGridRows => WorldWidth / CellGridSize; 
     [Property] public int ChunkGridSize { get; set; } = 50;
-    [Property] public int ChunksX => WorldWidth / ChunkGridSize;
-    [Property] public int ChunksY => WorldHeight / ChunkGridSize;
+    [Property] public int ChunksX => HalfWidth / ChunkGridSize;
+    [Property] public int ChunksY => HalfHeight / ChunkGridSize;
     [Property] public int TotalChunks => ChunksX * ChunksY;
     
     // Map generation modifiers
