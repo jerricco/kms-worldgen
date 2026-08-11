@@ -136,6 +136,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		
 		_chunks = new Dictionary<Vector2, Chunk>(); // new chunk register started
 		ClearRenderers();
+		ChunkRenderers = new List<GameObject>();
 	}
 	
 	// @TODO store completed entire Settings.CellGridSize for skipping when every chunk in it is generated.
@@ -296,8 +297,6 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		{
 			if (rendererGo.IsValid) rendererGo.DestroyImmediate();
 		}
-		
-		ChunkRenderers = new List<GameObject>();
 	}
 	
 	/// <summary>

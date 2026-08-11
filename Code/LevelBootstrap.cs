@@ -41,11 +41,6 @@ public sealed class LevelBootstrap : Component
 		GenerationReady = true; // @TODO: This will later orchestrate proper world generation
 	}
 
-	private void Startup()
-	{
-		
-	}
-
 	protected override void OnDestroy()
 	{
 		MapGeneratorSystem.Current.Cleanup();
