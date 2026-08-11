@@ -11,14 +11,21 @@ public sealed class LevelBootstrap : Component
 	public GameObject VoronoiFactoryGo { get; set; }
 	public GameObject MapInteractionGo {  get; set; }
 
+	// editor properties for updating generation
+	[Property] public string Seed;
+	[Property] public Vector2 GeneratePosition = new Vector2( 0, 0 );
 	[Property] public int RevealRadius = 8;
+	// debug orchestration
 	[Property, ReadOnly] public bool GenerationReady = false;
 	[Property, ReadOnly] public bool GenerationComplete = false;
 
 	protected override void OnStart()
 	{
 		var mapSystem = MapGeneratorSystem.Current;
-		mapSystem.InitializeScene( mapSystem.Settings.SeedText );
+		
+		if (Seed == null) Seed = MapGeneratorSystem.Current.Settings.SeedText;
+		
+		mapSystem.InitializeScene( Seed );
 		
 		// Attach gameObjects
 		VoronoiFactoryGo = new GameObject( true, "VoronoiFactory" );
@@ -32,6 +39,11 @@ public sealed class LevelBootstrap : Component
 		voronoiFactory.Rng = mapSystem.Rng;
 		
 		GenerationReady = true; // @TODO: This will later orchestrate proper world generation
+	}
+
+	private void Startup()
+	{
+		
 	}
 
 	protected override void OnDestroy()
@@ -51,7 +63,7 @@ public sealed class LevelBootstrap : Component
 		if (MapInteractionGo != null && MapInteractionGo.IsValid) MapInteractionGo.DestroyImmediate();
 	}
 
-	[Button( "Generate More Radius" )]
+	[Button, Title("Generate Radius"), Description("Queue chunks to generate with a Reveal Radius from the above inspector field.")]
 	public void PushRevealRadius()
 	{
 		if ( !GenerationReady || !GenerationComplete )
@@ -59,12 +71,18 @@ public sealed class LevelBootstrap : Component
 			Log.Warning( "Can't push new chunks! Exiting..." );
 			return;
 		}
+		
+		if ( Seed != MapGeneratorSystem.Current.Settings.SeedText )
+		{
+			Log.Warning( "Can't reveal a different seed! Hit Regenerate Map to restart!" );
+			return;
+		}
 
 		GenerationComplete = false;
 		GenerationReady = false;
 		
-		Log.Info($"Queueing a radius of {RevealRadius} chunks...");
-		MapGeneratorSystem.Current.GetChunkGenerationTasks( new Vector2( 0, 0 ), RevealRadius );
+		Log.Info($"Queueing a radius of <color=green>{RevealRadius} chunks...</color>");
+		MapGeneratorSystem.Current.GetChunkGenerationTasks( GeneratePosition, RevealRadius );
 		
 		GenerationReady = true;
 		GenerationComplete = true;
@@ -85,12 +103,13 @@ public sealed class LevelBootstrap : Component
 		    await Task.Frame();
 		    OnStart();
 		    await Task.Frame();
-		    GenerationComplete = false;
 	    }
 	    
+	    GenerationComplete = false;
+	    GenerationReady = false;
+	    
 	    Log.Info($"Scene for seed '{MapGeneratorSystem.Current.Settings.SeedText}' starting...");
-	    var voronoi = VoronoiFactoryGo.GetComponent<VoronoiFactory>();
-	    MapGeneratorSystem.Current.GenerateWorld( new Vector2( 0, 0 ), RevealRadius, voronoi );
+	    MapGeneratorSystem.Current.GenerateWorld( GeneratePosition, RevealRadius, Seed );
 	    GenerationReady = true;
 	    GenerationComplete = true;
     }
@@ -104,6 +123,7 @@ public sealed class LevelBootstrap : Component
 		    return;
 	    }
 	    GenerationReady = false;
+	    GenerationComplete = false;
 	    
 	    OnDestroy();
 	    await Task.Frame();
@@ -111,7 +131,6 @@ public sealed class LevelBootstrap : Component
 	    await Task.Frame();
 	    
 	    GenerationReady = true;
-	    GenerationComplete = false;
     }
 
     public bool CanGenerateMap()
