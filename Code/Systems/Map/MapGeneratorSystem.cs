@@ -63,6 +63,8 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 
 		// lifecycle
 		Listen( Stage.StartUpdate, 10, TryChunkDequeue, "Chunk Queue Tick" );
+		
+		InitializeScene(Settings.SeedText);
 	}
 
 	/// <summary>

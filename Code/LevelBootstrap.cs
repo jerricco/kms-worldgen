@@ -17,17 +17,8 @@ public sealed class LevelBootstrap : Component
 	protected override void OnStart()
 	{
 		var mapSystem = MapGeneratorSystem.Current;
-		
-		if (Seed == null) Seed = MapGeneratorSystem.Current.Settings.SeedText;
-		// attach component with system configuration
-		var voronoiFactory = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
-		voronoiFactory.Settings = mapSystem.Settings;
-		voronoiFactory.LineMaterial = mapSystem.VoronoiLineMaterial;
-
-		if ( !mapSystem.SceneReady )
-		{
-			mapSystem.InitializeScene( Seed );
-		}
+		if (Seed == null) Seed = mapSystem.Settings.SeedText;
+		if ( !mapSystem.SceneReady ) mapSystem.InitializeScene( Seed );
 	}
 
 	protected override void OnDestroy()
@@ -61,7 +52,7 @@ public sealed class LevelBootstrap : Component
 	}
 	
     [Button( "Regenerate Map" )]
-    public async Task GenerateMap()
+    public void GenerateMap()
     {
 	    // Try get a mapManager and start it
 	    if (!MapGeneratorSystem.Current.SceneReady)
@@ -80,9 +71,7 @@ public sealed class LevelBootstrap : Component
 	    if ( GenerationComplete )
 	    {
 		    OnDestroy();
-		    await Task.Frame();
 		    OnStart();
-		    await Task.Frame();
 	    }
 	    
 	    GenerationComplete = false;
@@ -95,20 +84,13 @@ public sealed class LevelBootstrap : Component
     }
 
     [Button( "Clear Map Generation" )]
-    public async Task ClearMap()
+    public void ClearMap()
     {
-	    if ( !GenerationReady || !GenerationComplete )
-	    {
-		    Log.Warning( "No generation to clear! Exiting..." );
-		    return;
-	    }
 	    GenerationReady = false;
 	    GenerationComplete = false;
 	    
 	    OnDestroy();
-	    await Task.Frame();
 	    OnStart();
-	    await Task.Frame();
 	    
 	    GenerationReady = true;
     }
