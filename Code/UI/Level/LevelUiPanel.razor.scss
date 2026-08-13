@@ -1,0 +1,45 @@
+LevelUiPanel
+{
+	position: absolute;
+	top: 24px;
+	left: 24px;
+	right: 24px;
+	bottom: 24px;
+    background-color: transparent;
+    pointer-events: none;
+
+  .screen-top
+	{
+		position: relative;
+        min-height: 70%;
+        width: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+      
+      .tracking-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        
+      }
+      
+      .info-tools-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+      }
+	}
+  
+    .screen-bottom {
+        max-height: 30%;
+        width: 100%;
+        height: 300px;
+        position: relative;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+}

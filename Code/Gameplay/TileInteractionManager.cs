@@ -1,6 +1,6 @@
 ﻿using Sandbox.Generator;
 using System;
-using Sandbox.GameObjectSystems.Map;
+using Sandbox.Systems.Map;
 using Sandbox.Generation;
 
 namespace Sandbox.Gameplay;

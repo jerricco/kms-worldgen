@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Threading;
 using Sandbox.GameData;
 using Sandbox.Generation;
 using Sandbox.Generator;
@@ -8,7 +7,7 @@ using Sandbox.Generator.Rendering;
 using Sandbox.Triangulation;
 using System.Threading.Tasks;
 
-namespace Sandbox.GameObjectSystems.Map;
+namespace Sandbox.Systems.Map;
 
 public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 {
@@ -36,6 +35,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	public Prng Rng { get; set; }
 	public OpenSimplexNoise Noise { get; set; }
 	public bool SceneReady = false;
+	public VoronoiFactory Voronoi;
 	public List<VoronoiFactory.CurvedSpine> TectonicSpines;
 	
 	// seeded generation properties
@@ -59,7 +59,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		
 		// get materials
 		ElevationHeightmapMaterial = Material.Load( "materials/tile_unlit.vmat" );
-		VoronoiLineMaterial = Material.Load( "materials/tile_unlit.vmat" );
+		VoronoiLineMaterial = Material.Load( "materials/opaque_line.vmat" );
 
 		// lifecycle
 		Listen( Stage.StartUpdate, 10, TryChunkDequeue, "Chunk Queue Tick" );
@@ -82,6 +82,28 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		
 		SceneReady = true;
 	}
+	
+	public void SetSeed( string seed )
+	{
+		Settings.SeedText = seed; // update seed.
+		
+		// set up helpers
+		Rng = new Prng(seed);
+		Noise = new OpenSimplexNoise(Rng);
+		
+		// component configuration
+		Rng = new Prng(Settings.SeedText);
+		Noise = new OpenSimplexNoise(Rng);
+		RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
+		CosA = Math.Cos(RandomAngle);
+		SinA = Math.Sin(RandomAngle);
+		OffsetX = Rng.NextRange(10000, 90000);
+		OffsetY = Rng.NextRange(10000, 90000);
+		
+		_chunks = new Dictionary<Vector2, Chunk>(); // new chunk register started
+		ClearRenderers();
+		ChunkRenderers = new List<GameObject>();
+	}
 
 	/// <summary>
 	/// Do raw world generation from given startPos position with given circular chunk radius.
@@ -90,8 +112,12 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// <param name="radius"></param>
 	public void GenerateWorld( Vector2? startPos = null, int radius = 4, string seed = null)
 	{
-		VoronoiFactory voronoiFactory = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
-		if (voronoiFactory == null) throw new NullReferenceException( "No VoronoiFactory component found in the scene!");
+		if ( Voronoi == null )
+		{
+			Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
+		}
+		
+		if (Voronoi == null) throw new NullReferenceException( "No VoronoiFactory component found in the scene!");
 
 		if ( radius > 32 ) throw new ArgumentException( "Radius can be no larger than 32 chunks!" );
 
@@ -112,33 +138,12 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		
 		// use the voronoi component to generate & render its structure
 		// @TODO: separate generate and rendering, hide rendering behind debug flag
-		voronoiFactory.GenerateAndRender();
-		TectonicSpines = voronoiFactory.TectonicSpines;
+		Voronoi.GenerateAndRender();
+		Log.Warning( "Voronoi GenerateAndRender run!" );
+		TectonicSpines = Voronoi.TectonicSpines;
         
 		// start initial world chunk generation
 		GetChunkGenerationTasks(startPos, radius);
-	}
-
-	private void SetSeed( string seed )
-	{
-		Settings.SeedText = seed; // update seed.
-		
-		// set up helpers
-		Rng = new Prng(seed);
-		Noise = new OpenSimplexNoise(Rng);
-		
-		// component configuration
-		Rng = new Prng(Settings.SeedText);
-		Noise = new OpenSimplexNoise(Rng);
-		RandomAngle = Rng.NextRangeDouble(0, Math.Tau);
-		CosA = Math.Cos(RandomAngle);
-		SinA = Math.Sin(RandomAngle);
-		OffsetX = Rng.NextRange(10000, 90000);
-		OffsetY = Rng.NextRange(10000, 90000);
-		
-		_chunks = new Dictionary<Vector2, Chunk>(); // new chunk register started
-		ClearRenderers();
-		ChunkRenderers = new List<GameObject>();
 	}
 	
 	// @TODO store completed entire Settings.CellGridSize for skipping when every chunk in it is generated.
@@ -279,12 +284,8 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// </summary>
 	public void Cleanup()
 	{
-		// clean helpers
-		Noise = null;
-		Rng = null;
 		// destroy all chunk renderers
 		ClearRenderers();
-		
 		
 		// destroy bucket
 		if (ChunkBucketGo != null && ChunkBucketGo.IsValid) ChunkBucketGo.DestroyImmediate();

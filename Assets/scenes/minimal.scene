@@ -299,8 +299,8 @@
           "__enabled": true,
           "Flags": 0,
           "GeneratePosition": "0,0",
-          "GenerationComplete": false,
-          "GenerationReady": true,
+          "IsGenerating": false,
+          "MapExists": true,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -367,6 +367,56 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "efeb68bf-a3d7-4189-8494-0573e56b402b",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "LevelUiScreen",
+      "Position": "-198.555878,-540.633728,1636.99866",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "8daec9f2-f017-445a-a1b4-1ea6011e4d27",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": null,
+          "ZIndex": 100
+        },
+        {
+          "__type": "Sandbox.UI.Level.LevelUiPanel",
+          "__guid": "ad00a17f-c94b-48a4-b559-0b2aac2aef23",
+          "__enabled": true,
+          "Flags": 0,
+          "MyStringValue": "Hello World!",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -397,16 +447,21 @@
           "$refs": []
         }
       },
-      "Sandbox.GameObjectSystems.Map.MapGeneratorSystem": {
-        "ElevationHeightmapMaterial": "materials/tile_unlit.vmat",
-        "Settings": "default_generation.genconf",
-        "Theme": "default_theme.gentheme",
-        "VoronoiLineMaterial": "materials/tile_unlit.vmat"
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.Systems.Map.MapGeneratorSystem": {
+        "CosA": -0.3032780985345427,
+        "ElevationHeightmapMaterial": "materials/tile_unlit.vmat",
+        "OffsetX": 36061,
+        "OffsetY": 77826,
+        "RandomAngle": 4.404258079758727,
+        "Settings": "default_generation.genconf",
+        "SinA": -0.9529020909565012,
+        "Theme": "default_theme.gentheme",
+        "VoronoiLineMaterial": "materials/tile_unlit.vmat"
       }
     }
   },

@@ -1,6 +1,6 @@
 using System;
 using Sandbox.GameData;
-using Sandbox.GameObjectSystems.Map;
+using Sandbox.Systems.Map;
 using Sandbox.Generation;
 using Sandbox.Utility;
 
@@ -29,7 +29,7 @@ public sealed class VoronoiFactory : Component
 
 	protected override void OnDestroy()
 	{
-		Renderer.Destroy();
+		if ( Renderer.IsValid ) Renderer.Destroy();
 	}
 
 	public void GenerateAndRender()
