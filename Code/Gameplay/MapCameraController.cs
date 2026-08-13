@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Sandbox.Generation;
 
 namespace Sandbox.Gameplay;
 
@@ -11,6 +10,8 @@ public sealed class MapCameraController : Component
 	// @TODO: Data-driven controls so that multiple cameras can inherit these values.
 	[Property, Header( "Zoom Settings" )] 
 	public float MinZoom { get; set; } = 10f;
+	[Property] 
+	public float BaseZoom { get; set; } = 2000f;
 	[Property] 
 	public float MaxZoom { get; set; } = 15000f;
 	[Property]
@@ -30,12 +31,15 @@ public sealed class MapCameraController : Component
 	{
 		_camera = GetComponent<CameraComponent>();
 		if ( _camera == null ) throw new FileLoadException( "Can't find a loaded main camera!" );
-
+		
+		
 		_camera.Orthographic = true; // Force the camera into orthographic view if this component is attached
+		_camera.ClearFlags = ClearFlags.All; // show a flat color if there's nothing rendering in the world
+		_camera.BackgroundColor = Color.Black; // ensure we always show black if there's nothing rendered
 		_camera.WorldRotation = Rotation.From( 90, 90, 0 ); // lock rotation
 		
 		// init zoom
-		_targetZoom = _camera.OrthographicHeight;
+		_targetZoom = _camera.OrthographicHeight = BaseZoom;
 		
 		// init panning
 		_targetPosition = _camera.WorldPosition;

@@ -22,10 +22,7 @@ public class ChunkRenderer : Component
 
 	protected override void OnDestroy()
 	{
-		if ( _modelRenderer != null && _modelRenderer.IsValid )
-		{
-			_modelRenderer.Destroy();	
-		}
+		if ( _modelRenderer.IsValid ) _modelRenderer.Destroy();
 	}
 
 	// @TODO: Create multiple sceneObjects which each have a different visualisation of the tiles.
@@ -186,8 +183,6 @@ public class ChunkRenderer : Component
 
 		_modelRenderer.Model = model;
 		_modelRenderer.Enabled = true;
-		
-		// Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} has been attached to it's renderer!" );
 	}
 
 	private Color GetElevationColour( double elevation )

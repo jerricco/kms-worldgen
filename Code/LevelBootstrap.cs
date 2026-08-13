@@ -11,7 +11,7 @@ public sealed class LevelBootstrap : Component
 	[Property] public int RevealRadius = 8;
 	[Property, ReadOnly] public bool IsGenerating = false;
 	[Property, ReadOnly] public bool MapExists = false;
-
+	
 	protected override void OnDestroy()
 	{
 		MapGeneratorSystem.Current.Cleanup();
@@ -42,6 +42,12 @@ public sealed class LevelBootstrap : Component
 	    if ( IsGenerating )
 	    {
 		    Log.Error( "Generation already in progress! Exiting..." );
+		    return;
+	    }
+	    
+	    if ( RevealRadius > 32 )
+	    {
+		    Log.Error("Radius can be no larger than 32 chunks!");
 		    return;
 	    }
 	    

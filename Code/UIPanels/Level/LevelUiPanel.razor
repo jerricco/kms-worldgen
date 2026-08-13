@@ -1,6 +1,8 @@
 @using Sandbox;
 @using Sandbox.UI;
+
 @inherits PanelComponent
+@namespace Sandbox.UIPanels.Level;
 
 <root>
 	@* SCREEN TOP: Takes a dynamic area at the top of the screen to fill down to SCREEN BOTTOM *@
@@ -14,7 +16,12 @@
 
 		@* TOP-RIGHT: Information & tools panel *@
 		<div class="info-tools-panel">
-			
+			<OverlaysPanel></OverlaysPanel>
+			<MenuPanel></MenuPanel>
+			<GameAlertsPanel></GameAlertsPanel>
+			<WorldStatePanel></WorldStatePanel>
+			<DebugToolsPanel></DebugToolsPanel>
+			<ToolbarPanel></ToolbarPanel>
 		</div>
 	</div>
 

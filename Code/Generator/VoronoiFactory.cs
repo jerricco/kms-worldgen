@@ -1,8 +1,6 @@
 using System;
 using Sandbox.GameData;
 using Sandbox.Systems.Map;
-using Sandbox.Generation;
-using Sandbox.Utility;
 
 namespace Sandbox.Triangulation;
 
@@ -10,9 +8,8 @@ namespace Sandbox.Triangulation;
 public sealed class VoronoiFactory : Component
 {
 	[Property] public GenerationSettings Settings { get; set;  }
-	[Property] public ProceduralDelaunayRenderer Renderer { get; set; }
+	public ProceduralDelaunayRenderer Renderer { get; set; }
 	[Property] public Material LineMaterial { get; set; }
-
 	public Delaunator Delaunay;
 	public Voronator Voronoi;
 	public List<CurvedSpine> TectonicSpines;
@@ -22,20 +19,18 @@ public sealed class VoronoiFactory : Component
 
 	protected override void OnStart()
 	{
+		// create mesh for drawing the voronoi sites - @TODO: default to false visibility when done with
 		Renderer = GameObject.GetOrAddComponent<ProceduralDelaunayRenderer>();
-		Renderer.Settings = Settings;
-		Renderer.BaseMaterial = LineMaterial;
 	}
 
 	protected override void OnDestroy()
 	{
-		if ( Renderer.IsValid ) Renderer.Destroy();
+		ClearData();
 	}
 
 	public void GenerateAndRender()
     {
 	    float startTime = RealTime.Now;
-
 	    TectonicSpines = GenerateTectonicNetwork();
         List<Vector2> points = SampleDensityPoints();
         Voronoi = new Voronator( points, -Settings.HalfWidth, Settings.HalfWidth );
@@ -43,12 +38,21 @@ public sealed class VoronoiFactory : Component
         CacheCellCenters();
         
         Log.Info( $"Voronoi generation complete! Took {RealTime.Now - startTime} s" );
-        
-        // create mesh for drawing the voronoi sites - @TODO: default to false visibility when done with
+        Renderer.Settings = Settings;
+        Renderer.LineMaterial = LineMaterial;
         Renderer.RebuildMesh(Delaunay);
         
         Log.Info( $"Voronoi mesh complete! Took {RealTime.Now - startTime} s" );
     }
+
+	public void ClearData()
+	{
+		if ( Renderer != null &&  Renderer.IsValid ) Renderer.ClearMesh();
+		
+		TectonicSpines = null;
+		Voronoi = null;
+		Delaunay = null;
+	}
     
     ///////////////////////////////////////////////
     //              Spatial Lookup               //

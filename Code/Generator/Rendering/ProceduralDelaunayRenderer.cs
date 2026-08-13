@@ -8,9 +8,8 @@ namespace Sandbox.Triangulation;
 public sealed class ProceduralDelaunayRenderer : Component
 {
 	[Property] public GenerationSettings Settings { get; set;  }
-	[Property] public Material BaseMaterial { get; set; }
+	public Material LineMaterial { get; set; }
 	
-	private GameObject _wireframeGo;
 	private ModelRenderer _modelRenderer;
 	private bool _enabled = true;
 	
@@ -25,13 +24,11 @@ public sealed class ProceduralDelaunayRenderer : Component
 			if (_modelRenderer != null) _modelRenderer.Enabled = _enabled;
 		}
 	}
-
-	protected override void OnStart()
+	
+	protected override void OnDestroy()
 	{
-		if ( BaseMaterial == null )
-			Log.Warning( "No custom material found for ProceduralDelaunayRenderer. Creating a material from materials/opaque_line.vmat" );
-		
-		BaseMaterial = BaseMaterial ?? Material.FromShader( "materials/opaque_line.vmat" );
+		ClearMesh();
+		if (_modelRenderer != null && _modelRenderer.IsValid) _modelRenderer.Destroy();
 	}
 	
 	/// <summary>
@@ -39,100 +36,103 @@ public sealed class ProceduralDelaunayRenderer : Component
 	/// </summary>
 	public void RebuildMesh( Delaunator delaunayData )
 	{
-		Log.Info( "ProceduralDelaunayRenderer: Cleaning up Delaunay scene information" );
+		Log.Info( "ProceduralDelaunayRenderer: Rebuilding Mesh..." );
 		
-		// spawn the game object if it doesn't exist.
-		if ( _wireframeGo == null || !_wireframeGo.IsValid() )
-		{
-			_wireframeGo = new GameObject("Delaunay Wireframe");
-			_wireframeGo.SetParent(GameObject);
-			_wireframeGo.WorldPosition = WorldPosition;
-			// spawn the modelRenderer on it
-			_modelRenderer = _wireframeGo.AddComponent<ModelRenderer>(true);
-		}
-		
-		// if our data is empty, nullify it and disable the GO
+		LineMaterial = LineMaterial ?? Material.FromShader( "materials/opaque_line.vmat" );
+		_modelRenderer = GameObject.GetOrAddComponent<ModelRenderer>();
+		// if our data is empty when this is called, disable the modelRenderer and leave
 		if ( delaunayData == null || delaunayData.Triangles.Length == 0 )
 		{
-			_modelRenderer.Enabled = false;
+			ClearMesh();
 			return;
 		} 
 		
-		// enable if we still need it
+		// enable if we still need it & in case it was turned off prior
 		if ( !_modelRenderer.Enabled )  _modelRenderer.Enabled = true;
 
 		var vertices = new List<Vertex>();
 		var indices = new List<int>();
 		Vector3 worldCenter = Vector3.Zero;
 		// Define our start and end points in Hue degrees (0.0 to 360.0)
-		// Cyan sits around 180 degrees, and Red sits at 0 (or 360) degrees
 		float startHue = 120f; 
-		float endHue = 0f; // Driving upward to 360 shifts Cyan -> Blue -> Magenta -> Red
+		float endHue = 0f;
 		
+		// 1. Build normal vertex structures (just single points, no quad math required)
 		for ( int i = 0; i < delaunayData.Points.Count; i++ )
 		{
-			// Lerp between GREEN -> RED as we move away from WorldCenter (0,0,0)
 			var p = delaunayData.Points[i];
 			Vector3 vertexPosition = new Vector3( p.x, p.y, 1f );
 			float distanceToCenter = Vector3.DistanceBetween( vertexPosition, worldCenter );
 			float t = Math.Clamp( distanceToCenter / Settings.MaxRadius, 0f, 1f );
 			float currentHue = MathX.Lerp( startHue, endHue, t );
-			ColorHsv hsvStruct = new ColorHsv( currentHue, 1f, 1f, 0.6f );
-			Color rainbowColor = hsvStruct; // turn it back implicitly to Color
-			
+			Color rainbowColor = new ColorHsv( currentHue, 1f, 1f, 0.6f );
+		
 			vertices.Add( new Vertex 
 			{
 				Position = vertexPosition,
 				Normal = Vector3.Up,
 				Tangent = new Vector4( Vector3.Right, 1f ),
-				// correct UV mapping to shift the negative bounds back into a 0.0 -> 1.0 space
-				TexCoord0 = new Vector2( 
-					(p.x + Settings.HalfWidth) / Settings.WorldWidth, 
-					(p.y + Settings.HalfHeight) / Settings.WorldHeight 
-				),
+				TexCoord0 = new Vector2( 0f, 0f ),
 				Color = rainbowColor
 			});
 		}
 
-		// get independent line pairs
+		// Track edges we've already drawn so we don't duplicate math
+		HashSet<(int, int)> processedEdges = new HashSet<(int, int)>();
+		void TryAddLineIndexPair(int aIdx, int bIdx)
+		{
+			var edgeKey = aIdx < bIdx ? (aIdx, bIdx) : (bIdx, aIdx);
+			if (processedEdges.Contains(edgeKey)) return;
+			processedEdges.Add(edgeKey);
+
+			indices.Add( aIdx );
+			indices.Add( bIdx );
+		}
+		
 		for ( int i = 0; i < delaunayData.Triangles.Length; i += 3 )
 		{
 			int idxA = delaunayData.Triangles[i];
 			int idxB = delaunayData.Triangles[i + 1];
 			int idxC = delaunayData.Triangles[i + 2];
 
-			// Edge 1: A to B
-			indices.Add( idxA );
-			indices.Add( idxB );
-
-			// Edge 2: B to C
-			indices.Add( idxB );
-			indices.Add( idxC );
-
-			// Edge 3: C to A
-			indices.Add( idxC );
-			indices.Add( idxA );
+			TryAddLineIndexPair(idxA, idxB);
+			TryAddLineIndexPair(idxB, idxC);
+			TryAddLineIndexPair(idxC, idxA);
 		}
 		
+		// create bounding box
+		BBox localBounds = BBox.FromPoints( vertices.Select( v => v.Position ) );
+		Log.Info( $"ProceduralDelaunayRenderer: Calculated BBox bounds" +
+		          $" from x{(int)localBounds.Mins.x},y{(int)localBounds.Mins.y}" +
+		          $" to x{(int)localBounds.Maxs.x},y{(int)localBounds.Maxs.y}" +
+		          $" with a height of {(int)(localBounds.Maxs.z - localBounds.Mins.z)}" );
+		
 		// create mesh
-		Mesh mesh = new Mesh( BaseMaterial );
+		Mesh mesh = new Mesh( LineMaterial );
 		mesh.CreateVertexBuffer( vertices.Count, vertices.ToArray() );
 		mesh.CreateIndexBuffer( indices.Count, indices.ToArray() );
-		mesh.AddSubMesh(BaseMaterial, 0, indices.Count, 0, vertices.Count);
+		mesh.PrimitiveType = MeshPrimitiveType.Lines; // LineStrip?
+		mesh.Bounds = localBounds;
 		
 		// compile its runtime model
 		var model = new ModelBuilder()
 			.AddMesh(mesh)
+			.WithViewBounds(localBounds)
 			.Create();
 
 		_modelRenderer.Model = model;
-		// @TODO: Work out why this isn't rendering, also how to make it not cast shadows and render past the UI
 		
 		Log.Info( "ProceduralDelaunayRenderer: Mesh geometry created for voronoi information. Toggle 'Show Delaunay' to view" );
 	}
 
-	protected override void OnDestroy()
+	public void ClearMesh()
 	{
-		if ( _wireframeGo.IsValid() ) _wireframeGo.Destroy();
+		if (_modelRenderer == null) return;
+		
+		if ( _modelRenderer.IsValid() )
+		{
+			_modelRenderer.Model = null;
+			_modelRenderer.Enabled = false;
+		}
 	}
 }

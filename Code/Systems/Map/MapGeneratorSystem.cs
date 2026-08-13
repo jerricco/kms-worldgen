@@ -112,15 +112,6 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// <param name="radius"></param>
 	public void GenerateWorld( Vector2? startPos = null, int radius = 4, string seed = null)
 	{
-		if ( Voronoi == null )
-		{
-			Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
-		}
-		
-		if (Voronoi == null) throw new NullReferenceException( "No VoronoiFactory component found in the scene!");
-
-		if ( radius > 32 ) throw new ArgumentException( "Radius can be no larger than 32 chunks!" );
-
 		if ( seed != null && seed != Settings.SeedText ) // seed has changed! clear out
 		{
 			Log.Warning( $"Seed was changed {Settings.SeedText}->{seed}...Regenerating..." );
@@ -138,10 +129,17 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 		
 		// use the voronoi component to generate & render its structure
 		// @TODO: separate generate and rendering, hide rendering behind debug flag
+		Voronoi = Scene.GetAllComponents<VoronoiFactory>().FirstOrDefault();
+		if ( Voronoi == null )
+		{
+			throw new NullReferenceException( "No Voronoi Factory is configured for this scene! Add one." );
+		}
+		Voronoi.Settings = Settings;
+		Voronoi.LineMaterial = VoronoiLineMaterial;
 		Voronoi.GenerateAndRender();
-		Log.Warning( "Voronoi GenerateAndRender run!" );
 		TectonicSpines = Voronoi.TectonicSpines;
         
+		// Log.Warning( Voronoi.TectonicSpines );
 		// start initial world chunk generation
 		GetChunkGenerationTasks(startPos, radius);
 	}
@@ -251,6 +249,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 			// Check our container GO exists and if not, create it
 			if ( ChunkBucketGo == null || !ChunkBucketGo.IsValid )
 			{
+				// @TODO: Batch/amortize chunk buckets
 				ChunkBucketGo = new GameObject(true, "ChunkBucket" ); // holds our generated chunks
 				ChunkBucketGo.SetParent( Scene );
 			}
@@ -284,6 +283,9 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 	/// </summary>
 	public void Cleanup()
 	{
+		// clear voronoi structure
+		if (Voronoi != null && Voronoi.IsValid) Voronoi.ClearData();
+		
 		// destroy all chunk renderers
 		ClearRenderers();
 		
