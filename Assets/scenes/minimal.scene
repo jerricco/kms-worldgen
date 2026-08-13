@@ -4,7 +4,7 @@
     {
       "__guid": "bd1ca1e6-7f66-4154-aead-b9303d942afe",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Scene Information",
       "Position": "0,0,0",
       "Rotation": "0,0,0,1",
@@ -103,7 +103,7 @@
           "__guid": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
           "__enabled": true,
           "Flags": 0,
-          "BackgroundColor": "0.33333,0.46275,0.52157,1",
+          "BackgroundColor": "0,0,0,1",
           "ClearFlags": "All",
           "EnablePostProcessing": true,
           "FieldOfView": 60,
@@ -124,8 +124,8 @@
           "RenderTexture": null,
           "TargetEye": "None",
           "Viewport": "0,0,1,1",
-          "ZFar": 10000,
-          "ZNear": 10
+          "ZFar": 15000,
+          "ZNear": 2
         },
         {
           "__type": "Sandbox.Bloom",
@@ -179,24 +179,6 @@
           "TexelSize": 1
         },
         {
-          "__type": "Sandbox.Gameplay.MapCameraController",
-          "__guid": "d10fac9d-075b-488b-b50d-4fbe34fe3ac0",
-          "__enabled": true,
-          "Flags": 0,
-          "BaseZoom": 2000,
-          "MaxZoom": 10000,
-          "MinZoom": 100,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PanSpeed": 1,
-          "ZoomSensitivity": 0.15,
-          "ZoomSmoothness": 15
-        },
-        {
           "__type": "Sandbox.Gameplay.TileInteractionManager",
           "__guid": "5bb0492c-082e-496f-baa8-96aefa24f37f",
           "__enabled": true,
@@ -207,6 +189,24 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.Gameplay.MapCameraController",
+          "__guid": "ca22496c-572d-4174-8800-2e8d0813f1f4",
+          "__enabled": true,
+          "Flags": 0,
+          "BaseZoom": 2000,
+          "MaxZoom": 15000,
+          "MinZoom": 2,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PanSpeed": 1,
+          "ZoomSensitivity": 0.15,
+          "ZoomSmoothness": 15
         }
       ],
       "Children": []
@@ -214,7 +214,7 @@
     {
       "__guid": "f4a1c389-d70d-480f-96c1-f61fe902251b",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "LevelManager",
       "Position": "0,0,-1",
       "Rotation": "0,0,0,1",
@@ -250,7 +250,7 @@
     {
       "__guid": "f767a273-c939-43f8-8fc3-3f711791c505",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "VoronoiFactory",
       "Position": "0,0,1",
       "Rotation": "0,0,0,1",
@@ -325,12 +325,17 @@
           "Opacity": 1,
           "Scale": 1,
           "ScaleStrategy": "ConsistentHeight",
-          "TargetCamera": null,
+          "TargetCamera": {
+            "_type": "component",
+            "component_id": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
+            "go": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
+            "component_type": "CameraComponent"
+          },
           "ZIndex": 100
         },
         {
-          "__type": "Sandbox.UI.Level.LevelUiPanel",
-          "__guid": "ad00a17f-c94b-48a4-b559-0b2aac2aef23",
+          "__type": "Sandbox.UIPanels.Level.LevelUiPanelComponent",
+          "__guid": "dcbc7af5-8efe-4c60-940c-44abfdb77da2",
           "__enabled": true,
           "Flags": 0,
           "MyStringValue": "Hello World!",

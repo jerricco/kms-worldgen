@@ -9,7 +9,7 @@ public sealed class MapCameraController : Component
 {
 	// @TODO: Data-driven controls so that multiple cameras can inherit these values.
 	[Property, Header( "Zoom Settings" )] 
-	public float MinZoom { get; set; } = 10f;
+	public float MinZoom { get; set; } = 2f;
 	[Property] 
 	public float BaseZoom { get; set; } = 2000f;
 	[Property] 
