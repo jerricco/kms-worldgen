@@ -1,0 +1,53 @@
+LevelUiPanelComponent
+{
+	position: absolute;
+	top:0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+    height: 100%;
+    background-color: transparent;
+    pointer-events: none;
+	
+	/* TOP-LEFT: Tracking panel */
+	.tracking-panel {
+		position: absolute;
+		top: 18px;
+		left: 18px;
+		
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+		align-items: flex-start;
+	}
+
+	/* TOP-RIGHT: Information & tools panel */
+	.info-tools-panel {
+		position: absolute;
+		top: 18px;
+		right: 18px;
+	}
+
+	/* BOTTOM-LEFT: Menu panel */
+    .menu-panel {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: calc(100% - 300px);
+		height: 50px;
+		display: flex;
+		flex-direction: row;
+		justify-content: flex-start;
+		align-items: flex-end;
+	}
+
+	/* BOTTOM-RIGHT: Notification panel */
+	.notification-panel {
+		position: absolute;
+		bottom: 0;
+		right: 0;
+		width: 300px;
+		height: 50px;
+	}
+}

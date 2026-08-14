@@ -1,0 +1,9 @@
+// THIS FILE IS AUTO-GENERATED
+
+Layer0
+{
+	shader "shaders/vertex_color_opaque_unlit.shader"
+
+	//---- Rendering ----
+	F_DO_NOT_CAST_SHADOWS 1
+}

@@ -1,0 +1,77 @@
+﻿@using Sandbox;
+@using Sandbox.UI;
+
+<root>
+	<div class="sim-panel">
+		@* SLOWMODE *@
+		<button class="sim-icon@(GameSpeedSelected == GameSpeed.SlowMode ? " selected" : "")" @onclick="@OnSlowClicked">
+			<img class="icon" src="icons/slow.svg" alt="Slow mode"/>
+			<img class="icon" src="icons/slow-multiplier.svg" alt="Slow mode"/>
+		</button>
+		
+		<div class="divider"></div>
+		
+		@* PAUSE/PLAY *@
+		<button class="sim-icon@(GameSpeedSelected == GameSpeed.Pause ? " selected" : "")" @onclick="@OnPauseClicked">
+			<img class="icon" src="icons/pause.svg" alt="Pause sim" />
+		</button>
+		<button class="sim-icon@(GameSpeedSelected == GameSpeed.Play ? " selected" : "")" @onclick="@OnPlayClicked">
+			<img class="icon" src="icons/play.svg" alt="Play sim"/>
+		</button>
+		
+		<button class="sim-icon@(GameSpeedSelected == GameSpeed.FastForward ? " selected" : "")" @onclick="@OnFastForwardClicked">
+			<img class="icon" src="icons/fast-forward.svg" alt="Fast forward sim"/>
+		</button>
+		
+		<div class="divider"></div>
+
+		@* TURBO *@
+		<button class="sim-icon@(GameSpeedSelected == GameSpeed.TurboMode ? " selected" : "")" @onclick="@OnTurboClicked">
+			<img class="icon" src="icons/turbo.svg" alt="Turbo mode"/>
+		</button>
+
+	</div>
+	<div class="sim-alert">
+		<div class="icon">
+			<img src="icons/sim-alert-yellow.svg" alt="SIM ALERT"/>
+		</div>
+		<span>No simulation detected!</span>
+	</div>
+</root>
+
+
+@code {
+
+	public enum GameSpeed
+	{
+		SlowMode,
+		Pause,
+		Play,
+		FastForward,
+		TurboMode,
+	}
+
+	public GameSpeed GameSpeedSelected = GameSpeed.Play;
+
+	private void OnSlowClicked()
+	{
+		GameSpeedSelected = GameSpeed.SlowMode;
+	}
+	private void OnPauseClicked()
+	{
+		GameSpeedSelected = GameSpeed.Pause;
+	}
+	private void OnPlayClicked()
+	{
+		GameSpeedSelected = GameSpeed.Play;
+	}
+	private void OnFastForwardClicked()
+	{
+		GameSpeedSelected = GameSpeed.FastForward;
+	}
+	private void OnTurboClicked()
+	{
+		GameSpeedSelected = GameSpeed.TurboMode;
+	}
+
+}

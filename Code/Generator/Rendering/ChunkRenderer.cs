@@ -4,11 +4,12 @@ namespace Sandbox.Generator.Rendering;
 
 public class ChunkRenderer : Component
 {
-	private ModelRenderer _modelRenderer;
 	[Property] public GenerationSettings Settings { get; set; }
 	[Property] public ChunkTheme Theme { get; set; }
 	[Property] public Material ChunkMaterial { get; set; }
 	[Property] public Color DefaultTileColor { get; set; } = Color.Magenta;
+
+    private ModelRenderer _modelRenderer;
 
 	protected override void OnStart()
 	{
@@ -19,10 +20,10 @@ public class ChunkRenderer : Component
 
 	protected override void OnDestroy()
 	{
-		if (this._modelRenderer != null && this._modelRenderer.IsValid)
-		{
-			this._modelRenderer.Destroy();
-		}
+        if (this._modelRenderer.IsValid)
+        {
+            this._modelRenderer.Destroy();
+        }
 	}
 
 	// @TODO: Create multiple sceneObjects which each have a different visualisation of the tiles.
@@ -205,7 +206,7 @@ public class ChunkRenderer : Component
 		this._modelRenderer.Model = model;
 		this._modelRenderer.Enabled = true;
 
-		// Log.Info( $"Chunk_{chunk.Position.x}_{chunk.Position.y} has been attached to it's renderer!" );
+
 	}
 
 	private Color GetElevationColour(double elevation)

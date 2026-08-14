@@ -1,4 +1,4 @@
-﻿using Sandbox.GameObjectSystems.Map;
+﻿using Sandbox.Systems.Map;
 using Sandbox.Generation;
 using Sandbox.Triangulation;
 

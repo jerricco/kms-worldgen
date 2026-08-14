@@ -2,11 +2,5 @@
 
 Layer0
 {
-	shader "shaders/vertex_color_lit.shader"
-
-	//---- Rendering ----
-	F_DO_NOT_CAST_SHADOWS 1
-
-	//---- Fog ----
-	g_bFogEnabled "0"
+	shader "shaders/vertex_color_masked_unlit.shader"
 }

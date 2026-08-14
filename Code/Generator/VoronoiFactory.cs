@@ -1,12 +1,16 @@
 using System;
 using Sandbox.GameData;
-using Sandbox.GameObjectSystems.Map;
+using Sandbox.Systems.Map;
 
 namespace Sandbox.Triangulation;
 
 [Category("Procedural Generation")]
 public sealed class VoronoiFactory : Component
 {
+	[Property] public GenerationSettings Settings { get; set;  }
+	public ProceduralDelaunayRenderer Renderer { get; set; }
+	[Property] public Material LineMaterial { get; set; }
+
 	// Cache object for handling fast voronoi/delaunay data spatial lookup
 	public static Dictionary<Vector2, List<(int index, Vector2 pos)>> PointGridBuckets = new();
 	public Vector2[] CachedCellCenters;
@@ -14,20 +18,16 @@ public sealed class VoronoiFactory : Component
 	public Delaunator Delaunay;
 	public List<CurvedSpine> TectonicSpines;
 	public Voronator Voronoi;
-	[Property] public GenerationSettings Settings { get; set; }
-	[Property] public ProceduralDelaunayRenderer Renderer { get; set; }
-	[Property] public Material LineMaterial { get; set; }
 
 	protected override void OnStart()
 	{
-		this.Renderer = this.GameObject.GetOrAddComponent<ProceduralDelaunayRenderer>();
-		this.Renderer.Settings = this.Settings;
-		this.Renderer.BaseMaterial = this.LineMaterial;
+		// create mesh for drawing the voronoi sites - @TODO: default to false visibility when done with
+        this.Renderer = this.GameObject.GetOrAddComponent<ProceduralDelaunayRenderer>();
 	}
 
 	protected override void OnDestroy()
 	{
-		this.Renderer.Destroy();
+        this.ClearData();
 	}
 
 	public void GenerateAndRender()
@@ -41,11 +41,20 @@ public sealed class VoronoiFactory : Component
 		this.CacheCellCenters();
 
 		Log.Info($"Voronoi generation complete! Took {RealTime.Now - startTime} s");
-
-		// create mesh for drawing the voronoi sites - @TODO: default to false visibility when done with
+        this.Renderer.Settings = this.Settings;
+        this.Renderer.LineMaterial = this.LineMaterial;
 		this.Renderer.RebuildMesh(this.Delaunay);
 
 		Log.Info($"Voronoi mesh complete! Took {RealTime.Now - startTime} s");
+    }
+
+	public void ClearData()
+	{
+		if (this.Renderer != null && this.Renderer.IsValid) this.Renderer.ClearMesh();
+
+        this.TectonicSpines = null;
+        this.Voronoi = null;
+        this.Delaunay = null;
 	}
 
 	///////////////////////////////////////////////
@@ -80,7 +89,7 @@ public sealed class VoronoiFactory : Component
 		var mapManager = MapGeneratorSystem.Current;
 		if (mapManager.Rng == null)
 			throw new InvalidOperationException("Rng on mapManager is null!");
-		
+
 		var networks = new List<CurvedSpine>();
 		var continentCount = mapManager.Rng.NextRange(3, 6);
 		for (var c = 0; c < continentCount; c++)

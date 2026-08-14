@@ -15,7 +15,9 @@ public sealed class MapCameraController : Component
 
 	// @TODO: Data-driven controls so that multiple cameras can inherit these values.
 	[Property] [Header("Zoom Settings")]
-	public float MinZoom { get; set; } = 10f;
+	public float MinZoom { get; set; } = 2f;
+	[Property]
+	public float BaseZoom { get; set; } = 2000f;
 
 	[Property]
 	public float MaxZoom { get; set; } = 15000f;
@@ -37,12 +39,11 @@ public sealed class MapCameraController : Component
 			throw new FileLoadException("Can't find a loaded main camera!");
 		}
 
-		this._camera.Orthographic = true;// Force the camera into orthographic view if this component is attached
+		this._camera.Orthographic = true;// Force the camera into orthographic view if this component is attached_camera.ClearFlags = ClearFlags.All; // show a flat color if there's nothing rendering in the world
+		_camera.BackgroundColor = Color.Black; // ensure we always show black if there's nothing rendered
 		this._camera.WorldRotation = Rotation.From(90, 90, 0);// lock rotation
-
 		// init zoom
-		this._targetZoom = this._camera.OrthographicHeight;
-
+		this._targetZoom = this._camera.OrthographicHeight = BaseZoom;
 		// init panning
 		this._targetPosition = this._camera.WorldPosition;
 		this._targetPosition.z = 100f;

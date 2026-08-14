@@ -4,7 +4,7 @@
     {
       "__guid": "bd1ca1e6-7f66-4154-aead-b9303d942afe",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "Scene Information",
       "Position": "0,0,0",
       "Rotation": "0,0,0,1",
@@ -83,73 +83,6 @@
       "Children": []
     },
     {
-      "__guid": "00344a8c-fa5e-45ae-b12a-10bb781a1dc3",
-      "__version": 2,
-      "Flags": 0,
-      "Name": "2D Skybox",
-      "Position": "0,0,0",
-      "Rotation": "0,0,0,1",
-      "Scale": "1,1,1",
-      "Tags": "skybox",
-      "Enabled": true,
-      "NetworkMode": 2,
-      "NetworkFlags": 0,
-      "NetworkOrphaned": 0,
-      "NetworkTransmit": true,
-      "OwnerTransfer": 1,
-      "Components": [
-        {
-          "__type": "Sandbox.SkyBox2D",
-          "__guid": "de79e9e0-5c37-4c54-ac67-bfcdb1d5483b",
-          "__enabled": true,
-          "Flags": 0,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "SkyIndirectLighting": true,
-          "SkyMaterial": "materials/skybox/skybox_day_01.vmat",
-          "Tint": "1,1,1,1"
-        },
-        {
-          "__type": "Sandbox.EnvmapProbe",
-          "__guid": "f3e304db-baab-4c1a-a4ec-8442585c2d62",
-          "__enabled": true,
-          "Flags": 0,
-          "__version": 1,
-          "BakedTexture": null,
-          "Bounds": {
-            "Mins": "-512,-512,-512",
-            "Maxs": "512,512,512"
-          },
-          "DelayBetweenUpdates": 0.1,
-          "Feathering": 0.02,
-          "FrameInterval": 5,
-          "MaxDistance": 512,
-          "Mode": "CustomTexture",
-          "MultiBounce": false,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "Priority": 0,
-          "Projection": "Sphere",
-          "RenderExcludeTags": "",
-          "Resolution": "Small",
-          "Texture": "textures/cubemaps/default2.vtex",
-          "TintColor": "1,1,1,1",
-          "UpdateStrategy": "OnEnabled",
-          "ZFar": 4096,
-          "ZNear": 16
-        }
-      ],
-      "Children": []
-    },
-    {
       "__guid": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
       "__version": 2,
       "Flags": 0,
@@ -170,7 +103,7 @@
           "__guid": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
           "__enabled": true,
           "Flags": 0,
-          "BackgroundColor": "0.33333,0.46275,0.52157,1",
+          "BackgroundColor": "0,0,0,1",
           "ClearFlags": "All",
           "EnablePostProcessing": true,
           "FieldOfView": 60,
@@ -183,7 +116,7 @@
           "OnComponentStart": null,
           "OnComponentUpdate": null,
           "Orthographic": true,
-          "OrthographicHeight": 1204,
+          "OrthographicHeight": 2000,
           "PostProcessAnchor": null,
           "Priority": 1,
           "RenderExcludeTags": "",
@@ -191,8 +124,8 @@
           "RenderTexture": null,
           "TargetEye": "None",
           "Viewport": "0,0,1,1",
-          "ZFar": 10000,
-          "ZNear": 10
+          "ZFar": 15000,
+          "ZNear": 2
         },
         {
           "__type": "Sandbox.Bloom",
@@ -246,23 +179,6 @@
           "TexelSize": 1
         },
         {
-          "__type": "Sandbox.Gameplay.MapCameraController",
-          "__guid": "d10fac9d-075b-488b-b50d-4fbe34fe3ac0",
-          "__enabled": true,
-          "Flags": 0,
-          "MaxZoom": 10000,
-          "MinZoom": 100,
-          "OnComponentDestroy": null,
-          "OnComponentDisabled": null,
-          "OnComponentEnabled": null,
-          "OnComponentFixedUpdate": null,
-          "OnComponentStart": null,
-          "OnComponentUpdate": null,
-          "PanSpeed": 1,
-          "ZoomSensitivity": 0.15,
-          "ZoomSmoothness": 15
-        },
-        {
           "__type": "Sandbox.Gameplay.TileInteractionManager",
           "__guid": "5bb0492c-082e-496f-baa8-96aefa24f37f",
           "__enabled": true,
@@ -273,6 +189,24 @@
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null
+        },
+        {
+          "__type": "Sandbox.Gameplay.MapCameraController",
+          "__guid": "ca22496c-572d-4174-8800-2e8d0813f1f4",
+          "__enabled": true,
+          "Flags": 0,
+          "BaseZoom": 2000,
+          "MaxZoom": 15000,
+          "MinZoom": 2,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "PanSpeed": 1,
+          "ZoomSensitivity": 0.15,
+          "ZoomSmoothness": 15
         }
       ],
       "Children": []
@@ -280,9 +214,9 @@
     {
       "__guid": "f4a1c389-d70d-480f-96c1-f61fe902251b",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "LevelManager",
-      "Position": "-7.03482819,-169.219055,76.7313385",
+      "Position": "0,0,-1",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -299,8 +233,8 @@
           "__enabled": true,
           "Flags": 0,
           "GeneratePosition": "0,0",
-          "GenerationComplete": false,
-          "GenerationReady": true,
+          "IsGenerating": false,
+          "MapExists": false,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -316,9 +250,9 @@
     {
       "__guid": "f767a273-c939-43f8-8fc3-3f711791c505",
       "__version": 2,
-      "Flags": 0,
+      "Flags": 32768,
       "Name": "VoronoiFactory",
-      "Position": "6.00005913,-12.0000229,2371.50269",
+      "Position": "0,0,1",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -334,19 +268,13 @@
           "__guid": "9121d3f9-9e11-4533-b69b-80d43468f0d9",
           "__enabled": true,
           "Flags": 0,
-          "LineMaterial": "materials/tile_unlit.vmat",
+          "LineMaterial": null,
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
           "OnComponentFixedUpdate": null,
           "OnComponentStart": null,
           "OnComponentUpdate": null,
-          "Renderer": {
-            "_type": "component",
-            "component_id": "3c9ac5dc-57e3-4bf8-9f8c-fa3f96cbda3a",
-            "go": "f767a273-c939-43f8-8fc3-3f711791c505",
-            "component_type": "ProceduralDelaunayRenderer"
-          },
           "Settings": "default_generation.genconf"
         },
         {
@@ -354,8 +282,6 @@
           "__guid": "3c9ac5dc-57e3-4bf8-9f8c-fa3f96cbda3a",
           "__enabled": true,
           "Flags": 0,
-          "BaseMaterial": "materials/tile_unlit.vmat",
-          "DefaultLineColor": "1,1,1,1",
           "OnComponentDestroy": null,
           "OnComponentDisabled": null,
           "OnComponentEnabled": null,
@@ -364,6 +290,61 @@
           "OnComponentUpdate": null,
           "Settings": "default_generation.genconf",
           "ShowDelaunay": true
+        }
+      ],
+      "Children": []
+    },
+    {
+      "__guid": "efeb68bf-a3d7-4189-8494-0573e56b402b",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "LevelUiScreen",
+      "Position": "0,0,10",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.ScreenPanel",
+          "__guid": "8daec9f2-f017-445a-a1b4-1ea6011e4d27",
+          "__enabled": true,
+          "Flags": 0,
+          "AutoScreenScale": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Opacity": 1,
+          "Scale": 1,
+          "ScaleStrategy": "ConsistentHeight",
+          "TargetCamera": {
+            "_type": "component",
+            "component_id": "cf3cbf96-22b6-4be4-a5d0-672a96c17f9f",
+            "go": "3ee1c9f4-07be-4e0b-8b23-67bee2d8ec8a",
+            "component_type": "CameraComponent"
+          },
+          "ZIndex": 100
+        },
+        {
+          "__type": "Sandbox.UIPanels.Level.LevelUiPanelComponent",
+          "__guid": "dcbc7af5-8efe-4c60-940c-44abfdb77da2",
+          "__enabled": true,
+          "Flags": 0,
+          "MyStringValue": "Hello World!",
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
         }
       ],
       "Children": []
@@ -397,16 +378,18 @@
           "$refs": []
         }
       },
-      "Sandbox.GameObjectSystems.Map.MapGeneratorSystem": {
-        "ElevationHeightmapMaterial": "materials/tile_unlit.vmat",
-        "Settings": "default_generation.genconf",
-        "Theme": "default_theme.gentheme",
-        "VoronoiLineMaterial": "materials/tile_unlit.vmat"
-      },
       "Sandbox.SelectionSetsSystem": {
         "Data": {
           "SelectionSets": []
         }
+      },
+      "Sandbox.Systems.Map.MapGeneratorSystem": {
+        "CosA": -0.3032780985345427,
+        "OffsetX": 36061,
+        "OffsetY": 77826,
+        "RandomAngle": 4.404258079758727,
+        "SinA": -0.9529020909565012,
+        "VoronoiLineMaterial": "materials/tile_unlit.vmat"
       }
     }
   },
