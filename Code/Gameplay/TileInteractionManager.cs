@@ -1,5 +1,4 @@
-﻿using Sandbox.Generator;
-using System;
+﻿using System;
 using Sandbox.GameObjectSystems.Map;
 using Sandbox.Generation;
 
@@ -9,58 +8,68 @@ public class TileInteractionManager : Component
 {
 	protected override void OnUpdate()
 	{
-		if ( MapGeneratorSystem.Current == null ) return;
-		HoverForTileTooltip();
+		if (MapGeneratorSystem.Current == null)
+		{
+			return;
+		}
+
+		this.HoverForTileTooltip();
 	}
 
 	private void HoverForTileTooltip()
 	{
-		Ray mouseRay = Scene.Camera.ScreenPixelToRay( Mouse.Position );
-		Vector3 rayOrigin = mouseRay.Position;
-		Vector3 rayDirection = mouseRay.Forward;
-		
-		if ( MathF.Abs( rayDirection.z ) <= 0.0001f ) return;
-		
+		var mouseRay = this.Scene.Camera.ScreenPixelToRay(Mouse.Position);
+		var rayOrigin = mouseRay.Position;
+		var rayDirection = mouseRay.Forward;
+
+		if (MathF.Abs(rayDirection.z) <= 0.0001f)
+		{
+			return;
+		}
+
 		// Distance along the ray to strike the flat ground plane
-		float distanceToPlane = -rayOrigin.z / rayDirection.z;
-		if ( distanceToPlane < 0f ) return;
-		
-			Vector3 intersectPoint = rayOrigin + (rayDirection * distanceToPlane);
+		var distanceToPlane = -rayOrigin.z / rayDirection.z;
+		if (distanceToPlane < 0f)
+		{
+			return;
+		}
 
-			// Floor global positions directly into grid indices (1x1 unit sizing)
-			int globalTileX = (int)MathF.Floor( intersectPoint.x );
-			int globalTileY = (int)MathF.Floor( intersectPoint.y );
+		var intersectPoint = rayOrigin + rayDirection * distanceToPlane;
 
-			// 5. Chunk space indexing breakdowns (Assuming 50x50 chunk dimensions)
-			int chunkSize = MapGeneratorSystem.Current.Settings.ChunkGridSize; 
-			int chunkX = (int)MathF.Floor( (float)globalTileX / chunkSize );
-			int chunkY = (int)MathF.Floor( (float)globalTileY / chunkSize );
+		// Floor global positions directly into grid indices (1x1 unit sizing)
+		var globalTileX = (int)MathF.Floor(intersectPoint.x);
+		var globalTileY = (int)MathF.Floor(intersectPoint.y);
 
-			// Isolate coordinates relative to the specific chunk's origin bound edge
-			int localTileX = globalTileX - (chunkX * chunkSize);
-			int localTileY = globalTileY - (chunkY * chunkSize);
+		// 5. Chunk space indexing breakdowns (Assuming 50x50 chunk dimensions)
+		var chunkSize = MapGeneratorSystem.Current.Settings.ChunkGridSize;
+		var chunkX = (int)MathF.Floor((float)globalTileX / chunkSize);
+		var chunkY = (int)MathF.Floor((float)globalTileY / chunkSize);
 
-			// check the chunk & draw its tooltip if we can find it
-			Chunk targetChunk = MapGeneratorSystem.Current.GetChunkAt( chunkX, chunkY );
-			if ( targetChunk != null && targetChunk.Tiles != null )
+		// Isolate coordinates relative to the specific chunk's origin bound edge
+		var localTileX = globalTileX - chunkX * chunkSize;
+		var localTileY = globalTileY - chunkY * chunkSize;
+
+		// check the chunk & draw its tooltip if we can find it
+		var targetChunk = MapGeneratorSystem.Current.GetChunkAt(chunkX, chunkY);
+		if (targetChunk != null)
+		{
+			var localIndex = targetChunk.LocalIndex(localTileX, localTileY);
+			if (localIndex < targetChunk.Tiles.Length)
 			{
-				uint localIndex = targetChunk.LocalIndex( localTileX, localTileY );
-				if ( localIndex < targetChunk.Tiles.Length )
-				{
-					TileData hoveredTile = targetChunk.Tiles[localIndex];
-					
-					// Render immediate UI tooltip onto the viewport surface
-					DrawTileTooltip( hoveredTile, globalTileX, globalTileY, chunkX, chunkY );
-				}
+				var hoveredTile = targetChunk.Tiles[localIndex];
+
+				// Render immediate UI tooltip onto the viewport surface
+				this.DrawTileTooltip(hoveredTile, globalTileX, globalTileY, chunkX, chunkY);
 			}
+		}
 	}
-	
+
 	/// <summary>
 	/// Renders a dynamic debug text block directly over the mouse cursor positions.
 	/// </summary>
-	private void DrawTileTooltip( TileData tile, int gx, int gy, int cx, int cy )
+	private void DrawTileTooltip(TileData tile, int gx, int gy, int cx, int cy)
 	{
-		string tooltipText = 
+		var tooltipText =
 			$"[Tile Coordinates]\n" +
 			$"Global: ({gx}, {gy})\n" +
 			$"Chunk Space: ({cx}, {cy})\n\n" +
@@ -71,6 +80,6 @@ public class TileInteractionManager : Component
 			$"Material ID: {tile.MaterialId}";
 
 		// Draw immediate screen overlay text directly onto the active view window
-		Gizmo.Draw.ScreenText( tooltipText, Mouse.Position + new Vector2( 20, 20 ), size: 14f );
+		Gizmo.Draw.ScreenText(tooltipText, Mouse.Position + new Vector2(20, 20), size: 14f);
 	}
 }

@@ -1,8 +1,7 @@
-﻿namespace Sandbox.Triangulation
+﻿namespace Sandbox.Triangulation;
+
+public interface IDelaunayChunk
 {
-	public interface IDelaunayChunk
-	{
-		BBox ChunkBounds { get; }
-		List<int> TriangleIndices { get; }
-	}
+	BBox ChunkBounds { get; }
+	List<int> TriangleIndices { get; }
 }

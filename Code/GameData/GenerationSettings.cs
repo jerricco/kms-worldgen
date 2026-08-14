@@ -3,55 +3,54 @@
 namespace Sandbox.GameData;
 
 [AssetType(Name = "Generation Settings", Extension = "genconf", Category = "Configuration")]
-public partial class GenerationSettings : GameResource
+public class GenerationSettings : GameResource
 {
-    // --- STATIC(ISH) PROPERTIES --- //
-    // Seeded randomisation
-    [Property] public string SeedText   { get; set; } = "aborio rice";
+	// --- STATIC(ISH) PROPERTIES --- //
+	// Seeded randomisation
+	[Property] public string SeedText { get; set; } = "aborio rice";
 
-    // Map dimensions
-    [Property] public int WorldWidth    { get; set; } = 12800;
-    [Property] public int WorldHeight   { get; set; } = 12800;
-    [Property] public int CellGridSize  { get; set; } = 400;
-    [Property] public int CellGridColumns => WorldHeight / CellGridSize; // e.g., 12800 / 400 = 32
-    [Property] public int CellGridRows => WorldWidth / CellGridSize; 
-    [Property] public int ChunkGridSize { get; set; } = 50;
-    [Property] public int ChunksX => HalfWidth / ChunkGridSize;
-    [Property] public int ChunksY => HalfHeight / ChunkGridSize;
-    [Property] public int TotalChunks => ChunksX * ChunksY;
-    
-    // Map generation modifiers
-    [Property] public float OceanClamp  { get; set; } = 0.85f;
-    [Property] public float MacroScale  { get; set; } = 0.00015f;
-    [Property] public float MicroScale  { get; set; } = 0.0015f;
-    [Property] public float SquishFactor{ get; set; } = 1.0f;
-    [Property] public float StretchX    { get; set; } = 0.7f;
-    [Property] public float StretchY    { get; set; } = 1.3f;
+	// Map dimensions
+	[Property] public int WorldWidth { get; set; } = 12800;
+	[Property] public int WorldHeight { get; set; } = 12800;
+	[Property] public int CellGridSize { get; set; } = 400;
+	[Property] public int CellGridColumns => this.WorldHeight / this.CellGridSize;// e.g., 12800 / 400 = 32
+	[Property] public int CellGridRows => this.WorldWidth / this.CellGridSize;
+	[Property] public int ChunkGridSize { get; set; } = 50;
+	[Property] public int ChunksX => this.HalfWidth / this.ChunkGridSize;
+	[Property] public int ChunksY => this.HalfHeight / this.ChunkGridSize;
+	[Property] public int TotalChunks => this.ChunksX * this.ChunksY;
 
-    // Elevation boundaries
-    [Property] public float AbyssalLevel { get; set; } = -1.0f;
-    [Property] public float TrenchLevel  { get; set; } = -0.85f;
-    [Property] public float DeepOceanLevel { get; set; } = -0.55f;
-    [Property] public float OceanLevel { get; set; } = -0.25f;
-    [Property] public float SeaLevel { get; set; } = 0f;
-    [Property] public float BeachLevel { get; set; } = 0.03f;
-    [Property] public float PlainLevel { get; set; } = 0.48f;
-    [Property] public float HillLevel { get; set; } = 0.68f;
-    [Property] public float MountainLevel { get; set; } = 0.82f;
-    [Property] public float PeakLevel { get; set; } = 0.95f;
+	// Map generation modifiers
+	[Property] public float OceanClamp { get; set; } = 0.85f;
+	[Property] public float MacroScale { get; set; } = 0.00015f;
+	[Property] public float MicroScale { get; set; } = 0.0015f;
+	[Property] public float SquishFactor { get; set; } = 1.0f;
+	[Property] public float StretchX { get; set; } = 0.7f;
+	[Property] public float StretchY { get; set; } = 1.3f;
 
+	// Elevation boundaries
+	[Property] public float AbyssalLevel { get; set; } = -1.0f;
+	[Property] public float TrenchLevel { get; set; } = -0.85f;
+	[Property] public float DeepOceanLevel { get; set; } = -0.55f;
+	[Property] public float OceanLevel { get; set; } = -0.25f;
+	[Property] public float SeaLevel { get; set; } = 0f;
+	[Property] public float BeachLevel { get; set; } = 0.03f;
+	[Property] public float PlainLevel { get; set; } = 0.48f;
+	[Property] public float HillLevel { get; set; } = 0.68f;
+	[Property] public float MountainLevel { get; set; } = 0.82f;
+	[Property] public float PeakLevel { get; set; } = 0.95f;
 
-    // --- COMPUTED PROPERTIES --- //
-    // dimensionality
-    [Property] public int TotalTiles => WorldWidth * WorldHeight;
-    [Property] public int MaxDimension => Math.Max(WorldWidth, WorldHeight);
-    [Property] public float MaxRadius => MathF.Sqrt( (HalfWidth * HalfWidth) + (HalfHeight * HalfHeight) );
-    [Property] public int HalfWidth => WorldWidth / 2;
-    [Property] public int HalfHeight => WorldHeight / 2;
-    
-    // resource visual icon
-    protected override Bitmap CreateAssetTypeIcon( int width, int height )
-    {
-	    return CreateSimpleAssetTypeIcon( "landscape", width, height, "#fdea60", "black" );
-    }
+	// --- COMPUTED PROPERTIES --- //
+	// dimensionality
+	[Property] public int TotalTiles => this.WorldWidth * this.WorldHeight;
+	[Property] public int MaxDimension => Math.Max(this.WorldWidth, this.WorldHeight);
+	[Property] public float MaxRadius => MathF.Sqrt(this.HalfWidth * this.HalfWidth + this.HalfHeight * this.HalfHeight);
+	[Property] public int HalfWidth => this.WorldWidth / 2;
+	[Property] public int HalfHeight => this.WorldHeight / 2;
+
+	// resource visual icon
+	protected override Bitmap CreateAssetTypeIcon(int width, int height)
+	{
+		return CreateSimpleAssetTypeIcon("landscape", width, height, "#fdea60", "black");
+	}
 }

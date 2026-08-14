@@ -6,66 +6,71 @@ namespace Sandbox.Generator;
 
 public class Chunk
 {
+	public bool Generated { get; set; }
+	public bool Generating { get; set; }
+	public int Size { get; set; }
+	public float TileSize { get; set; } = 1f;// @TODO: increase physical tile size? Will be a big refactor
+	
 	public Vector2 Position { get; set; }
-	public Vector2 GlobalPosition { get; private set; }
-	
-	public TileData[] Tiles { get; private set; }
-	public bool Generating;
-	public bool Generated;
-	public int Size;
-	public float TileSize = 1f; // @TODO: increase physical tile size? Will be a big refactor
-	
-	
+	public Vector2 GlobalPosition { get; }
+	public TileData[] Tiles { get; }
+
 	public Chunk(Vector2 chunkPosition, int size)
 	{
-		Size = size;
-		
+		this.Size = size;
+
 		// All positions refer to the chunks top-left corner
-		Position = new Vector2( chunkPosition.x, chunkPosition.y );
-		GlobalPosition = new Vector2( Position.x * Size * TileSize, Position.y * Size * TileSize );
-		
-		Tiles = new TileData[size * size];
+		this.Position = new Vector2(chunkPosition.x, chunkPosition.y);
+		this.GlobalPosition = new Vector2(this.Position.x * this.Size * this.TileSize, this.Position.y * this.Size * this.TileSize);
+
+		this.Tiles = new TileData[size * size];
 	}
 
 	public void Generate(int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
-		if (!Generating) Generating = true;
-		for ( int x = 0; x < Size; x++ )
+		this.Generating = true;
+
+		for (var x = 0; x < this.Size; x++)
 		{
-			for ( int y = 0; y < Size; y++ )
+			for (var y = 0; y < this.Size; y++)
 			{
-				GenerateTile( x, y, xLimit, yLimit, spines );
+				this.GenerateTile(x, y, xLimit, yLimit, spines);
 			}
 		}
-		
-		Generating = false;
-		Generated = true;
+
+		this.Generating = false;
+		this.Generated = true;
 	}
 
 	public void GenerateTile(float x, float y, int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
-		Vector2 global = new Vector2( GlobalPosition.x + x, GlobalPosition.y + y ); // get global tile location
-		
+		var global = new Vector2(this.GlobalPosition.x + x, this.GlobalPosition.y + y);// get global tile location
+
 		// ignore parts of the chunk that extend past the world border.
-		if ( global.x > xLimit || global.y > yLimit || global.x < -xLimit || global.y < -yLimit )
+		if (global.x > xLimit || global.y > yLimit || global.x < -xLimit || global.y < -yLimit)
+		{
 			return;
-		
+		}
+
 		// create tile
-		TileData tile = new TileData();
-		tile.GlobalPosition = global;
-				
+		var tile = new TileData
+		{
+			GlobalPosition = global,
+		};
+
 		// generate tile properties
 		tile.GenerateElevation(MapGeneratorSystem.Current.Settings, spines);
 		tile.GenerateGeology();
 		tile.GenerateRegion();
-		
+
 		// load data to chunk
-		uint tileIndex = LocalIndex((int)x, (int)y);
-		Tiles[tileIndex] = tile;
+		var tileIndex = this.LocalIndex((int)x, (int)y);
+		this.Tiles[tileIndex] = tile;
 	}
-	
+
 	// Fast inline index helper mapping local 2D space to 1D space
-	public uint LocalIndex( int x, int y ) {
-		return (uint)(y * Size + x);
+	public uint LocalIndex(int x, int y)
+	{
+		return (uint)(y * this.Size + x);
 	}
 }

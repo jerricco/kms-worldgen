@@ -1,11 +1,10 @@
-﻿namespace Sandbox.Triangulation
+﻿namespace Sandbox.Triangulation;
+
+public interface IVoronoiSite
 {
-	public interface IVoronoiSite
-	{
-		int Id { get; }
-		Vector2 Position { get; }
-		int PlateId { get; }
-		bool IsOceanic { get; }
-		double BaseElevation { get; }
-	}	
+	int Id { get; }
+	Vector2 Position { get; }
+	int PlateId { get; }
+	bool IsOceanic { get; }
+	double BaseElevation { get; }
 }
