@@ -157,10 +157,10 @@ internal static class ExactArithmetic
 
 		Split(a, out ahi, out alo);
 		Split(b, out bhi, out blo);
-		var err1 = x - ahi * bhi;
-		var err2 = err1 - alo * bhi;
-		var err3 = err2 - ahi * blo;
-		y = alo * blo - err3;
+		var err1 = x - (ahi * bhi);
+		var err2 = err1 - (alo * bhi);
+		var err3 = err2 - (ahi * blo);
+		y = (alo * blo) - err3;
 	}
 
 	// This is TwoProduct for the case where one factor has already been Split
@@ -178,10 +178,10 @@ internal static class ExactArithmetic
 
 		x = a * b;
 		Split(a, out ahi, out alo);
-		var err1 = x - ahi * bhi;
-		var err2 = err1 - alo * bhi;
-		var err3 = err2 - ahi * blo;
-		y = alo * blo - err3;
+		var err1 = x - (ahi * bhi);
+		var err2 = err1 - (alo * bhi);
+		var err3 = err2 - (ahi * blo);
+		y = (alo * blo) - err3;
 	}
 
 	// This is TwoProduct for the case where one factor has already been Split
@@ -198,10 +198,10 @@ internal static class ExactArithmetic
 	)
 	{
 		x = a * b;
-		var err1 = x - ahi * bhi;
-		var err2 = err1 - alo * bhi;
-		var err3 = err2 - ahi * blo;
-		y = alo * blo - err3;
+		var err1 = x - (ahi * bhi);
+		var err2 = err1 - (alo * bhi);
+		var err3 = err2 - (ahi * blo);
+		y = (alo * blo) - err3;
 	}
 
 	// [MethodImplOptions(MethodImplOptions.AggressiveInlining)]
@@ -218,9 +218,9 @@ internal static class ExactArithmetic
 		double ahi, alo;
 
 		Split(a, out ahi, out alo);
-		err1 = x - ahi * ahi;
-		err3 = err1 - (ahi + ahi) * alo;
-		y = alo * alo - err3;
+		err1 = x - (ahi * ahi);
+		err3 = err1 - ((ahi + ahi) * alo);
+		y = (alo * alo) - err3;
 	}
 
 	#endregion
@@ -844,7 +844,7 @@ internal static class ExactArithmetic
 		eindex = findex = 0;
 
 		// First step is to assign to Q the entry with smaller magnitude
-		if (fnow > enow == fnow > -enow)// if |fnow| >= |enow|
+		if ((fnow > enow) == (fnow > -enow))// if |fnow| >= |enow|
 		{
 			Q = enow;
 			eindex++;
@@ -875,7 +875,7 @@ internal static class ExactArithmetic
 			fnow = f[findex];
 			// Pick smaller magnitude
 			// if |fnow| >= |enow|
-			if (fnow > enow == fnow > -enow)
+			if ((fnow > enow) == (fnow > -enow))
 			{
 				// Add e and advance eindex
 				FastTwoSum(enow, Q, out Qnew, out h[0]);
@@ -898,7 +898,7 @@ internal static class ExactArithmetic
 				fnow = f[findex];
 				// Pick smaller magnitude
 				// if |fnow| >= |enow|
-				if (fnow > enow == fnow > -enow)
+				if ((fnow > enow) == (fnow > -enow))
 				{
 					TwoSum(Q, enow, out Qnew, out h[hindex]);
 					eindex++;
@@ -962,7 +962,7 @@ internal static class ExactArithmetic
 		eindex = findex = 0;
 
 		// First step is to assign to Q the entry with smaller magnitude
-		if (fnow > enow == fnow > -enow)// if |fnow| >= |enow|
+		if ((fnow > enow) == (fnow > -enow))// if |fnow| >= |enow|
 		{
 			Q = enow;
 			eindex++;
@@ -993,7 +993,7 @@ internal static class ExactArithmetic
 			fnow = f[findex];
 			// Pick smaller magnitude
 			// if |fnow| >= |enow|
-			if (fnow > enow == fnow > -enow)
+			if ((fnow > enow) == (fnow > -enow))
 			{
 				// Add e and advance eindex
 				FastTwoSum(enow, Q, out Qnew, out hh);
@@ -1020,7 +1020,7 @@ internal static class ExactArithmetic
 				fnow = f[findex];
 				// Pick smaller magnitude
 				// if |fnow| >= |enow|
-				if (fnow > enow == fnow > -enow)
+				if ((fnow > enow) == (fnow > -enow))
 				{
 					TwoSum(Q, enow, out Qnew, out hh);
 					eindex++;

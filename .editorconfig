@@ -63,7 +63,7 @@ indent_style = tab
 # .NET Code Style
 # ============================================================================
 
-[*.{cs,csx,cake,vb,vbx}]
+[*.{cs,csx,cake}]
 
 # Default severity for .NET analyzer diagnostics
 dotnet_analyzer_diagnostic.severity = warning
@@ -88,9 +88,6 @@ dotnet_style_readonly_field = true:warning
 
 # C# modifier order
 csharp_preferred_modifier_order = public, private, protected, internal, static, extern, new, virtual, abstract, sealed, override, readonly, unsafe, volatile, async:warning
-
-# Visual Basic modifier order
-visual_basic_preferred_modifier_order = Partial, Default, Private, Protected, Public, Friend, NotOverridable, Overridable, MustOverride, Overloads, Overrides, MustInherit, NotInheritable, Static, Shared, Shadows, ReadOnly, WriteOnly, Dim, Const, WithEvents, Widening, Narrowing, Custom, Async:warning
 
 # Parentheses
 dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:warning
@@ -165,7 +162,7 @@ csharp_style_throw_expression = true:warning
 csharp_style_conditional_delegate_call = true:warning
 
 # Code blocks
-csharp_prefer_braces = true:warning
+csharp_prefer_braces = true
 csharp_prefer_simple_using_statement = true:suggestion
 dotnet_diagnostic.IDE0063.severity = suggestion
 
@@ -262,7 +259,7 @@ csharp_preserve_single_line_blocks = true
 # Naming
 # ============================================================================
 
-[*.{cs,csx,cake,vb,vbx}]
+[*.{cs,csx,cake}]
 
 # ----------------------------------------------------------------------------
 # Naming styles

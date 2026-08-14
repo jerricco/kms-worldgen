@@ -55,7 +55,7 @@ public class Prng
 	/// </summary>
 	public float NextRangeFloat(float min, float max)
 	{
-		return this.Next() * (max - min) + min;
+		return (this.Next() * (max - min)) + min;
 	}
 
 	/// <summary>
@@ -63,7 +63,7 @@ public class Prng
 	/// </summary>
 	public double NextRangeDouble(double min, double max)
 	{
-		return this.Next() * (max - min) + min;
+		return (this.Next() * (max - min)) + min;
 	}
 }
 

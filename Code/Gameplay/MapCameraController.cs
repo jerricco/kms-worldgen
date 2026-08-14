@@ -40,10 +40,10 @@ public sealed class MapCameraController : Component
 		}
 
 		this._camera.Orthographic = true;// Force the camera into orthographic view if this component is attached_camera.ClearFlags = ClearFlags.All; // show a flat color if there's nothing rendering in the world
-		_camera.BackgroundColor = Color.Black; // ensure we always show black if there's nothing rendered
+        this._camera.BackgroundColor = Color.Black; // ensure we always show black if there's nothing rendered
 		this._camera.WorldRotation = Rotation.From(90, 90, 0);// lock rotation
 		// init zoom
-		this._targetZoom = this._camera.OrthographicHeight = BaseZoom;
+		this._targetZoom = this._camera.OrthographicHeight = this.BaseZoom;
 		// init panning
 		this._targetPosition = this._camera.WorldPosition;
 		this._targetPosition.z = 100f;

@@ -4,7 +4,7 @@
 <root>
 	<div class="sim-panel">
 		@* SLOWMODE *@
-		<button class="sim-icon@(GameSpeedSelected == GameSpeed.SlowMode ? " selected" : "")" @onclick="@OnSlowClicked">
+		<button class="sim-icon@(this.GameSpeedSelected == GameSpeed.SlowMode ? " selected" : "")" @onclick="@(this.OnSlowClicked)">
 			<img class="icon" src="icons/slow.svg" alt="Slow mode"/>
 			<img class="icon" src="icons/slow-multiplier.svg" alt="Slow mode"/>
 		</button>
@@ -12,21 +12,21 @@
 		<div class="divider"></div>
 		
 		@* PAUSE/PLAY *@
-		<button class="sim-icon@(GameSpeedSelected == GameSpeed.Pause ? " selected" : "")" @onclick="@OnPauseClicked">
+		<button class="sim-icon@(this.GameSpeedSelected == GameSpeed.Pause ? " selected" : "")" @onclick="@(this.OnPauseClicked)">
 			<img class="icon" src="icons/pause.svg" alt="Pause sim" />
 		</button>
-		<button class="sim-icon@(GameSpeedSelected == GameSpeed.Play ? " selected" : "")" @onclick="@OnPlayClicked">
+		<button class="sim-icon@(this.GameSpeedSelected == GameSpeed.Play ? " selected" : "")" @onclick="@(this.OnPlayClicked)">
 			<img class="icon" src="icons/play.svg" alt="Play sim"/>
 		</button>
 		
-		<button class="sim-icon@(GameSpeedSelected == GameSpeed.FastForward ? " selected" : "")" @onclick="@OnFastForwardClicked">
+		<button class="sim-icon@(this.GameSpeedSelected == GameSpeed.FastForward ? " selected" : "")" @onclick="@(this.OnFastForwardClicked)">
 			<img class="icon" src="icons/fast-forward.svg" alt="Fast forward sim"/>
 		</button>
 		
 		<div class="divider"></div>
 
 		@* TURBO *@
-		<button class="sim-icon@(GameSpeedSelected == GameSpeed.TurboMode ? " selected" : "")" @onclick="@OnTurboClicked">
+		<button class="sim-icon@(this.GameSpeedSelected == GameSpeed.TurboMode ? " selected" : "")" @onclick="@(this.OnTurboClicked)">
 			<img class="icon" src="icons/turbo.svg" alt="Turbo mode"/>
 		</button>
 
@@ -55,23 +55,23 @@
 
 	private void OnSlowClicked()
 	{
-		GameSpeedSelected = GameSpeed.SlowMode;
+        this.GameSpeedSelected = GameSpeed.SlowMode;
 	}
 	private void OnPauseClicked()
 	{
-		GameSpeedSelected = GameSpeed.Pause;
+        this.GameSpeedSelected = GameSpeed.Pause;
 	}
 	private void OnPlayClicked()
 	{
-		GameSpeedSelected = GameSpeed.Play;
+        this.GameSpeedSelected = GameSpeed.Play;
 	}
 	private void OnFastForwardClicked()
 	{
-		GameSpeedSelected = GameSpeed.FastForward;
+        this.GameSpeedSelected = GameSpeed.FastForward;
 	}
 	private void OnTurboClicked()
 	{
-		GameSpeedSelected = GameSpeed.TurboMode;
+        this.GameSpeedSelected = GameSpeed.TurboMode;
 	}
 
 }

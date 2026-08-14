@@ -1,4 +1,4 @@
-﻿using Sandbox.Systems.Map;
+﻿using Sandbox.GameObjectSystems.Map;
 using Sandbox.Generation;
 using Sandbox.Triangulation;
 
@@ -10,7 +10,7 @@ public class Chunk
 	public bool Generating { get; set; }
 	public int Size { get; set; }
 	public float TileSize { get; set; } = 1f;// @TODO: increase physical tile size? Will be a big refactor
-	
+
 	public Vector2 Position { get; set; }
 	public Vector2 GlobalPosition { get; }
 	public TileData[] Tiles { get; }
@@ -42,9 +42,10 @@ public class Chunk
 		this.Generated = true;
 	}
 
-	public void GenerateTile(float x, float y, int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
+    private void GenerateTile(float x, float y, int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
 	{
-		var global = new Vector2(this.GlobalPosition.x + x, this.GlobalPosition.y + y);// get global tile location
+        // get global tile location
+		var global = new Vector2(this.GlobalPosition.x + x, this.GlobalPosition.y + y);
 
 		// ignore parts of the chunk that extend past the world border.
 		if (global.x > xLimit || global.y > yLimit || global.x < -xLimit || global.y < -yLimit)
@@ -69,8 +70,5 @@ public class Chunk
 	}
 
 	// Fast inline index helper mapping local 2D space to 1D space
-	public uint LocalIndex(int x, int y)
-	{
-		return (uint)(y * this.Size + x);
-	}
+	public uint LocalIndex(int x, int y) => (uint)((y * this.Size) + x);
 }

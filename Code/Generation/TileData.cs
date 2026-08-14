@@ -6,6 +6,9 @@ using Sandbox.Utility;
 
 namespace Sandbox.Generation;
 
+using Extensions;
+using Generator;
+
 public struct TileData : ITileData
 {
 	public Vector2 GlobalPosition { get; set; }
@@ -25,14 +28,14 @@ public struct TileData : ITileData
 		var global = this.GlobalPosition;
 
 		// fractal warp
-		var warpX = Noise.Perlin(global.x * settings.MacroScale + 123.45f, global.y * settings.MacroScale + 678.90f);
-		var warpY = Noise.Perlin(global.x * settings.MacroScale - 456.78f, global.y * settings.MacroScale + 321.12f);
+		var warpX = Noise.Perlin((global.x * settings.MacroScale) + 123.45f, (global.y * settings.MacroScale) + 678.90f);
+		var warpY = Noise.Perlin((global.x * settings.MacroScale) - 456.78f, (global.y * settings.MacroScale) + 321.12f);
 
 		// Warp intensity. Higher values = deeper gulfs and broken straits.
 		var warpIntensity = 1200f;// @TODO: config?
 		var warpedWorldPos = new Vector2(
-			global.x * settings.StretchX + warpX * warpIntensity,
-			global.y * settings.StretchY + warpY * warpIntensity
+			(global.x * settings.StretchX) + (warpX * warpIntensity),
+			(global.y * settings.StretchY) + (warpY * warpIntensity)
 		);
 
 		// distance to nearest spine line segment
@@ -52,7 +55,7 @@ public struct TileData : ITileData
 
 			for (var i = 0; i < spine.Nodes.Count - 1; i++)
 			{
-				var dist = this.DistanceToSegment(warpedWorldPos, spine.Nodes[i], spine.Nodes[i + 1]);
+				var dist = warpedWorldPos.DistanceToSegment(spine.Nodes[i], spine.Nodes[i + 1]);
 				if (dist < minDistanceToSpine)
 				{
 					minDistanceToSpine = dist;
@@ -66,14 +69,14 @@ public struct TileData : ITileData
 
 		// creates wide flat sedimentary lowlands before clamping near mountains
 		spineGradient = MathF.Pow(spineGradient, 1.8f);
-		spineGradient = this.SmoothStep(0f, 1f, spineGradient);
+		spineGradient = spineGradient.SmoothStep(0f, 1f);
 
 		// fBm detail - layering multiple frequencies to build complex details (Coastlines, small hills)
 		var detailNoise = 0f;
 		var amplitude = 1.0f;
 		var currentFreq = settings.MicroScale;
 		var totalAmplitude = 0f;
-		var octaves = 5;
+		const int octaves = 5;
 
 		for (var i = 0; i < octaves; i++)
 		{
@@ -89,14 +92,14 @@ public struct TileData : ITileData
 
 		// ridged noise - pinches mountain elevation
 		// Sharp mountain cresting driven by an aggressive power exponent
-		var rawRidge = Noise.Perlin(warpedWorldPos.x * settings.MacroScale * 6f + 50f, warpedWorldPos.y * settings.MacroScale * 6f + 50f);
+		var rawRidge = Noise.Perlin((warpedWorldPos.x * settings.MacroScale * 6f) + 50f, (warpedWorldPos.y * settings.MacroScale * 6f) + 50f);
 		var ridgeNoise = 1.0f - MathF.Abs((rawRidge - 0.5f) * 2.0f);
 		ridgeNoise = MathF.Pow(ridgeNoise, 3.0f);
 
 		// combine profiles & mask
-		// Instead of a flat base, we lerp between Abyssal and Sea Level for ocean basins, 
+		// Instead of a flat base, we lerp between Abyssal and Sea Level for ocean basins,
 		// and Sea Level to Peak Level for land masses.
-		var baseElevation = 0f;
+        float baseElevation;
 		if (spineGradient < 0.25f)
 		{
 			// Ocean Floor Basin Profile
@@ -136,7 +139,7 @@ public struct TileData : ITileData
 		if (edgeDistance > falloffStart)
 		{
 			edgeFalloff = (edgeDistance - falloffStart) / (1.0f - falloffStart);
-			edgeFalloff = this.SmoothStep(0f, 1f, edgeFalloff);
+			edgeFalloff = edgeFalloff.SmoothStep(0f, 1f);
 		}
 
 		var finalElevation = MathX.Lerp(baseElevation, settings.AbyssalLevel, edgeFalloff);
@@ -170,37 +173,5 @@ public struct TileData : ITileData
 	public void GenerateRegion()
 	{
 		this.RegionId = RegionId.Unassigned;// @TODO: Does nothing for now.
-	}
-
-	/// RANDOM ASS UTILITY FUNCTIONS I SHOULD MOVE
-	/// BUNG
-	private float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
-	{
-		var ab = b - a;
-		var ap = p - a;
-		var r = Vector2.Dot(ap, ab) / Vector2.Dot(ab, ab);
-
-		if (r <= 0.0f)
-		{
-			return Vector2.Distance(p, a);
-		}
-
-		if (r >= 1.0f)
-		{
-			return Vector2.Distance(p, b);
-		}
-
-		var closestPoint = a + r * ab;
-		return Vector2.Distance(p, closestPoint);
-	}
-
-	/// // @TODO: move to math utility u goon
-	public float SmoothStep(float edge0, float edge1, float x)
-	{
-		// Clamp and normalise x between 0.0 and 1.0
-		var t = Math.Clamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
-
-		// Evaluate the cubic Hermite polynomial
-		return t * t * (3.0f - 2.0f * t);
 	}
 }

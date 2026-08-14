@@ -63,23 +63,23 @@ public class OpenSimplexNoise
 		double value = 0;
 
 		// Contribution from first corner (0,0)
-		var attn0 = 2 - x0 * x0 - y0 * y0;
+		var attn0 = 2 - (x0 * x0) - (y0 * y0);
 		if (attn0 > 0)
 		{
 			attn0 *= attn0;
 			hash = this._perm[(this._perm[xsb & 0xFF] + ysb) & 0xFF] & 0x0E;
-			value += attn0 * attn0 * (Gradients2D[(int)hash] * x0 + Gradients2D[(int)hash + 1] * y0);
+			value += attn0 * attn0 * ((Gradients2D[(int)hash] * x0) + (Gradients2D[(int)hash + 1] * y0));
 		}
 
 		// Contribution from second corner (1,1)
-		var x1 = x0 - 1.0 - 2.0 * SquishConstant2D;
-		var y1 = y0 - 1.0 - 2.0 * SquishConstant2D;
-		var attn1 = 2 - x1 * x1 - y1 * y1;
+		var x1 = x0 - 1.0 - (2.0 * SquishConstant2D);
+		var y1 = y0 - 1.0 - (2.0 * SquishConstant2D);
+		var attn1 = 2 - (x1 * x1) - (y1 * y1);
 		if (attn1 > 0)
 		{
 			attn1 *= attn1;
 			hash = this._perm[(this._perm[(xsb + 1) & 0xFF] + ysb + 1) & 0xFF] & 0x0E;
-			value += attn1 * attn1 * (Gradients2D[(int)hash] * x1 + Gradients2D[(int)hash + 1] * y1);
+			value += attn1 * attn1 * ((Gradients2D[(int)hash] * x1) + (Gradients2D[(int)hash + 1] * y1));
 		}
 
 		// Contribution from the remaining internal corner points
@@ -90,24 +90,24 @@ public class OpenSimplexNoise
 			{
 				var x2 = x0 - 1.0 - SquishConstant2D;
 				var y2 = y0 - SquishConstant2D;
-				var attn2 = 2 - x2 * x2 - y2 * y2;
+				var attn2 = 2 - (x2 * x2) - (y2 * y2);
 				if (attn2 > 0)
 				{
 					attn2 *= attn2;
 					hash = this._perm[(this._perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
-					value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
+					value += attn2 * attn2 * ((Gradients2D[(int)hash] * x2) + (Gradients2D[(int)hash + 1] * y2));
 				}
 			}
 			else
 			{
 				var x2 = x0 - SquishConstant2D;
 				var y2 = y0 - 1.0 - SquishConstant2D;
-				var attn2 = 2 - x2 * x2 - y2 * y2;
+				var attn2 = 2 - (x2 * x2) - (y2 * y2);
 				if (attn2 > 0)
 				{
 					attn2 *= attn2;
 					hash = this._perm[(this._perm[xsb & 0xFF] + ysb + 1) & 0xFF] & 0x0E;
-					value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
+					value += attn2 * attn2 * ((Gradients2D[(int)hash] * x2) + (Gradients2D[(int)hash + 1] * y2));
 				}
 			}
 		}
@@ -118,24 +118,24 @@ public class OpenSimplexNoise
 			{
 				var x2 = x0 + SquishConstant2D;
 				var y2 = y0 - 1.0 + SquishConstant2D;
-				var attn2 = 2 - x2 * x2 - y2 * y2;
+				var attn2 = 2 - (x2 * x2) - (y2 * y2);
 				if (attn2 > 0)
 				{
 					attn2 *= attn2;
 					hash = this._perm[(this._perm[xsb & 0xFF] + ysb + 1) & 0xFF] & 0x0E;
-					value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
+					value += attn2 * attn2 * ((Gradients2D[(int)hash] * x2) + (Gradients2D[(int)hash + 1] * y2));
 				}
 			}
 			else
 			{
 				var x2 = x0 - 1.0 + SquishConstant2D;
 				var y2 = y0 + SquishConstant2D;
-				var attn2 = 2 - x2 * x2 - y2 * y2;
+				var attn2 = 2 - (x2 * x2) - (y2 * y2);
 				if (attn2 > 0)
 				{
 					attn2 *= attn2;
 					hash = this._perm[(this._perm[(xsb + 1) & 0xFF] + ysb) & 0xFF] & 0x0E;
-					value += attn2 * attn2 * (Gradients2D[(int)hash] * x2 + Gradients2D[(int)hash + 1] * y2);
+					value += attn2 * attn2 * ((Gradients2D[(int)hash] * x2) + (Gradients2D[(int)hash + 1] * y2));
 				}
 			}
 		}

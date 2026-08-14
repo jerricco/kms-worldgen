@@ -2,6 +2,8 @@
 
 namespace Sandbox.Generator.Rendering;
 
+using System;
+
 public class ChunkRenderer : Component
 {
 	[Property] public GenerationSettings Settings { get; set; }
@@ -212,57 +214,57 @@ public class ChunkRenderer : Component
 	private Color GetElevationColour(double elevation)
 	{
 		// If out of elevation bounds, express as the default Color
-		if (elevation < -1.0D || elevation > 1.0D)
+		if (elevation is < -1.0D or > 1.0D)
 		{
 			return this.DefaultTileColor;
 		}
 
 		// @TODO: fiddle here more
-		if (elevation == this.Settings.AbyssalLevel)
+		if (Math.Abs(elevation - this.Settings.AbyssalLevel) < 0.01f)
 		{
-			return this.Theme.Void;
+			return ThemeColors.Void;
 		}
 
 		if (elevation < this.Settings.TrenchLevel)
 		{
-			return this.Theme.CrustFloor;
+			return ThemeColors.CrustFloor;
 		}
 
 		if (elevation < this.Settings.DeepOceanLevel)
 		{
-			return this.Theme.AbyssalOcean;
+			return ThemeColors.AbyssalOcean;
 		}
 
 		if (elevation < this.Settings.OceanLevel)
 		{
-			return this.Theme.DeepOcean;
+			return ThemeColors.DeepOcean;
 		}
 
 		if (elevation < this.Settings.SeaLevel)
 		{
-			return this.Theme.Ocean;
+			return ThemeColors.Ocean;
 		}
 
 		if (elevation < this.Settings.BeachLevel)
 		{
-			return this.Theme.Beach;
+			return ThemeColors.Beach;
 		}
 
 		if (elevation < this.Settings.PlainLevel)
 		{
-			return this.Theme.Plain;
+			return ThemeColors.Plain;
 		}
 
 		if (elevation < this.Settings.HillLevel)
 		{
-			return this.Theme.Hill;
+			return ThemeColors.Hill;
 		}
 
 		if (elevation < this.Settings.MountainLevel)
 		{
-			return this.Theme.Mountain;
+			return ThemeColors.Mountain;
 		}
 
-		return this.Theme.Peak;
+		return ThemeColors.Peak;
 	}
 }

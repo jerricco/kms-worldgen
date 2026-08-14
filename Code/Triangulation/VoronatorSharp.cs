@@ -129,7 +129,7 @@ public class Voronator
 			var l = last - first;
 
 			var cPos = new Vector2(l.y, -l.x);
-			var mag = (float)Math.Sqrt(cPos.x * cPos.x + cPos.y * cPos.y);
+			var mag = (float)Math.Sqrt((cPos.x * cPos.x) + (cPos.y * cPos.y));
 			var normalised = mag > 0.00001f ? new Vector2(cPos.x / mag, cPos.y / mag) : new Vector2(0, 0);
 			this.collinearNormal = normalised;
 		}
@@ -278,7 +278,7 @@ public class Voronator
 
 		for (int i = 0, j = points.Count - 1; i < points.Count; j = i++)
 		{
-			var temp = points[i].x * points[j].y - points[j].x * points[i].y;
+			var temp = (points[i].x * points[j].y) - (points[j].x * points[i].y);
 			accumulatedArea += temp;
 			centerX += (points[i].x + points[j].x) * temp;
 			centerY += (points[i].y + points[j].y) * temp;
@@ -366,7 +366,7 @@ public class Voronator
 		while (e != e0 && e != -1);
 
 		ray1 = this.vectors[i * 2];
-		ray2 = this.vectors[i * 2 + 1];
+		ray2 = this.vectors[(i * 2) + 1];
 		return true;
 	}
 
@@ -540,19 +540,19 @@ public class Voronator
 			Vector2 v;
 			if ((c & 0b1000) != 0)
 			{
-				v = new Vector2(v0.x + (v1.x - v0.x) * (this.clipMax.y - v0.y) / (v1.y - v0.y), this.clipMax.y);
+				v = new Vector2(v0.x + ((v1.x - v0.x) * (this.clipMax.y - v0.y) / (v1.y - v0.y)), this.clipMax.y);
 			}
 			else if ((c & 0b0100) != 0)
 			{
-				v = new Vector2(v0.x + (v1.x - v0.x) * (this.clipMin.y - v0.y) / (v1.y - v0.y), this.clipMin.y);
+				v = new Vector2(v0.x + ((v1.x - v0.x) * (this.clipMin.y - v0.y) / (v1.y - v0.y)), this.clipMin.y);
 			}
 			else if ((c & 0b0010) != 0)
 			{
-				v = new Vector2(this.clipMax.x, v0.y + (v1.y - v0.y) * (this.clipMax.x - v0.x) / (v1.x - v0.x));
+				v = new Vector2(this.clipMax.x, v0.y + ((v1.y - v0.y) * (this.clipMax.x - v0.x) / (v1.x - v0.x)));
 			}
 			else
 			{
-				v = new Vector2(this.clipMin.x, v0.y + (v1.y - v0.y) * (this.clipMin.x - v0.x) / (v1.x - v0.x));
+				v = new Vector2(this.clipMin.x, v0.y + ((v1.y - v0.y) * (this.clipMin.x - v0.x) / (v1.x - v0.x)));
 			}
 
 			if (c0 != 0)
@@ -881,14 +881,14 @@ public class Voronator
 		{
 			var c = i;
 			var dcp = u - this.points[i];
-			var dc = dcp.x * dcp.x + dcp.y * dcp.y;
+			var dc = (dcp.x * dcp.x) + (dcp.y * dcp.y);
 
 			var hi = this.hullIndex[i];
 			if (hi > 0)
 			{
 				var t = this.Delaunator.Hull[hi - 1];
 				var dtp = u - this.points[t];
-				var dt = dtp.x * dtp.x + dtp.y * dtp.y;
+				var dt = (dtp.x * dtp.x) + (dtp.y * dtp.y);
 				if (dt < dc)
 				{
 					dc = dt;
@@ -900,7 +900,7 @@ public class Voronator
 			{
 				var t = this.Delaunator.Hull[hi + 1];
 				var dtp = u - this.points[t];
-				var dt = dtp.x * dtp.x + dtp.y * dtp.y;
+				var dt = (dtp.x * dtp.x) + (dtp.y * dtp.y);
 				if (dt < dc)
 				{
 					dc = dt;
@@ -919,14 +919,14 @@ public class Voronator
 
 			var c = i;
 			var dcp = u - this.points[i];
-			var dc = dcp.x * dcp.x + dcp.y * dcp.y;
+			var dc = (dcp.x * dcp.x) + (dcp.y * dcp.y);
 			var e0 = this.Inedges[i];
 			var e = e0;
 			do
 			{
 				var t = this.Delaunator.Triangles[e];
 				var dtp = u - this.points[e];
-				var dt = dtp.x * dtp.x + dtp.y * dtp.y;
+				var dt = (dtp.x * dtp.x) + (dtp.y * dtp.y);
 				if (dt < dc)
 				{
 					dc = dt;
@@ -946,7 +946,7 @@ public class Voronator
 					if (e != t)
 					{
 						var etp = u - this.points[e];
-						var et = etp.x * etp.x + etp.y * etp.y;
+						var et = (etp.x * etp.x) + (etp.y * etp.y);
 
 						if (et < dc)
 						{
@@ -981,7 +981,7 @@ public class Voronator
 
 			if ((c = (this.clipMin.y - u.y) / v.y) < t)
 			{
-				r = new Vector2(u.x + (t = c) * v.x, this.clipMin.y);
+				r = new Vector2(u.x + ((t = c) * v.x), this.clipMin.y);
 			}
 		}
 		else if (v.y > 0)
@@ -994,7 +994,7 @@ public class Voronator
 
 			if ((c = (this.clipMax.y - u.y) / v.y) < t)
 			{
-				r = new Vector2(u.x + (t = c) * v.x, this.clipMax.y);
+				r = new Vector2(u.x + ((t = c) * v.x), this.clipMax.y);
 			}
 		}
 
@@ -1008,7 +1008,7 @@ public class Voronator
 
 			if ((c = (this.clipMax.x - u.x) / v.x) < t)
 			{
-				r = new Vector2(this.clipMax.x, u.y + (t = c) * v.y);
+				r = new Vector2(this.clipMax.x, u.y + ((t = c) * v.y));
 			}
 		}
 		else if (v.x < 0)
@@ -1021,7 +1021,7 @@ public class Voronator
 
 			if ((c = (this.clipMin.x - u.x) / v.x) < t)
 			{
-				r = new Vector2(this.clipMin.x, u.y + (t = c) * v.y);
+				r = new Vector2(this.clipMin.x, u.y + ((t = c) * v.y));
 			}
 		}
 

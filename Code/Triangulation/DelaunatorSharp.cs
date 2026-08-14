@@ -32,11 +32,11 @@ public class Delaunator
 		{
 			var p = this.Points[i];
 			this.coords[2 * i] = p.x;
-			this.coords[2 * i + 1] = p.y;
+			this.coords[(2 * i) + 1] = p.y;
 		}
 
 		var n = points.Count;
-		var maxTriangles = Math.Max(2 * n - 5, 0);
+		var maxTriangles = Math.Max((2 * n) - 5, 0);
 
 		this.Triangles = new int[maxTriangles * 3];
 
@@ -58,7 +58,7 @@ public class Delaunator
 		for (var i = 0; i < n; i++)
 		{
 			var x = this.coords[2 * i];
-			var y = this.coords[2 * i + 1];
+			var y = this.coords[(2 * i) + 1];
 			if (x < minX)
 			{
 				minX = x;
@@ -93,7 +93,7 @@ public class Delaunator
 		// pick a seed point close to the center
 		for (var i = 0; i < n; i++)
 		{
-			var d = Dist(cx, cy, this.coords[2 * i], this.coords[2 * i + 1]);
+			var d = Dist(cx, cy, this.coords[2 * i], this.coords[(2 * i) + 1]);
 			if (d < minDist)
 			{
 				i0 = i;
@@ -102,7 +102,7 @@ public class Delaunator
 		}
 
 		var i0x = this.coords[2 * i0];
-		var i0y = this.coords[2 * i0 + 1];
+		var i0y = this.coords[(2 * i0) + 1];
 
 		minDist = double.PositiveInfinity;
 
@@ -114,7 +114,7 @@ public class Delaunator
 				continue;
 			}
 
-			var d = Dist(i0x, i0y, this.coords[2 * i], this.coords[2 * i + 1]);
+			var d = Dist(i0x, i0y, this.coords[2 * i], this.coords[(2 * i) + 1]);
 			if (d < minDist && d > 0)
 			{
 				i1 = i;
@@ -123,7 +123,7 @@ public class Delaunator
 		}
 
 		var i1x = this.coords[2 * i1];
-		var i1y = this.coords[2 * i1 + 1];
+		var i1y = this.coords[(2 * i1) + 1];
 
 		var minRadius = double.PositiveInfinity;
 
@@ -135,7 +135,7 @@ public class Delaunator
 				continue;
 			}
 
-			var r = Circumradius(i0x, i0y, i1x, i1y, this.coords[2 * i], this.coords[2 * i + 1]);
+			var r = Circumradius(i0x, i0y, i1x, i1y, this.coords[2 * i], this.coords[(2 * i) + 1]);
 			if (r < minRadius)
 			{
 				i2 = i;
@@ -144,7 +144,7 @@ public class Delaunator
 		}
 
 		var i2x = this.coords[2 * i2];
-		var i2y = this.coords[2 * i2 + 1];
+		var i2y = this.coords[(2 * i2) + 1];
 
 		if (minRadius == double.PositiveInfinity)
 		{
@@ -154,7 +154,7 @@ public class Delaunator
 			var primaryCoords = new double[n];
 			for (var i = 0; i < n; i++)
 			{
-				primaryCoords[i] = this.coords[2 * i] - this.coords[0] == 0 ? this.coords[2 * i + 1] - this.coords[1] : this.coords[2 * i] - this.coords[0];
+				primaryCoords[i] = this.coords[2 * i] - this.coords[0] == 0 ? this.coords[(2 * i) + 1] - this.coords[1] : this.coords[2 * i] - this.coords[0];
 			}
 
 			Quicksort(ids, primaryCoords, 0, n - 1);
@@ -198,7 +198,7 @@ public class Delaunator
 		var dists = new double[n];
 		for (var i = 0; i < n; i++)
 		{
-			dists[i] = Dist(this.coords[2 * i], this.coords[2 * i + 1], center.x, center.y);
+			dists[i] = Dist(this.coords[2 * i], this.coords[(2 * i) + 1], center.x, center.y);
 		}
 
 		// sort the points by distance from the seed triangle circumcenter
@@ -230,7 +230,7 @@ public class Delaunator
 		{
 			var i = ids[k];
 			var x = this.coords[2 * i];
-			var y = this.coords[2 * i + 1];
+			var y = this.coords[(2 * i) + 1];
 
 			// skip near-duplicate points
 			if (k > 0 && Math.Abs(x - xp) <= this.EPSILON && Math.Abs(y - yp) <= this.EPSILON)
@@ -263,7 +263,7 @@ public class Delaunator
 			var e = start;
 			var q = this.hullNext[e];
 
-			while (!Orient(x, y, this.coords[2 * e], this.coords[2 * e + 1], this.coords[2 * q], this.coords[2 * q + 1]))
+			while (!Orient(x, y, this.coords[2 * e], this.coords[(2 * e) + 1], this.coords[2 * q], this.coords[(2 * q) + 1]))
 			{
 				e = q;
 				if (e == start)
@@ -292,7 +292,7 @@ public class Delaunator
 			var next = this.hullNext[e];
 			q = this.hullNext[next];
 
-			while (Orient(x, y, this.coords[2 * next], this.coords[2 * next + 1], this.coords[2 * q], this.coords[2 * q + 1]))
+			while (Orient(x, y, this.coords[2 * next], this.coords[(2 * next) + 1], this.coords[2 * q], this.coords[(2 * q) + 1]))
 			{
 				t = this.AddTriangle(next, i, q, this.hullTri[i], -1, this.hullTri[next]);
 				this.hullTri[i] = this.Legalize(t + 2);
@@ -308,7 +308,7 @@ public class Delaunator
 			{
 				q = this.hullPrev[e];
 
-				while (Orient(x, y, this.coords[2 * q], this.coords[2 * q + 1], this.coords[2 * e], this.coords[2 * e + 1]))
+				while (Orient(x, y, this.coords[2 * q], this.coords[(2 * q) + 1], this.coords[2 * e], this.coords[(2 * e) + 1]))
 				{
 					t = this.AddTriangle(q, i, e, -1, this.hullTri[e], this.hullTri[q]);
 					this.Legalize(t + 2);
@@ -328,7 +328,7 @@ public class Delaunator
 
 			// save the two new edges in the hash table
 			this.hullHash[this.HashKey(x, y)] = i;
-			this.hullHash[this.HashKey(this.coords[2 * e], this.coords[2 * e + 1])] = e;
+			this.hullHash[this.HashKey(this.coords[2 * e], this.coords[(2 * e) + 1])] = e;
 		}
 
 		this.Hull = new int[this.hullSize];
@@ -396,8 +396,8 @@ public class Delaunator
 			 *          \||/                  \  /
 			 *           pr                    pr
 			 */
-			var a0 = a - a % 3;
-			ar = a0 + (a + 2) % 3;
+			var a0 = a - (a % 3);
+			ar = a0 + ((a + 2) % 3);
 
 			if (b == -1)
 			{
@@ -411,9 +411,9 @@ public class Delaunator
 				continue;
 			}
 
-			var b0 = b - b % 3;
-			var al = a0 + (a + 1) % 3;
-			var bl = b0 + (b + 2) % 3;
+			var b0 = b - (b % 3);
+			var al = a0 + ((a + 1) % 3);
+			var bl = b0 + ((b + 2) % 3);
 
 			var p0 = this.Triangles[ar];
 			var pr = this.Triangles[a];
@@ -422,13 +422,13 @@ public class Delaunator
 
 			var illegal = InCircle(
 				this.coords[2 * p0],
-				this.coords[2 * p0 + 1],
+				this.coords[(2 * p0) + 1],
 				this.coords[2 * pr],
-				this.coords[2 * pr + 1],
+				this.coords[(2 * pr) + 1],
 				this.coords[2 * pl],
-				this.coords[2 * pl + 1],
+				this.coords[(2 * pl) + 1],
 				this.coords[2 * p1],
-				this.coords[2 * p1 + 1]
+				this.coords[(2 * p1) + 1]
 			);
 
 			if (illegal)
@@ -459,7 +459,7 @@ public class Delaunator
 				this.Link(b, this.Halfedges[ar]);
 				this.Link(ar, bl);
 
-				var br = b0 + (b + 1) % 3;
+				var br = b0 + ((b + 1) % 3);
 
 				// don't worry about hitting the cap: it can only happen on extremely degenerate input
 				if (i < this.EDGE_STACK.Length)
@@ -498,13 +498,13 @@ public class Delaunator
 		var fx = cx - px;
 		var fy = cy - py;
 
-		var ap = dx * dx + dy * dy;
-		var bp = ex * ex + ey * ey;
-		var cp = fx * fx + fy * fy;
+		var ap = (dx * dx) + (dy * dy);
+		var bp = (ex * ex) + (ey * ey);
+		var cp = (fx * fx) + (fy * fy);
 
-		return dx * (ey * cp - bp * fy) -
-			dy * (ex * cp - bp * fx) +
-			ap * (ex * fy - ey * fx) < 0;
+		return (dx * ((ey * cp) - (bp * fy))) -
+			(dy * ((ex * cp) - (bp * fx))) +
+			(ap * ((ex * fy) - (ey * fx))) < 0;
 	}
 	private int AddTriangle(
 		int i0,
@@ -654,12 +654,12 @@ public class Delaunator
 		var dy = by - ay;
 		var ex = cx - ax;
 		var ey = cy - ay;
-		var bl = dx * dx + dy * dy;
-		var cl = ex * ex + ey * ey;
-		var d = 0.5 / (dx * ey - dy * ex);
-		var x = (ey * bl - dy * cl) * d;
-		var y = (dx * cl - ex * bl) * d;
-		return x * x + y * y;
+		var bl = (dx * dx) + (dy * dy);
+		var cl = (ex * ex) + (ey * ey);
+		var d = 0.5 / ((dx * ey) - (dy * ex));
+		var x = ((ey * bl) - (dy * cl)) * d;
+		var y = ((dx * cl) - (ex * bl)) * d;
+		return (x * x) + (y * y);
 	}
 	private static Vector2 Circumcenter(
 		float ax,
@@ -674,11 +674,11 @@ public class Delaunator
 		var dy = by - ay;
 		var ex = cx - ax;
 		var ey = cy - ay;
-		var bl = dx * dx + dy * dy;
-		var cl = ex * ex + ey * ey;
-		var d = 0.5f / (dx * ey - dy * ex);
-		var x = ax + (ey * bl - dy * cl) * d;
-		var y = ay + (dx * cl - ex * bl) * d;
+		var bl = (dx * dx) + (dy * dy);
+		var cl = (ex * ex) + (ey * ey);
+		var d = 0.5f / ((dx * ey) - (dy * ex));
+		var x = ax + (((ey * bl) - (dy * cl)) * d);
+		var y = ay + (((dx * cl) - (ex * bl)) * d);
 
 		return new Vector2(x, y);
 	}
@@ -686,7 +686,7 @@ public class Delaunator
 	{
 		var dx = ax - bx;
 		var dy = ay - by;
-		return dx * dx + dy * dy;
+		return (dx * dx) + (dy * dy);
 	}
 
 	#endregion CreationLogic
@@ -842,7 +842,7 @@ public class Delaunator
 	}
 	public static Triple<int> EdgeIndicesAroundTriangle(int t)
 	{
-		return (3 * t, 3 * t + 1, 3 * t + 2);
+		return (3 * t, (3 * t) + 1, (3 * t) + 2);
 	}
 	public static int EdgeIndexToTriangleIndex(int e) { return e / 3; }
 

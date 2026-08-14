@@ -80,19 +80,19 @@ public static class GeometricPredicates
 	private const double epsilon = 1.1102230246251565E-16;
 
 	// Error bounds for orientation and incircle tests.
-	private const double resulterrbound = (3.0 + 8.0 * epsilon) * epsilon;
-	private const double ccwerrboundA = (3.0 + 16.0 * epsilon) * epsilon;
-	private const double ccwerrboundB = (2.0 + 12.0 * epsilon) * epsilon;
-	private const double ccwerrboundC = (9.0 + 64.0 * epsilon) * epsilon * epsilon;
-	private const double o3derrboundA = (7.0 + 56.0 * epsilon) * epsilon;
-	private const double o3derrboundB = (3.0 + 28.0 * epsilon) * epsilon;
-	private const double o3derrboundC = (26.0 + 288.0 * epsilon) * epsilon * epsilon;
-	private const double iccerrboundA = (10.0 + 96.0 * epsilon) * epsilon;
-	private const double iccerrboundB = (4.0 + 48.0 * epsilon) * epsilon;
-	private const double iccerrboundC = (44.0 + 576.0 * epsilon) * epsilon * epsilon;
-	private const double isperrboundA = (16.0 + 224.0 * epsilon) * epsilon;
-	private const double isperrboundB = (5.0 + 72.0 * epsilon) * epsilon;
-	private const double isperrboundC = (71.0 + 1408.0 * epsilon) * epsilon * epsilon;
+	private const double resulterrbound = (3.0 + (8.0 * epsilon)) * epsilon;
+	private const double ccwerrboundA = (3.0 + (16.0 * epsilon)) * epsilon;
+	private const double ccwerrboundB = (2.0 + (12.0 * epsilon)) * epsilon;
+	private const double ccwerrboundC = (9.0 + (64.0 * epsilon)) * epsilon * epsilon;
+	private const double o3derrboundA = (7.0 + (56.0 * epsilon)) * epsilon;
+	private const double o3derrboundB = (3.0 + (28.0 * epsilon)) * epsilon;
+	private const double o3derrboundC = (26.0 + (288.0 * epsilon)) * epsilon * epsilon;
+	private const double iccerrboundA = (10.0 + (96.0 * epsilon)) * epsilon;
+	private const double iccerrboundB = (4.0 + (48.0 * epsilon)) * epsilon;
+	private const double iccerrboundC = (44.0 + (576.0 * epsilon)) * epsilon * epsilon;
+	private const double isperrboundA = (16.0 + (224.0 * epsilon)) * epsilon;
+	private const double isperrboundB = (5.0 + (72.0 * epsilon)) * epsilon;
+	private const double isperrboundC = (71.0 + (1408.0 * epsilon)) * epsilon * epsilon;
 
 	#endregion
 
@@ -120,7 +120,7 @@ public static class GeometricPredicates
 		bcx = pb[0] - pc[0];
 		acy = pa[1] - pc[1];
 		bcy = pb[1] - pc[1];
-		return acx * bcy - acy * bcx;
+		return (acx * bcy) - (acy * bcx);
 	}
 
 	internal static double Orient2DExact(double[] pa, double[] pb, double[] pc)
@@ -398,9 +398,9 @@ public static class GeometricPredicates
 			return det;
 		}
 
-		errbound = ccwerrboundC * detsum + resulterrbound * Math.Abs(det);
-		det += acx * bcytail + bcy * acxtail
-		       - (acy * bcxtail + bcx * acytail);
+		errbound = (ccwerrboundC * detsum) + (resulterrbound * Math.Abs(det));
+		det += (acx * bcytail) + (bcy * acxtail)
+		       - ((acy * bcxtail) + (bcx * acytail));
 		if (det >= errbound || -det >= errbound)
 		{
 			return det;
@@ -503,9 +503,9 @@ public static class GeometricPredicates
 		bdz = pb[2] - pd[2];
 		cdz = pc[2] - pd[2];
 
-		return adx * (bdy * cdz - bdz * cdy)
-		       + bdx * (cdy * adz - cdz * ady)
-		       + cdx * (ady * bdz - adz * bdy);
+		return (adx * ((bdy * cdz) - (bdz * cdy)))
+		       + (bdx * ((cdy * adz) - (cdz * ady)))
+		       + (cdx * ((ady * bdz) - (adz * bdy)));
 	}
 
 	internal static double Orient3DExact(double[] pa, double[] pb, double[] pc, double[] pd)
@@ -833,13 +833,13 @@ public static class GeometricPredicates
 		adxbdy = adx * bdy;
 		bdxady = bdx * ady;
 
-		det = adz * (bdxcdy - cdxbdy)
-		      + bdz * (cdxady - adxcdy)
-		      + cdz * (adxbdy - bdxady);
+		det = (adz * (bdxcdy - cdxbdy))
+		      + (bdz * (cdxady - adxcdy))
+		      + (cdz * (adxbdy - bdxady));
 
-		permanent = (Math.Abs(bdxcdy) + Math.Abs(cdxbdy)) * Math.Abs(adz)
-		            + (Math.Abs(cdxady) + Math.Abs(adxcdy)) * Math.Abs(bdz)
-		            + (Math.Abs(adxbdy) + Math.Abs(bdxady)) * Math.Abs(cdz);
+		permanent = ((Math.Abs(bdxcdy) + Math.Abs(cdxbdy)) * Math.Abs(adz))
+		            + ((Math.Abs(cdxady) + Math.Abs(adxcdy)) * Math.Abs(bdz))
+		            + ((Math.Abs(adxbdy) + Math.Abs(bdxady)) * Math.Abs(cdz));
 		errbound = o3derrboundA * permanent;
 
 		if (det > errbound || -det > errbound)
@@ -991,16 +991,16 @@ public static class GeometricPredicates
 			return det;
 		}
 
-		errbound = o3derrboundC * permanent + resulterrbound * Math.Abs(det);
-		det += adz * (bdx * cdytail + cdy * bdxtail
-		              - (bdy * cdxtail + cdx * bdytail))
-		       + adztail * (bdx * cdy - bdy * cdx)
-		       + (bdz * (cdx * adytail + ady * cdxtail
-		                 - (cdy * adxtail + adx * cdytail))
-		          + bdztail * (cdx * ady - cdy * adx))
-		       + (cdz * (adx * bdytail + bdy * adxtail
-		                 - (ady * bdxtail + bdx * adytail))
-		          + cdztail * (adx * bdy - ady * bdx));
+		errbound = (o3derrboundC * permanent) + (resulterrbound * Math.Abs(det));
+		det += (adz * ((bdx * cdytail) + (cdy * bdxtail)
+                       - ((bdy * cdxtail) + (cdx * bdytail))))
+		       + (adztail * ((bdx * cdy) - (bdy * cdx)))
+		       + ((bdz * ((cdx * adytail) + (ady * cdxtail)
+                          - ((cdy * adxtail) + (adx * cdytail))))
+		          + (bdztail * ((cdx * ady) - (cdy * adx))))
+		       + ((cdz * ((adx * bdytail) + (bdy * adxtail)
+                          - ((ady * bdxtail) + (bdx * adytail))))
+		          + (cdztail * ((adx * bdy) - (ady * bdx))));
 		if (det >= errbound || -det >= errbound)
 		{
 			return det;
@@ -1616,14 +1616,14 @@ public static class GeometricPredicates
 		cdx = pc[0] - pd[0];
 		cdy = pc[1] - pd[1];
 
-		abdet = adx * bdy - bdx * ady;
-		bcdet = bdx * cdy - cdx * bdy;
-		cadet = cdx * ady - adx * cdy;
-		alift = adx * adx + ady * ady;
-		blift = bdx * bdx + bdy * bdy;
-		clift = cdx * cdx + cdy * cdy;
+		abdet = (adx * bdy) - (bdx * ady);
+		bcdet = (bdx * cdy) - (cdx * bdy);
+		cadet = (cdx * ady) - (adx * cdy);
+		alift = (adx * adx) + (ady * ady);
+		blift = (bdx * bdx) + (bdy * bdy);
+		clift = (cdx * cdx) + (cdy * cdy);
 
-		return alift * bcdet + blift * cadet + clift * abdet;
+		return (alift * bcdet) + (blift * cadet) + (clift * abdet);
 	}
 
 	internal static double InCircleExact(double[] pa, double[] pb, double[] pc, double[] pd)
@@ -2052,23 +2052,23 @@ public static class GeometricPredicates
 
 		bdxcdy = bdx * cdy;
 		cdxbdy = cdx * bdy;
-		alift = adx * adx + ady * ady;
+		alift = (adx * adx) + (ady * ady);
 
 		cdxady = cdx * ady;
 		adxcdy = adx * cdy;
-		blift = bdx * bdx + bdy * bdy;
+		blift = (bdx * bdx) + (bdy * bdy);
 
 		adxbdy = adx * bdy;
 		bdxady = bdx * ady;
-		clift = cdx * cdx + cdy * cdy;
+		clift = (cdx * cdx) + (cdy * cdy);
 
-		det = alift * (bdxcdy - cdxbdy)
-		      + blift * (cdxady - adxcdy)
-		      + clift * (adxbdy - bdxady);
+		det = (alift * (bdxcdy - cdxbdy))
+		      + (blift * (cdxady - adxcdy))
+		      + (clift * (adxbdy - bdxady));
 
-		permanent = (Math.Abs(bdxcdy) + Math.Abs(cdxbdy)) * alift
-		            + (Math.Abs(cdxady) + Math.Abs(adxcdy)) * blift
-		            + (Math.Abs(adxbdy) + Math.Abs(bdxady)) * clift;
+		permanent = ((Math.Abs(bdxcdy) + Math.Abs(cdxbdy)) * alift)
+		            + ((Math.Abs(cdxady) + Math.Abs(adxcdy)) * blift)
+		            + ((Math.Abs(adxbdy) + Math.Abs(bdxady)) * clift);
 		errbound = iccerrboundA * permanent;
 		if (det > errbound || -det > errbound)
 		{
@@ -2279,16 +2279,16 @@ public static class GeometricPredicates
 			return det;
 		}
 
-		errbound = iccerrboundC * permanent + resulterrbound * Math.Abs(det);
-		det += (adx * adx + ady * ady) * (bdx * cdytail + cdy * bdxtail
-		                                  - (bdy * cdxtail + cdx * bdytail))
-		       + 2.0 * (adx * adxtail + ady * adytail) * (bdx * cdy - bdy * cdx)
-		       + ((bdx * bdx + bdy * bdy) * (cdx * adytail + ady * cdxtail
-		                                     - (cdy * adxtail + adx * cdytail))
-		          + 2.0 * (bdx * bdxtail + bdy * bdytail) * (cdx * ady - cdy * adx))
-		       + ((cdx * cdx + cdy * cdy) * (adx * bdytail + bdy * adxtail
-		                                     - (ady * bdxtail + bdx * adytail))
-		          + 2.0 * (cdx * cdxtail + cdy * cdytail) * (adx * bdy - ady * bdx));
+		errbound = (iccerrboundC * permanent) + (resulterrbound * Math.Abs(det));
+		det += (((adx * adx) + (ady * ady)) * ((bdx * cdytail) + (cdy * bdxtail)
+                                               - ((bdy * cdxtail) + (cdx * bdytail))))
+		       + (2.0 * ((adx * adxtail) + (ady * adytail)) * ((bdx * cdy) - (bdy * cdx)))
+		       + ((((bdx * bdx) + (bdy * bdy)) * ((cdx * adytail) + (ady * cdxtail)
+                                                  - ((cdy * adxtail) + (adx * cdytail))))
+		          + (2.0 * ((bdx * bdxtail) + (bdy * bdytail)) * ((cdx * ady) - (cdy * adx))))
+		       + ((((cdx * cdx) + (cdy * cdy)) * ((adx * bdytail) + (bdy * adxtail)
+                                                  - ((ady * bdxtail) + (bdx * adytail))))
+		          + (2.0 * ((cdx * cdxtail) + (cdy * cdytail)) * ((adx * bdy) - (ady * bdx))));
 		if (det >= errbound || -det >= errbound)
 		{
 			return det;
@@ -2893,25 +2893,25 @@ public static class GeometricPredicates
 		cez = pc[2] - pe[2];
 		dez = pd[2] - pe[2];
 
-		ab = aex * bey - bex * aey;
-		bc = bex * cey - cex * bey;
-		cd = cex * dey - dex * cey;
-		da = dex * aey - aex * dey;
+		ab = (aex * bey) - (bex * aey);
+		bc = (bex * cey) - (cex * bey);
+		cd = (cex * dey) - (dex * cey);
+		da = (dex * aey) - (aex * dey);
 
-		ac = aex * cey - cex * aey;
-		bd = bex * dey - dex * bey;
+		ac = (aex * cey) - (cex * aey);
+		bd = (bex * dey) - (dex * bey);
 
-		abc = aez * bc - bez * ac + cez * ab;
-		bcd = bez * cd - cez * bd + dez * bc;
-		cda = cez * da + dez * ac + aez * cd;
-		dab = dez * ab + aez * bd + bez * da;
+		abc = (aez * bc) - (bez * ac) + (cez * ab);
+		bcd = (bez * cd) - (cez * bd) + (dez * bc);
+		cda = (cez * da) + (dez * ac) + (aez * cd);
+		dab = (dez * ab) + (aez * bd) + (bez * da);
 
-		alift = aex * aex + aey * aey + aez * aez;
-		blift = bex * bex + bey * bey + bez * bez;
-		clift = cex * cex + cey * cey + cez * cez;
-		dlift = dex * dex + dey * dey + dez * dez;
+		alift = (aex * aex) + (aey * aey) + (aez * aez);
+		blift = (bex * bex) + (bey * bey) + (bez * bez);
+		clift = (cex * cex) + (cey * cey) + (cez * cez);
+		dlift = (dex * dex) + (dey * dey) + (dez * dez);
 
-		return dlift * abc - clift * dab + (blift * cda - alift * bcd);
+		return (dlift * abc) - (clift * dab) + ((blift * cda) - (alift * bcd));
 	}
 
 	internal static double InSphereExact(double[] pa, double[] pb, double[] pc, double[] pd, double[] pe)
@@ -3817,17 +3817,17 @@ public static class GeometricPredicates
 		dexbey = dex * bey;
 		bd = bexdey - dexbey;
 
-		abc = aez * bc - bez * ac + cez * ab;
-		bcd = bez * cd - cez * bd + dez * bc;
-		cda = cez * da + dez * ac + aez * cd;
-		dab = dez * ab + aez * bd + bez * da;
+		abc = (aez * bc) - (bez * ac) + (cez * ab);
+		bcd = (bez * cd) - (cez * bd) + (dez * bc);
+		cda = (cez * da) + (dez * ac) + (aez * cd);
+		dab = (dez * ab) + (aez * bd) + (bez * da);
 
-		alift = aex * aex + aey * aey + aez * aez;
-		blift = bex * bex + bey * bey + bez * bez;
-		clift = cex * cex + cey * cey + cez * cez;
-		dlift = dex * dex + dey * dey + dez * dez;
+		alift = (aex * aex) + (aey * aey) + (aez * aez);
+		blift = (bex * bex) + (bey * bey) + (bez * bez);
+		clift = (cex * cex) + (cey * cey) + (cez * cez);
+		dlift = (dex * dex) + (dey * dey) + (dez * dez);
 
-		det = dlift * abc - clift * dab + (blift * cda - alift * bcd);
+		det = (dlift * abc) - (clift * dab) + ((blift * cda) - (alift * bcd));
 
 		aezplus = Math.Abs(aez);
 		bezplus = Math.Abs(bez);
@@ -3845,22 +3845,22 @@ public static class GeometricPredicates
 		cexaeyplus = Math.Abs(cexaey);
 		bexdeyplus = Math.Abs(bexdey);
 		dexbeyplus = Math.Abs(dexbey);
-		permanent = ((cexdeyplus + dexceyplus) * bezplus
-		             + (dexbeyplus + bexdeyplus) * cezplus
-		             + (bexceyplus + cexbeyplus) * dezplus)
-		            * alift
-		            + ((dexaeyplus + aexdeyplus) * cezplus
-		               + (aexceyplus + cexaeyplus) * dezplus
-		               + (cexdeyplus + dexceyplus) * aezplus)
-		            * blift
-		            + ((aexbeyplus + bexaeyplus) * dezplus
-		               + (bexdeyplus + dexbeyplus) * aezplus
-		               + (dexaeyplus + aexdeyplus) * bezplus)
-		            * clift
-		            + ((bexceyplus + cexbeyplus) * aezplus
-		               + (cexaeyplus + aexceyplus) * bezplus
-		               + (aexbeyplus + bexaeyplus) * cezplus)
-		            * dlift;
+		permanent = ((((cexdeyplus + dexceyplus) * bezplus)
+                      + ((dexbeyplus + bexdeyplus) * cezplus)
+                      + ((bexceyplus + cexbeyplus) * dezplus))
+                     * alift)
+		            + ((((dexaeyplus + aexdeyplus) * cezplus)
+                        + ((aexceyplus + cexaeyplus) * dezplus)
+                        + ((cexdeyplus + dexceyplus) * aezplus))
+                       * blift)
+		            + ((((aexbeyplus + bexaeyplus) * dezplus)
+                        + ((bexdeyplus + dexbeyplus) * aezplus)
+                        + ((dexaeyplus + aexdeyplus) * bezplus))
+                       * clift)
+		            + ((((bexceyplus + cexbeyplus) * aezplus)
+                        + ((cexaeyplus + aexceyplus) * bezplus)
+                        + ((aexbeyplus + bexaeyplus) * cezplus))
+                       * dlift);
 		errbound = isperrboundA * permanent;
 		if (det > errbound || -det > errbound)
 		{
@@ -4108,39 +4108,39 @@ public static class GeometricPredicates
 			return det;
 		}
 
-		errbound = isperrboundC * permanent + resulterrbound * Math.Abs(det);
-		abeps = aex * beytail + bey * aextail
-		        - (aey * bextail + bex * aeytail);
-		bceps = bex * ceytail + cey * bextail
-		        - (bey * cextail + cex * beytail);
-		cdeps = cex * deytail + dey * cextail
-		        - (cey * dextail + dex * ceytail);
-		daeps = dex * aeytail + aey * dextail
-		        - (dey * aextail + aex * deytail);
-		aceps = aex * ceytail + cey * aextail
-		        - (aey * cextail + cex * aeytail);
-		bdeps = bex * deytail + dey * bextail
-		        - (bey * dextail + dex * beytail);
-		det += (bex * bex + bey * bey + bez * bez)
-		       * (cez * daeps + dez * aceps + aez * cdeps
-		          + (ceztail * da3 + deztail * ac3 + aeztail * cd3))
-		       + (dex * dex + dey * dey + dez * dez)
-		       * (aez * bceps - bez * aceps + cez * abeps
-		                                    + (aeztail * bc3 - beztail * ac3 + ceztail * ab3))
-		       - ((aex * aex + aey * aey + aez * aez)
-		          * (bez * cdeps - cez * bdeps + dez * bceps
-		                                       + (beztail * cd3 - ceztail * bd3 + deztail * bc3))
-		          + (cex * cex + cey * cey + cez * cez)
-		          * (dez * abeps + aez * bdeps + bez * daeps
-		             + (deztail * ab3 + aeztail * bd3 + beztail * da3)))
-		       + 2.0 * ((bex * bextail + bey * beytail + bez * beztail)
-		                * (cez * da3 + dez * ac3 + aez * cd3)
-		                + (dex * dextail + dey * deytail + dez * deztail)
-		                * (aez * bc3 - bez * ac3 + cez * ab3)
-		                - ((aex * aextail + aey * aeytail + aez * aeztail)
-		                   * (bez * cd3 - cez * bd3 + dez * bc3)
-		                   + (cex * cextail + cey * ceytail + cez * ceztail)
-		                   * (dez * ab3 + aez * bd3 + bez * da3)));
+		errbound = (isperrboundC * permanent) + (resulterrbound * Math.Abs(det));
+		abeps = (aex * beytail) + (bey * aextail)
+		        - ((aey * bextail) + (bex * aeytail));
+		bceps = (bex * ceytail) + (cey * bextail)
+		        - ((bey * cextail) + (cex * beytail));
+		cdeps = (cex * deytail) + (dey * cextail)
+		        - ((cey * dextail) + (dex * ceytail));
+		daeps = (dex * aeytail) + (aey * dextail)
+		        - ((dey * aextail) + (aex * deytail));
+		aceps = (aex * ceytail) + (cey * aextail)
+		        - ((aey * cextail) + (cex * aeytail));
+		bdeps = (bex * deytail) + (dey * bextail)
+		        - ((bey * dextail) + (dex * beytail));
+		det += (((bex * bex) + (bey * bey) + (bez * bez))
+                * ((cez * daeps) + (dez * aceps) + (aez * cdeps)
+                   + ((ceztail * da3) + (deztail * ac3) + (aeztail * cd3))))
+		       + (((dex * dex) + (dey * dey) + (dez * dez))
+                  * ((aez * bceps) - (bez * aceps) + (cez * abeps)
+                                                   + ((aeztail * bc3) - (beztail * ac3) + (ceztail * ab3))))
+		       - ((((aex * aex) + (aey * aey) + (aez * aez))
+                   * ((bez * cdeps) - (cez * bdeps) + (dez * bceps)
+                                                    + ((beztail * cd3) - (ceztail * bd3) + (deztail * bc3))))
+		          + (((cex * cex) + (cey * cey) + (cez * cez))
+                     * ((dez * abeps) + (aez * bdeps) + (bez * daeps)
+                        + ((deztail * ab3) + (aeztail * bd3) + (beztail * da3)))))
+		       + (2.0 * ((((bex * bextail) + (bey * beytail) + (bez * beztail))
+                          * ((cez * da3) + (dez * ac3) + (aez * cd3)))
+                         + (((dex * dextail) + (dey * deytail) + (dez * deztail))
+                            * ((aez * bc3) - (bez * ac3) + (cez * ab3)))
+                         - ((((aex * aextail) + (aey * aeytail) + (aez * aeztail))
+                             * ((bez * cd3) - (cez * bd3) + (dez * bc3)))
+                            + (((cex * cextail) + (cey * ceytail) + (cez * ceztail))
+                               * ((dez * ab3) + (aez * bd3) + (bez * da3))))));
 		if (det >= errbound || -det >= errbound)
 		{
 			return det;

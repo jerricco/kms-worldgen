@@ -1,5 +1,5 @@
 ﻿using System;
-using Sandbox.Systems.Map;
+using Sandbox.GameObjectSystems.Map;
 using Sandbox.Generation;
 
 namespace Sandbox.Gameplay;
@@ -34,7 +34,7 @@ public class TileInteractionManager : Component
 			return;
 		}
 
-		var intersectPoint = rayOrigin + rayDirection * distanceToPlane;
+		var intersectPoint = rayOrigin + (rayDirection * distanceToPlane);
 
 		// Floor global positions directly into grid indices (1x1 unit sizing)
 		var globalTileX = (int)MathF.Floor(intersectPoint.x);
@@ -46,8 +46,8 @@ public class TileInteractionManager : Component
 		var chunkY = (int)MathF.Floor((float)globalTileY / chunkSize);
 
 		// Isolate coordinates relative to the specific chunk's origin bound edge
-		var localTileX = globalTileX - chunkX * chunkSize;
-		var localTileY = globalTileY - chunkY * chunkSize;
+		var localTileX = globalTileX - (chunkX * chunkSize);
+		var localTileY = globalTileY - (chunkY * chunkSize);
 
 		// check the chunk & draw its tooltip if we can find it
 		var targetChunk = MapGeneratorSystem.Current.GetChunkAt(chunkX, chunkY);

@@ -44,7 +44,7 @@ public class GenerationSettings : GameResource
 	// dimensionality
 	[Property] public int TotalTiles => this.WorldWidth * this.WorldHeight;
 	[Property] public int MaxDimension => Math.Max(this.WorldWidth, this.WorldHeight);
-	[Property] public float MaxRadius => MathF.Sqrt(this.HalfWidth * this.HalfWidth + this.HalfHeight * this.HalfHeight);
+	[Property] public float MaxRadius => MathF.Sqrt((this.HalfWidth * this.HalfWidth) + (this.HalfHeight * this.HalfHeight));
 	[Property] public int HalfWidth => this.WorldWidth / 2;
 	[Property] public int HalfHeight => this.WorldHeight / 2;
 
