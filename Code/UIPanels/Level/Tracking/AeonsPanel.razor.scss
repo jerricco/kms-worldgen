@@ -1,10 +1,17 @@
-﻿.aeons-panel {
-  pointer-events: all;
-  height: 80px;
-  margin: 8px 0;
-  background-color: rgba(20, 20, 20, 0.4);
-  border: 1px solid rgba(20, 20, 20, 0.7);
-  border-radius: 4px;
-  
-  
+﻿AeonsPanel {
+	pointer-events: all;
+	height: 80px;
+	background-color: rgba(20, 20, 20, 0.85);
+	border: 1px solid rgba(20, 20, 20, 0.9);
+	border-radius: 4px;
+	padding: 12px;
+	margin-top: 4px;
+	margin-bottom: 8px;
+	font-family: "aeons-mono";
+	font-size:  18px;
+	
+	.title {
+		color: white;
+		text-shadow: 1px 1px 1px #0004
+	}
 }

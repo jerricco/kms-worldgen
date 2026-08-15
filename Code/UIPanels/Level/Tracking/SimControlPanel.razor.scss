@@ -5,8 +5,8 @@
 		pointer-events: all;
 		height: 40px;
 		margin: 4px 0;
-		background-color: rgba(20, 20, 20, 0.4);
-		border: 1px solid rgba(20, 20, 20, 0.7);
+		background-color: rgba(20, 20, 20, 0.85);
+		border: 1px solid rgba(20, 20, 20, 0.9);
 		border-radius: 4px;
 
 		.divider {
@@ -24,6 +24,12 @@
 				background-color: rgba(70, 140, 217, 0.5);
 				border-left: 1px solid rgba(20, 20, 20, 0.5);
 				border-right: 1px solid rgba(20, 20, 20, 0.5);
+			}
+
+			&:active {
+				background-color: rgba(70, 140, 217, 0.7);
+				border-left: 1px solid rgba(20, 20, 20, 0.7);
+				border-right: 1px solid rgba(20, 20, 20, 0.7);
 			}
 
 			&.selected {
@@ -52,8 +58,9 @@
 		span {
 			text-shadow: rgba(0, 0, 0, 0.9) 0 0 3px;
 			color: rgb(248, 210, 68);
-			font-size: 18px;
+			font-size: 20px;
 			font-weight: 600;
+			font-family: "aeons-mono";
 		}
 	}
 }

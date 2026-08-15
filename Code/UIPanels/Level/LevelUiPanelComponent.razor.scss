@@ -1,3 +1,24 @@
+root, body {
+	font-family: "aeons-mono";
+}
+
+/* @TODO: Add a universal stylesheet */
+.notched-panel {
+	
+}
+
+.screen-bottom {
+	height: 50px;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	height: 50px;
+	margin: 0;
+	background-color: rgba(20, 20, 20, 0.85);
+	border-top: 1px solid rgba(20, 20, 20, 0.9);
+	border-top: 1px solid rgba(20, 20, 20, 0.9);
+}
+
 LevelUiPanelComponent
 {
 	position: absolute;
@@ -27,15 +48,33 @@ LevelUiPanelComponent
 		position: absolute;
 		top: 18px;
 		right: 18px;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+		align-items: flex-end;
+		
+		.top {
+			margin-bottom: 8px;
+			
+			OverlaysPanel {
+				margin-right: 8px;
+			}
+		}
+		
+		.bottom {
+			.minimap {
+				margin: 0 8px;
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-start;
+				align-items: flex-end;
+			}
+		}
 	}
 
 	/* BOTTOM-LEFT: Menu panel */
     .menu-panel {
-		position: absolute;
-		bottom: 0;
-		left: 0;
 		width: calc(100% - 300px);
-		height: 50px;
 		display: flex;
 		flex-direction: row;
 		justify-content: flex-start;
@@ -44,10 +83,6 @@ LevelUiPanelComponent
 
 	/* BOTTOM-RIGHT: Notification panel */
 	.notification-panel {
-		position: absolute;
-		bottom: 0;
-		right: 0;
 		width: 300px;
-		height: 50px;
 	}
 }

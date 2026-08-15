@@ -1,7 +1,40 @@
 ﻿DockMenuPanel {
-  pointer-events: all;
-  height: 50px;
-  margin: 0;
-  background-color: rgba(20, 20, 20, 0.7);
-  border-top: 1px solid rgba(20, 20, 20, 0.7);
+	pointer-events: all;
+	/*height: 50px;
+	margin: 0;
+	background-color: rgba(20, 20, 20, 0.85);
+	border-top: 1px solid rgba(20, 20, 20, 0.9);
+	border-top: 1px solid rgba(20, 20, 20, 0.9);*/
+	width: 100%;
+	
+	text-shadow: 1px 1px 1px #0004;
+	
+	button.dock-item {
+		padding: 0 12px;
+		border-right: 1px solid rgba(20, 20, 20, 0.7);
+		color: #f9f9f9;
+		font-family: "aeons-mono";
+		font-size: 20px;
+		line-height: 50px;
+		text-shadow: rgba(0, 0, 0, 0.9) 0 0 3px;
+		cursor: pointer;
+		
+		&:hover {
+			background-color: rgba(70, 140, 217, 0.5);
+			border-right: 1px solid rgba(20, 20, 20, 0.5);
+		}
+
+		&:active {
+			background-color: rgba(70, 140, 217, 0.7);
+			border-right: 1px solid rgba(20, 20, 20, 0.7);
+		}
+		
+		img {
+			height: 28px;
+			width: 28px;
+			margin-top: 11px;
+			margin-right: 8px;
+			opacity: 0.8;
+		}
+	}
 }

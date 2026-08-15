@@ -24,19 +24,18 @@ public class TileInteractionManager : Component
 		// Distance along the ray to strike the flat ground plane
 		float distanceToPlane = -rayOrigin.z / rayDirection.z;
 		if ( distanceToPlane < 0f ) return;
-		
 			Vector3 intersectPoint = rayOrigin + (rayDirection * distanceToPlane);
 
-			// Floor global positions directly into grid indices (1x1 unit sizing)
+			// get global tile space
 			int globalTileX = (int)MathF.Floor( intersectPoint.x );
 			int globalTileY = (int)MathF.Floor( intersectPoint.y );
 
-			// 5. Chunk space indexing breakdowns (Assuming 50x50 chunk dimensions)
+			// get chunk space
 			int chunkSize = MapGeneratorSystem.Current.Settings.ChunkGridSize; 
 			int chunkX = (int)MathF.Floor( (float)globalTileX / chunkSize );
 			int chunkY = (int)MathF.Floor( (float)globalTileY / chunkSize );
 
-			// Isolate coordinates relative to the specific chunk's origin bound edge
+			// isolate coordinates relative to the specific chunk's origin bound edge
 			int localTileX = globalTileX - (chunkX * chunkSize);
 			int localTileY = globalTileY - (chunkY * chunkSize);
 
@@ -55,6 +54,7 @@ public class TileInteractionManager : Component
 			}
 	}
 	
+	// @TODO: stop using Gizmo you goon 
 	/// <summary>
 	/// Renders a dynamic debug text block directly over the mouse cursor positions.
 	/// </summary>

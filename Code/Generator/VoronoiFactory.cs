@@ -47,7 +47,10 @@ public sealed class VoronoiFactory : Component
 
 	public void ClearData()
 	{
-		if ( Renderer != null &&  Renderer.IsValid ) Renderer.ClearMesh();
+		if ( Renderer != null && Renderer.IsValid )
+		{
+			Renderer.ClearMesh();
+		}
 		
 		TectonicSpines = null;
 		Voronoi = null;

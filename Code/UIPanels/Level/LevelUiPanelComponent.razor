@@ -14,23 +14,35 @@
 
 	@* TOP-RIGHT: Information & tools panel *@
 	<div class="info-tools-panel">
-		<Tools.OverlaysPanel></Tools.OverlaysPanel>
-		<Tools.MenuToolPanel></Tools.MenuToolPanel>
-		<Tools.GameAlertsPanel></Tools.GameAlertsPanel>
-		<Tools.WorldStatePanel></Tools.WorldStatePanel>
-		<Tools.DebugToolsPanel></Tools.DebugToolsPanel>
-		<Tools.ToolbarPanel></Tools.ToolbarPanel>
+		<div class="top">
+			<Tools.OverlaysPanel></Tools.OverlaysPanel>
+			<Tools.MenuToolPanel></Tools.MenuToolPanel>	
+		</div>
+		
+		<div class="bottom">
+			<Tools.GameAlertsPanel></Tools.GameAlertsPanel>
+		
+			<div class="minimap">
+				<Tools.WorldStatePanel></Tools.WorldStatePanel>
+				<Tools.DebugToolsPanel></Tools.DebugToolsPanel>
+			</div>
+		
+			<Tools.ToolbarPanel></Tools.ToolbarPanel>	
+		</div>
 	</div>
+	
+	<div class="screen-bottom notched-panel">
+		@* BOTTOM-LEFT: Menu panel *@
+		<div class="menu-panel">
+			<Dock.DockMenuPanel></Dock.DockMenuPanel>
+		</div>
 
-	@* BOTTOM-LEFT: Menu panel *@
-	<div class="menu-panel">
-		<Dock.DockMenuPanel></Dock.DockMenuPanel>
+		@* BOTTOM-RIGHT: Notification panel *@
+		<div class="notification-panel">
+			<Dock.GameNotificationsPanel></Dock.GameNotificationsPanel>
+		</div>	
 	</div>
-
-	@* BOTTOM-RIGHT: Notification panel *@
-	<div class="notification-panel">
-		<Dock.GameNotificationsPanel></Dock.GameNotificationsPanel>
-	</div>
+	
 	@* OVERLAY: Open widgets *@
 	@* OVERLAY: Dock window panel *@
 	@* OVERLAY: Full-window panel *@
