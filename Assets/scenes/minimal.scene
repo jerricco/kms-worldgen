@@ -348,6 +348,50 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "5672c32f-aac3-4922-b7c3-591fddc2fc6e",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "MapManager",
+      "Position": "0,0,100",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.GameData.MapConfig",
+          "__guid": "2978bfcc-b101-494d-8585-35aba76e54e3",
+          "__enabled": true,
+          "Flags": 0,
+          "BiophysicalDegradation": 0,
+          "CircumscribedRadius": 11585.237,
+          "DistanceToEquator": 0,
+          "GeneticDiversity": 0,
+          "Glaciation": 0.18,
+          "InscribedRadius": 8192,
+          "OceanClampX": 0.85,
+          "OceanClampY": 0.85,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "OrbitEccentricity": 0.167,
+          "PlanetInclination": 0.409,
+          "RadiativeForcing": 0.24,
+          "TropicLine": 0,
+          "WorldWidth": 16384
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
