@@ -2,7 +2,7 @@
 using Sandbox.Generation;
 
 namespace Sandbox.Systems.Map;
-
+// @TODO: Rewrite this once I have solidified the map chunking methodology.
 /*
  * Since the map is a large number of integers
  */

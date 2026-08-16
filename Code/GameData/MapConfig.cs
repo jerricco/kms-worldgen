@@ -6,15 +6,29 @@ namespace Sandbox.GameData;
 // the value ranges produce sensible results while the default values produce roughly Earth-like results.
 public class MapConfig: Component
 {
+	//////////////////////////
+	//   world dimensions   //
+	//////////////////////////
+	// @TODO: A few of these properties should be moved from elsewhere
+	[Property] public int WorldWidth = 16384; // @TODO: center around this value for now, but determine other value sizes
+	[Property, ReadOnly] public float InscribedRadius => WorldWidth / 2f;
+
+	[Property, ReadOnly] public float CircumscribedRadius => WorldWidth / MathF.Sqrt( 2f );
+	
+	//////////////////////////////
+	// configuration properties //
+	//////////////////////////////
+	// END @TODO
 	// DistanceToEquator - The proportion from -1 to -1 of how far the equator is from the X=0. A maximum distance represents
 	// that the continent's X=0 centers on a respective planetary pole (-1 for south pole, +1 for north pole)
+	// this value doesn't actually affect the planet generation, but informs the map on where it is placed on the globe of the planet.
 	[Property] public readonly float DistanceToEquator = 0f;
 	
 	// PlanetInclination- current Earth axial tilt in radians. Maxes out at 90Pi/180 (90degrees).
 	// Tipping it all the way should produce tidal-locking. Catastrophic, but maybe survivable???
-	[Property] public readonly float PlanetInclination = 0.4090f;
+	[Property] public readonly float PlanetInclination = 0.409f;
 	
-	// Orbit Eccentricity - Current inclination proportion, multiplied by 10 for a more palateable value. The range maxes out 1/10th of
+	// Orbit Eccentricity - Current inclination proportion, multiplied by 10 for a more palatable value. The range maxes out 1/10th of
 	// the orbital mechanical maximum since this will still greatly affect climate.
 	[Property] public readonly float OrbitEccentricity = 0.167f;
 	
@@ -27,11 +41,25 @@ public class MapConfig: Component
 	// BiophysicalDegradation - A value from 0 to 1 that explains how much ecological damage the Aeons have
 	// historically done to the planet before this point. 0 means the most that was going on was hunter-gathering.
 	// 1 means that someone has at some point set off a few nukes.
-	[Property] public readonly float BiophysicalDegradation;
-	// TropicLines - see derivation function
+	[Property] public readonly float BiophysicalDegradation = 0f; // always baseline at 0 here
+	
+	//////////////////////////
+	//  derived properties  //
+	//////////////////////////
+	// TropicLines - see derivation function DeriveTropicLine
 	[Property] public readonly (float, float) TropicLines;
-	// GeneticDiversity - see derivation function
+	// GeneticDiversity - see derivation function DeriveGeneticDiversity
 	[Property] public readonly float GeneticDiversity;
+	
+	//////////////////////////
+	// hardcoded properties //
+	//////////////////////////
+	// The proportion of the map (in each direction) by which the ocean forces itself inside the map.
+	// These ensure the map rarely generates large parts of a landmass off the edge and tries to contain
+	// the continent inside its bounds.
+	// @TODO: make configurable in a range?
+	[Property, ReadOnly] public readonly float OceanClampX = 0.85f;
+	[Property, ReadOnly] public readonly float OceanClampY = 0.85f;
 
 	public MapConfig( 
 		float distanceToEquator, 
