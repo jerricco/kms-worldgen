@@ -1,4 +1,5 @@
-﻿using Sandbox.Systems.Map;
+﻿using Sandbox.GameData;
+using Sandbox.Systems.Map;
 using Sandbox.Generation;
 using Sandbox.Triangulation;
 
@@ -14,17 +15,20 @@ public class Chunk
 	public bool Generated;
 	public int Size;
 	public float TileSize = 1f; // @TODO: increase physical tile size? Will be a big refactor
+	public GenerationSettings Settings { get; set; }
+	public OpenSimplexNoise SimplexNoise {get; set;}
 	
 	
-	public Chunk(Vector2 chunkPosition, int size)
+	public Chunk(Vector2 chunkPosition, GenerationSettings settings)
 	{
-		Size = size;
+		Settings = settings;
+		Size = Settings.ChunkGridSize;
 		
 		// All positions refer to the chunks top-left corner
 		Position = new Vector2( chunkPosition.x, chunkPosition.y );
 		GlobalPosition = new Vector2( Position.x * Size * TileSize, Position.y * Size * TileSize );
 		
-		Tiles = new TileData[size * size];
+		Tiles = new TileData[Size * Size];
 	}
 
 	public void Generate(int xLimit, int yLimit, List<VoronoiFactory.CurvedSpine> spines)
@@ -53,9 +57,11 @@ public class Chunk
 		// create tile
 		TileData tile = new TileData();
 		tile.GlobalPosition = global;
+		tile.Settings = Settings;
+		tile.SimplexNoise = SimplexNoise;
 				
 		// generate tile properties
-		tile.GenerateElevation(MapGeneratorSystem.Current.Settings, spines);
+		tile.GenerateElevation(spines);
 		tile.GenerateGeology();
 		tile.GenerateRegion();
 		

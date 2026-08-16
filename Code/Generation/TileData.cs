@@ -18,24 +18,26 @@ namespace Sandbox.Generation
 		public RegionId RegionId { get; set; }
 		public SubterraneanLayer Geology { get; set; }
 		public DelaunayNeighbors NeighborSites { get; set; }
+		public GenerationSettings Settings { get; set; }
+		public OpenSimplexNoise SimplexNoise { get; set; }
 
 		///////////////////////////////////////////////
 		//            Elevation Generation           //
 		///////////////////////////////////////////////
-		public void GenerateElevation(GenerationSettings settings, List<VoronoiFactory.CurvedSpine> tectonicSpines)
+		public void GenerateElevation(List<VoronoiFactory.CurvedSpine> tectonicSpines)
 		{
 			var global = GlobalPosition;
 			
 			// fractal warp
-			float warpX = Noise.Perlin((global.x * settings.MacroScale) + 123.45f, (global.y * settings.MacroScale) + 678.90f);
-			float warpY = Noise.Perlin((global.x * settings.MacroScale) - 456.78f, (global.y * settings.MacroScale) + 321.12f);
+			float warpX = Noise.Perlin((global.x * Settings.MacroScale) + 123.45f, (global.y * Settings.MacroScale) + 678.90f);
+			float warpY = Noise.Perlin((global.x * Settings.MacroScale) - 456.78f, (global.y * Settings.MacroScale) + 321.12f);
 			
 			
 			// Warp intensity. Higher values = deeper gulfs and broken straits.
 			float warpIntensity = 1200f; // @TODO: config?
 			Vector2 warpedWorldPos = new Vector2(
-				(global.x * settings.StretchX) + (warpX * warpIntensity),
-				(global.y * settings.StretchY) + (warpY * warpIntensity)
+				(global.x * Settings.StretchX) + (warpX * warpIntensity),
+				(global.y * Settings.StretchY) + (warpY * warpIntensity)
 			);
 			
 			// distance to nearest spine line segment
@@ -61,14 +63,26 @@ namespace Sandbox.Generation
 			}
 			
 			// base elevation gradient
-			float maxSpineInfluence = settings.MaxDimension * 0.4f; 
+			float maxSpineInfluence = Settings.MaxDimension * 0.4f; 
 			float spineGradient = 1.0f - MathX.Clamp(minDistanceToSpine / maxSpineInfluence, 0f, 1f);
 			
 			// creates wide flat sedimentary lowlands before clamping near mountains
 			spineGradient = MathF.Pow(spineGradient, 1.8f); 
 			spineGradient = SmoothStep(0f, 1f, spineGradient);
 
-			// fBm detail - layering multiple frequencies to build complex details (Coastlines, small hills)
+			var knobs = new OpenSimplexNoise.NoiseKnobs
+			{
+				AmplitudeBase = 1f,
+				Frequency = Settings.MicroScale,
+				Octaves = 5,
+				Persistence = 0.48f,
+				Lacunarity = 2.1f,
+			};
+
+			// get fractal Brownian motion.
+			double detailNoise = SimplexNoise.GetNoiseLandscape( warpedWorldPos.x, warpedWorldPos.y, Settings.HalfWidth, Settings.HalfHeight, knobs );
+
+			/*// fBm detail - layering multiple frequencies to build complex details (Coastlines, small hills)
 			float detailNoise = 0f;
 			float amplitude = 1.0f;
 			float currentFreq = settings.MicroScale;
@@ -84,32 +98,32 @@ namespace Sandbox.Generation
 				currentFreq *= 2.1f;  // Lacunarity (frequency multiplier)
 				amplitude *= 0.48f;   // Persistence (amplitude dampener)
 			}
-			detailNoise /= totalAmplitude; // Normalized back to a clean -0.5 to 0.5 variation range
+			detailNoise /= totalAmplitude; // Normalized back to a clean -0.5 to 0.5 variation range*/
 			
 			// ridged noise - pinches mountain elevation
 			// Sharp mountain cresting driven by an aggressive power exponent
-			float rawRidge = Noise.Perlin((warpedWorldPos.x * settings.MacroScale * 6f) + 50f, (warpedWorldPos.y * settings.MacroScale * 6f) + 50f);
+			float rawRidge = Noise.Perlin((warpedWorldPos.x * Settings.MacroScale * 6f) + 50f, (warpedWorldPos.y * Settings.MacroScale * 6f) + 50f);
 			float ridgeNoise = 1.0f - MathF.Abs((rawRidge - 0.5f) * 2.0f); 
 			ridgeNoise = MathF.Pow(ridgeNoise, 3.0f);
 			
 			// combine profiles & mask
 			// Instead of a flat base, we lerp between Abyssal and Sea Level for ocean basins, 
 			// and Sea Level to Peak Level for land masses.
-			float baseElevation = 0f;
+			double baseElevation;
 			if (spineGradient < 0.25f) 
 			{
 				// Ocean Floor Basin Profile
-				baseElevation = MathX.Lerp(settings.AbyssalLevel, settings.SeaLevel, spineGradient / 0.25f);
+				baseElevation = MathX.Lerp(Settings.AbyssalLevel, Settings.SeaLevel, spineGradient / 0.25f);
 				baseElevation += detailNoise * 0.15f; 
 			}
 			else 
 			{
 				// Surface Landmass Profile
 				float landT = (spineGradient - 0.25f) / 0.75f;
-				baseElevation = MathX.Lerp(settings.SeaLevel, settings.MountainLevel, landT);
+				baseElevation = MathX.Lerp(Settings.SeaLevel, Settings.MountainLevel, landT);
         
 				// Coastline Scrambler: Targets your explicit SeaLevel property to fractalize borders
-				float coastMask = 1.0f - MathX.Clamp(MathF.Abs(baseElevation - settings.SeaLevel) * 4f, 0f, 1f); 
+				float coastMask = 1.0f - MathX.Clamp((float)Math.Abs(baseElevation - Settings.SeaLevel) * 4f, 0f, 1f); 
 				baseElevation += detailNoise * 0.45f * coastMask; 
 
 				// Rolling Lowland Plains & Hills
@@ -120,16 +134,16 @@ namespace Sandbox.Generation
 			if (spineGradient > 0.55f)
 			{
 				float mountainMask = MathX.Remap(spineGradient, 0.55f, 1.0f, 0f, 1f);
-				baseElevation = MathX.Lerp(baseElevation, settings.PeakLevel, mountainMask * ridgeNoise * 0.8f);
+				baseElevation = MathX.Lerp(baseElevation, Settings.PeakLevel, mountainMask * ridgeNoise * 0.8f);
 				baseElevation += mountainMask * 0.12f; 
 			}
 			
 			// ocean clamp falloff
-			float distX = MathF.Abs(global.x) / settings.HalfWidth;
-			float distY = MathF.Abs(global.y) / settings.HalfHeight;
+			float distX = MathF.Abs(global.x) / Settings.HalfWidth;
+			float distY = MathF.Abs(global.y) / Settings.HalfHeight;
 			float edgeDistance = MathF.Max(distX, distY);
 			
-			float falloffStart = settings.OceanClamp;
+			float falloffStart = Settings.OceanClamp;
 			float edgeFalloff = 0f;
 
 			if (edgeDistance > falloffStart)
@@ -138,7 +152,7 @@ namespace Sandbox.Generation
 				edgeFalloff = SmoothStep(0f, 1f, edgeFalloff);
 			}
 
-			float finalElevation = MathX.Lerp(baseElevation, settings.AbyssalLevel, edgeFalloff);
+			double finalElevation = MathX.Lerp(baseElevation, Settings.AbyssalLevel, edgeFalloff);
 
 			Elevation = Math.Clamp(finalElevation, -1.0f, 1.0f);
 		}

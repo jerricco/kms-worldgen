@@ -29,16 +29,16 @@ public partial class GenerationSettings : GameResource
     [Property] public float StretchY    { get; set; } = 1.3f;
 
     // Elevation boundaries
-    [Property] public float AbyssalLevel { get; set; } = -1.0f;
-    [Property] public float TrenchLevel  { get; set; } = -0.85f;
-    [Property] public float DeepOceanLevel { get; set; } = -0.55f;
-    [Property] public float OceanLevel { get; set; } = -0.25f;
+    [Property] public float AbyssalLevel { get; set; } = -256f;
+    [Property] public float TrenchLevel  { get; set; } = -218f;
+    [Property] public float DeepOceanLevel { get; set; } = -140f;
+    [Property] public float OceanLevel { get; set; } = -64f;
     [Property] public float SeaLevel { get; set; } = 0f;
-    [Property] public float BeachLevel { get; set; } = 0.03f;
-    [Property] public float PlainLevel { get; set; } = 0.48f;
-    [Property] public float HillLevel { get; set; } = 0.68f;
-    [Property] public float MountainLevel { get; set; } = 0.82f;
-    [Property] public float PeakLevel { get; set; } = 0.95f;
+    [Property] public float BeachLevel { get; set; } = 8f;
+    [Property] public float PlainLevel { get; set; } = 124f;
+    [Property] public float HillLevel { get; set; } = 175f;
+    [Property] public float MountainLevel { get; set; } = 210f;
+    [Property] public float PeakLevel { get; set; } = 245f;
 
 
     // --- COMPUTED PROPERTIES --- //

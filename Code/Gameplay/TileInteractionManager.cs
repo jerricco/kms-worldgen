@@ -65,7 +65,7 @@ public class TileInteractionManager : Component
 			$"Global: ({gx}, {gy})\n" +
 			$"Chunk Space: ({cx}, {cy})\n\n" +
 			$"[Tile Data]\n" +
-			$"Elevation: {tile.Elevation:F2}\n" +
+			$"Elevation: {tile.Elevation:F0}\n" +
 			$"Humidity: {tile.Humidity:F2}\n" +
 			$"Temperature: {tile.Temperature:F2}\n" +
 			$"Material ID: {tile.MaterialId}";

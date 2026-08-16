@@ -170,7 +170,7 @@ public class MapGeneratorSystem : GameObjectSystem<MapGeneratorSystem>
 			}
 			else
 			{
-				chunk = new Chunk(chunkPos, Settings.ChunkGridSize);
+				chunk = new Chunk(chunkPos, Settings);
 				_chunks[chunkPos] = chunk;  // put it in box
 			}
 
