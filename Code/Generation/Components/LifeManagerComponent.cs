@@ -11,7 +11,7 @@ public class LifeManagerComponent: Component
 	// plants, algae, cyanobacteria, other photosynthesisers
 	[Property, ReadOnly, Group("Eco Niche Buckets"), Order(3)]
 	public int AutotrophBucketSize;
-	// fungi, bacteria, scavengers, carion eaters, decomposing insects
+	// fungi, bacteria, scavengers, carrion eaters, decomposing insects
 	[Property, ReadOnly, Group("Eco Niche Buckets"), Order(3)]
 	public int DetritivoreBucketSize;
 	// Grazers, browsers, anything which consumes Autotrophs

@@ -10,7 +10,7 @@ public class ContinentManagerComponent: Component
 	
 	// For each tectonic plate, we need to store the vector directions of each side, ensuring all direction vectors add up to 0.
 	// This ensures that each plate has sides which subduct crust as well as sides which form new ones.
-	// If all plates have a vectorSum of 0, then we know that the only external forces are the cooling of the crust above and the heat pressure from below.
+	// If all plates have a vector sum of 0, then we know that the only external forces are the cooling of the crust above and the heat pressure from below.
 	// The directional vectors can be seeded by the force-direction of the lloyd-relaxed grid in generating the original plate sizes.
 	// This tells the generation engine where to form continent-building superstructures such as
 	// continental rock cratons, mid-ocean ridges, fault lines and collision mountain ranges.

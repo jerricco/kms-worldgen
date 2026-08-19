@@ -12,12 +12,12 @@ public class PlanetManagerComponent: Component
 	//////////////////////////
 	// @TODO: A few of these properties should be moved from elsewhere
 	// @TODO: Make Map Dimensions a dropdown of valid world generation sizes.
-	[Property, Group("Map Dimensions"), Order(3)]
+	[Property, Group("Map Dimensions"), Order(0)]
 	public int WorldWidth = 16384; // @TODO: center around this value for now, but determine other value sizes
-	[Property, ReadOnly, Group("Map Dimensions"), Order(3)]
+	[Property, ReadOnly, Group("Map Dimensions"), Order(0)]
 	public float InscribedRadius => WorldWidth / 2f;
 
-	[Property, ReadOnly, Group("Map Dimensions"), Order(3)]
+	[Property, ReadOnly, Group("Map Dimensions"), Order(0)]
 	public float CircumscribedRadius => WorldWidth / MathF.Sqrt( 2f );
 	
 	// END @TODO
@@ -123,41 +123,41 @@ public class PlanetManagerComponent: Component
 	/// See relevant DeriveX function for documentation on each property.
 	
 	/// PRECESSIONAL_CLIMATE
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float AverageGlobalTemperature;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float PlanetaryAlbedo;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ClimateLapseRate;
 	
 	/// ALTITUDE_CLIMES
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float SeaElevation;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float SnowElevation;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float SnowElevationDropOff;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ElevationTreeDropOff;
 	
 	/// LATTITUDE_CLIMES
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float HorizontalClimateOffset;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float TropicLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ArcticLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float BorealHellLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ScorchLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public (float, float) TerminalZoneLines;
 	
 	/// BIOGEOGRAPHICAL_BOUNDING
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ResourceDiversity;
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float GeneticDiversity;
 	
 	/// OTHER_PROPERTIES
@@ -166,10 +166,10 @@ public class PlanetManagerComponent: Component
 	// 0.3 is 40 microtesla -> earth's current field strength 
 	// 0.6 is 1 Tesla of strength -> disrupts and changes the nature of enzyme reaction
 	// 1.0 is 10 Tesla of strength -> Levitates cell biology, forcing it to adapt to orienting to magnetic lines.
-	[Property, ReadOnly, Group("Configuration"), Order(4)]
+	[Property, ReadOnly, Group("Configuration"), Order(2)]
 	public float PlanetaryMagneticDynamo;
 	/// events which occurred at specific points in the planet's history which might alter its makeup or climate.
-	[Property, ReadOnly, Group("Configuration"), Order(4)]
+	[Property, ReadOnly, Group("Configuration"), Order(2)]
 	public float FilterEvents; // @TODO: typing
 	
 	//////////////////////////
