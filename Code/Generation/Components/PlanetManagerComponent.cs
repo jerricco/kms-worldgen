@@ -1,12 +1,11 @@
 ﻿using System;
 
-
 namespace Sandbox.GameData;
 
 // @NOTE: The given values are the more correct, and the derived calculations from them should change to ensure
 // the value ranges produce sensible results while the default values produce roughly Earth-like results.
 [Category("Procedural Generation")]
-public class MapConfig: Component
+public class PlanetManagerComponent: Component
 {
 	//////////////////////////
 	//   world dimensions   //
@@ -26,7 +25,7 @@ public class MapConfig: Component
 	// configuration properties //
 	//////////////////////////////
 	// DistanceToEquator - The proportion from -1 to -1 of how far the equator is from the X=0. A maximum distance represents
-	// that the continent's X=0 centers on a respective planetary pole (-1 for south pole, +1 for north pole)
+	// that the continent's X=0 centers on a respective planetary pole (-1 for the South Pole, +1 for the North Pole)
 	// this value doesn't actually affect the planet generation, but informs the map on where it is placed on the globe of the planet.
 	[Property, Range( -1f, 1f ), Group( "Map Levers" ), Order( 1 )]
 	public float DistanceToEquator { 
@@ -121,15 +120,57 @@ public class MapConfig: Component
 	//////////////////////////
 	//  derived properties  //
 	//////////////////////////
-	// TropicLines - see derivation function DeriveTropicLine
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
-	public float TropicLine;
-	// GeneticDiversity - see derivation function DeriveGeneticDiversity
-	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
-	public float GeneticDiversity;
-	// AverageGlobalTemperature - see derivation function DeriveAverageGlobalTemperature
+	/// See relevant DeriveX function for documentation on each property.
+	
+	/// PRECESSIONAL_CLIMATE
 	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
 	public float AverageGlobalTemperature;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float PlanetaryAlbedo;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float ClimateLapseRate;
+	
+	/// ALTITUDE_CLIMES
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float SeaElevation;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float SnowElevation;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float SnowElevationDropOff;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float ElevationTreeDropOff;
+	
+	/// LATTITUDE_CLIMES
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float HorizontalClimateOffset;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float TropicLine;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float ArcticLine;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float BorealHellLine;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float ScorchLine;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public (float, float) TerminalZoneLines;
+	
+	/// BIOGEOGRAPHICAL_BOUNDING
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float ResourceDiversity;
+	[Property, ReadOnly, Group("Calculated Values"), Order(2)]
+	public float GeneticDiversity;
+	
+	/// OTHER_PROPERTIES
+	// A weirdly step-scaled value between 0f and 1.0f which determines how strong the planet's magnetic field is.
+	// 0 is absolutely no magnetic field -> the planet's atmosphere is stripping
+	// 0.3 is 40 microtesla -> earth's current field strength 
+	// 0.6 is 1 Tesla of strength -> disrupts and changes the nature of enzyme reaction
+	// 1.0 is 10 Tesla of strength -> Levitates cell biology, forcing it to adapt to orienting to magnetic lines.
+	[Property, ReadOnly, Group("Configuration"), Order(4)]
+	public float PlanetaryMagneticDynamo;
+	/// events which occurred at specific points in the planet's history which might alter its makeup or climate.
+	[Property, ReadOnly, Group("Configuration"), Order(4)]
+	public float FilterEvents; // @TODO: typing
 	
 	//////////////////////////
 	// hardcoded properties //
@@ -150,13 +191,13 @@ public class MapConfig: Component
 
 	// the private getter/setter properties contain raw defaults
 	// these will generally be ovewritten by the player.
-	private float _distanceToEquator = 0f;
-	private float _solarIntensity = 0f;
-	private float _solarFlux = 0.2f;
+	private float _distanceToEquator      = 0f;
+	private float _solarIntensity         = 0f;
+	private float _solarFlux              = 0.2f;
 	private float _planetInclination      = 0.409f;
-	private float _orbitEccentricity = 0.167f;
-	private float _glaciation = 0.18f;
-	private float _radiativeForcing = 0.24f;
+	private float _orbitEccentricity      = 0.167f;
+	private float _glaciation             = 0.18f;
+	private float _radiativeForcing       = 0.24f;
 	private float _biophysicalDegradation = 0f;
 	
 
@@ -196,7 +237,8 @@ public class MapConfig: Component
 		this.GeneticDiversity = DeriveGeneticDiversity(
 			this.BiophysicalDegradation, 
 			this.Glaciation, 
-			this.RadiativeForcing);
+			this.RadiativeForcing,
+			this.SolarFlux);
 	}
 
 	/// <summary>
@@ -221,8 +263,9 @@ public class MapConfig: Component
 	/// <param name="bio"></param>
 	/// <param name="glac"></param>
 	/// <param name="rad"></param>
+	/// <param name="flux"></param>
 	/// <returns></returns>
-	public static float DeriveGeneticDiversity(float bio, float glac, float rad)
+	public static float DeriveGeneticDiversity(float bio, float glac, float rad, float flux)
 	{
 		// invert inputs since they share an inverse relationship with genetic diversity.
 		float bioPreservation = 1.0f - bio;
@@ -243,6 +286,11 @@ public class MapConfig: Component
 		{
 			return 0.0f;
 		}
+		
+		// if we do still have life, kill more of it with solar activity as it rises
+		float fluxCurve = MathF.Pow(flux, 2.8f);
+		float minDiversityAtMaxFlux = 0.05f;
+		baseDiversity = MathX.Lerp(baseDiversity, minDiversityAtMaxFlux, fluxCurve);
 
 		// clamp result
 		return Math.Clamp(baseDiversity, 0.0f, 1.0f);
