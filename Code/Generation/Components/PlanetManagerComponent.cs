@@ -140,18 +140,18 @@ public class PlanetManagerComponent: Component
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ElevationTreeDropOff { get; set; }
 	
-	/// LATTITUDE_CLIMES
+	/// LATITUDE_CLIMES
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float HorizontalClimateOffset { get; set; }
-	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float TropicLine { get; set; }
-	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ArcticLine { get; set; }
-	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float BorealHellLine { get; set; }
-	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public float ScorchLine { get; set; }
-	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
 	public (float, float) TerminalZoneLines { get; set; }
 	
 	/// BIOGEOGRAPHICAL_BOUNDING
