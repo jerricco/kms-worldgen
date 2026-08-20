@@ -87,7 +87,7 @@
       "__version": 2,
       "Flags": 0,
       "Name": "Generator",
-      "Position": "149.994965,149.994995,-212.124985",
+      "Position": "0,0,0",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
       "Tags": "",
@@ -266,7 +266,7 @@
             {
               "__type": "Sandbox.CameraComponent",
               "__guid": "ab37c381-d0cc-489d-9957-2bf74a0f383e",
-              "__enabled": true,
+              "__enabled": false,
               "Flags": 0,
               "BackgroundColor": "0,0,0,1",
               "ClearFlags": "All",
@@ -491,7 +491,7 @@
                         "TextureAddressMode": "Wrap",
                         "Clamp": false
                       },
-                      "UseVectorPoints": false,
+                      "UseVectorPoints": true,
                       "VectorPoints": [],
                       "Width": [
                         {
@@ -649,7 +649,7 @@
                         "TextureAddressMode": "Wrap",
                         "Clamp": false
                       },
-                      "UseVectorPoints": false,
+                      "UseVectorPoints": true,
                       "VectorPoints": [],
                       "Width": [
                         {

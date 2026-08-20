@@ -124,41 +124,41 @@ public class PlanetManagerComponent: Component
 	
 	/// PRECESSIONAL_CLIMATE
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float AverageGlobalTemperature;
+	public float AverageGlobalTemperature { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float PlanetaryAlbedo;
+	public float PlanetaryAlbedo { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float ClimateLapseRate;
+	public float ClimateLapseRate { get; set; }
 	
 	/// ALTITUDE_CLIMES
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float SeaElevation;
+	public float SeaElevation { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float SnowElevation;
+	public float SnowElevation { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float SnowElevationDropOff;
+	public float SnowElevationDropOff { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float ElevationTreeDropOff;
+	public float ElevationTreeDropOff { get; set; }
 	
 	/// LATTITUDE_CLIMES
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float HorizontalClimateOffset;
-	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float TropicLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float ArcticLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float BorealHellLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float ScorchLine;
-	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public (float, float) TerminalZoneLines;
+	public float HorizontalClimateOffset { get; set; }
+	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	public float TropicLine { get; set; }
+	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	public float ArcticLine { get; set; }
+	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	public float BorealHellLine { get; set; }
+	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	public float ScorchLine { get; set; }
+	[Property, ReadOnly, Group("Calculated Values"), Tag("Latitude Line"), Order(3)]
+	public (float, float) TerminalZoneLines { get; set; }
 	
 	/// BIOGEOGRAPHICAL_BOUNDING
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float ResourceDiversity;
+	public float ResourceDiversity { get; set; }
 	[Property, ReadOnly, Group("Calculated Values"), Order(3)]
-	public float GeneticDiversity;
+	public float GeneticDiversity { get; set; }
 	
 	/// OTHER_PROPERTIES
 	// A weirdly step-scaled value between 0f and 1.0f which determines how strong the planet's magnetic field is.
@@ -167,10 +167,10 @@ public class PlanetManagerComponent: Component
 	// 0.6 is 1 Tesla of strength -> disrupts and changes the nature of enzyme reaction
 	// 1.0 is 10 Tesla of strength -> Levitates cell biology, forcing it to adapt to orienting to magnetic lines.
 	[Property, ReadOnly, Group("Configuration"), Order(2)]
-	public float PlanetaryMagneticDynamo;
+	public float PlanetaryMagneticDynamo { get; set; }
 	/// events which occurred at specific points in the planet's history which might alter its makeup or climate.
 	[Property, ReadOnly, Group("Configuration"), Order(2)]
-	public float FilterEvents; // @TODO: typing
+	public float FilterEvents { get; set; } // @TODO: typing
 	
 	//////////////////////////
 	// hardcoded properties //
