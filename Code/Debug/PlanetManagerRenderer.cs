@@ -27,7 +27,7 @@ public sealed class PlanetManagerRenderer : Component
 	private float _horizontalClimateOffset { get; set; }
 	
 	// comparation 
-	private string[] _allowedSingleLatitudeLines = ["TropicLine", "ArcticLine", "ArcticLine", "BorealHellLine", "ScorchLine"];
+	private string[] _allowedSingleLatitudeLines = ["Equator", "TropicLine", "ArcticLine", "ArcticLine", "BorealHellLine", "ScorchLine"];
 
 	private struct LineConfig
 	{
@@ -63,7 +63,10 @@ public sealed class PlanetManagerRenderer : Component
 			{
 				Name = property.Name,
 				Value = property.GetValue(PlanetManager),
-				LineColor = Color.Red,
+				LineColor = new Color(
+					MapGeneratorSystem.Current.Rng.NextRange( 0, 255 ),
+					MapGeneratorSystem.Current.Rng.NextRange( 0, 255 ),
+					MapGeneratorSystem.Current.Rng.NextRange( 0, 255 )),
 			};
 			
 			PopulateConfigLines( lineConfig );
@@ -92,7 +95,7 @@ public sealed class PlanetManagerRenderer : Component
 		
 		// create lineconfig to populate fields with
 		// compile a list of points for the sphere
-		List<GameObject> localPoints = new List<GameObject>();
+		List<Vector3> localPoints = new List<Vector3>();
 		for ( int i = 0; i < this._sphereLinePointCount; i++ )
 		{
 			float progress = (float)i / this._sphereLinePointCount;
@@ -102,25 +105,15 @@ public sealed class PlanetManagerRenderer : Component
 			float x = MathF.Cos( angle ) * circleRadius;
 			float y = MathF.Sin( angle ) * circleRadius;
 			
-			GameObject go = new GameObject($"LINE_{i}");
-			go.SetParent(lineConfig.SphereLineGo);
-			go.LocalPosition = new Vector3( x, y, z );
-			localPoints.Add(go);
+			localPoints.Add(lineConfig.SphereLineGo.Transform.World.PointToWorld(new Vector3( x, y, z )));
 		}
 		
 		// attach points
-		LineRenderer Line = lineConfig.SphereLineGo.AddComponent<LineRenderer>();
-		Line.CastShadows = false;
-		Line.Points = localPoints;
-		
-		// give it a colour
-		int r = MapGeneratorSystem.Current.Rng.NextRange( 0, 255 );
-		int g = MapGeneratorSystem.Current.Rng.NextRange( 0, 255 );
-		int b = MapGeneratorSystem.Current.Rng.NextRange( 0, 255 );
-		Log.Info($"{r}, {g}, {b}"  );
-		Line.Color = new Color(r, g, b);
-		
-		// give it a material
-		Line.Attributes.Set( "material", "materials/default/default_line.vmat_c" );
+		LineRenderer line = lineConfig.SphereLineGo.AddComponent<LineRenderer>();
+		line.CastShadows = false;
+		line.Width = 1;
+		line.Color = new Gradient(lineConfig.LineColor);
+		line.UseVectorPoints = true;
+		line.VectorPoints = localPoints;
 	}
 }
