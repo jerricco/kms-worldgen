@@ -301,7 +301,7 @@
       "__guid": "a81e0c02-fc95-4ae6-ba2a-ca1e2c14fbaf",
       "__version": 2,
       "Flags": 0,
-      "Name": "Projections",
+      "Name": "Projection Renderer",
       "Position": "0,0,0",
       "Rotation": "0,0,0,1",
       "Scale": "1,1,1",
@@ -312,14 +312,53 @@
       "NetworkOrphaned": 0,
       "NetworkTransmit": true,
       "OwnerTransfer": 1,
-      "Components": [],
+      "Components": [
+        {
+          "__type": "PlanetManagerRenderer",
+          "__guid": "650d4aae-9b4e-49cf-8d27-110bba3ecd4e",
+          "__enabled": true,
+          "Flags": 0,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null,
+          "Plane": {
+            "_type": "component",
+            "component_id": "e17a24fa-44a8-418e-b598-a3a7c95cc3c7",
+            "go": "49f7a5a9-4dbf-4401-b8c0-1880f9c05a3d",
+            "component_type": "ModelRenderer"
+          },
+          "PlaneLineBucket": {
+            "_type": "gameobject",
+            "go": "ef3bfe89-b065-467c-bfe5-4da1fb5bb7ea"
+          },
+          "PlanetManager": {
+            "_type": "component",
+            "component_id": "21038209-950f-4717-a80e-0add92901529",
+            "go": "3def0880-00ee-4b9d-a06d-460b1e02115b",
+            "component_type": "PlanetManagerComponent"
+          },
+          "Sphere": {
+            "_type": "component",
+            "component_id": "dd0a2d3d-465f-4852-a78f-b2dc9213d666",
+            "go": "f0253a05-5b97-49a7-9cc9-636ff5a542d4",
+            "component_type": "ModelRenderer"
+          },
+          "SphereLineBucket": {
+            "_type": "gameobject",
+            "go": "ec319713-ec02-42ab-9c16-1328b701a1a6"
+          }
+        }
+      ],
       "Children": [
         {
           "__guid": "f0253a05-5b97-49a7-9cc9-636ff5a542d4",
           "__version": 2,
           "Flags": 0,
           "Name": "Sphere Planet",
-          "Position": "2908.22192,-680.652832,94.4821625",
+          "Position": "2900,-680,95",
           "Rotation": "0,0,0,1",
           "Scale": "32,32,32",
           "Tags": "",
@@ -358,7 +397,119 @@
               "Tint": "0.10111,0.12202,0.1907,1"
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "ec319713-ec02-42ab-9c16-1328b701a1a6",
+              "__version": 2,
+              "Flags": 0,
+              "Name": "SphereLines",
+              "Position": "0,0,0",
+              "Rotation": "0,0,0,1",
+              "Scale": "0.03125,0.03125,0.03125",
+              "Tags": "",
+              "Enabled": true,
+              "NetworkMode": 2,
+              "NetworkFlags": 0,
+              "NetworkOrphaned": 0,
+              "NetworkTransmit": true,
+              "OwnerTransfer": 1,
+              "Components": [],
+              "Children": [
+                {
+                  "__guid": "344ffbd8-93d9-453f-b076-4ca2a7165301",
+                  "__version": 2,
+                  "Flags": 0,
+                  "Name": "Equator",
+                  "Position": "0,0,0",
+                  "Rotation": "0,0,0,1",
+                  "Scale": "1,1,1",
+                  "Tags": "",
+                  "Enabled": true,
+                  "NetworkMode": 2,
+                  "NetworkFlags": 0,
+                  "NetworkOrphaned": 0,
+                  "NetworkTransmit": true,
+                  "OwnerTransfer": 1,
+                  "Components": [
+                    {
+                      "__type": "Sandbox.LineRenderer",
+                      "__guid": "bebe736b-e339-49aa-9a99-b15b9b4a9e91",
+                      "__enabled": true,
+                      "Flags": 0,
+                      "Additive": false,
+                      "AutoCalculateNormals": true,
+                      "CastShadows": false,
+                      "Color": {
+                        "blend": "Linear",
+                        "color": [
+                          {
+                            "t": 0.5,
+                            "c": "1,1,1,1"
+                          }
+                        ],
+                        "alpha": []
+                      },
+                      "CylinderSegments": 12,
+                      "DepthFeather": 0,
+                      "EndCap": "Rounded",
+                      "Face": "Camera",
+                      "FogStrength": 1,
+                      "Lighting": false,
+                      "OnComponentDestroy": null,
+                      "OnComponentDisabled": null,
+                      "OnComponentEnabled": null,
+                      "OnComponentFixedUpdate": null,
+                      "OnComponentStart": null,
+                      "OnComponentUpdate": null,
+                      "Opaque": false,
+                      "Points": [
+                        null,
+                        null,
+                        null,
+                        null
+                      ],
+                      "RenderOptions": {
+                        "GameLayer": true,
+                        "OverlayLayer": false,
+                        "BloomLayer": false,
+                        "AfterUILayer": false
+                      },
+                      "SplineBias": 0,
+                      "SplineContinuity": 0,
+                      "SplineInterpolation": 8,
+                      "SplineTension": 0,
+                      "StartCap": "Rounded",
+                      "Texturing": {
+                        "Texture": null,
+                        "Material": "materials/default/default_line.vmat",
+                        "WorldSpace": true,
+                        "UnitsPerTexture": 10,
+                        "Scale": 1,
+                        "Offset": 0,
+                        "Scroll": 0,
+                        "FilterMode": "Anisotropic",
+                        "TextureAddressMode": "Wrap",
+                        "Clamp": false
+                      },
+                      "UseVectorPoints": false,
+                      "VectorPoints": [],
+                      "Width": [
+                        {
+                          "x": 0.5,
+                          "y": 0.5,
+                          "in": 0,
+                          "out": 0,
+                          "mode": "Mirrored"
+                        }
+                      ],
+                      "Wireframe": false
+                    }
+                  ],
+                  "Children": []
+                }
+              ]
+            }
+          ]
         },
         {
           "__guid": "49f7a5a9-4dbf-4401-b8c0-1880f9c05a3d",
@@ -404,7 +555,119 @@
               "Tint": "0.10111,0.12202,0.1907,1"
             }
           ],
-          "Children": []
+          "Children": [
+            {
+              "__guid": "ef3bfe89-b065-467c-bfe5-4da1fb5bb7ea",
+              "__version": 2,
+              "Flags": 0,
+              "Name": "PlaneLines",
+              "Position": "32.1702499,-0.00527526857,-1228.10303",
+              "Rotation": "0,0,0,1",
+              "Scale": "0.00999999978,0.00999999978,10",
+              "Tags": "",
+              "Enabled": true,
+              "NetworkMode": 2,
+              "NetworkFlags": 0,
+              "NetworkOrphaned": 0,
+              "NetworkTransmit": true,
+              "OwnerTransfer": 1,
+              "Components": [],
+              "Children": [
+                {
+                  "__guid": "9d5e38eb-c706-4011-8234-4b7d9c5bf550",
+                  "__version": 2,
+                  "Flags": 0,
+                  "Name": "Equator",
+                  "Position": "0,0,0",
+                  "Rotation": "0,0,0,1",
+                  "Scale": "1,1,1",
+                  "Tags": "",
+                  "Enabled": true,
+                  "NetworkMode": 2,
+                  "NetworkFlags": 0,
+                  "NetworkOrphaned": 0,
+                  "NetworkTransmit": true,
+                  "OwnerTransfer": 1,
+                  "Components": [
+                    {
+                      "__type": "Sandbox.LineRenderer",
+                      "__guid": "651d2408-2fce-4352-9746-0e7a2bdb759f",
+                      "__enabled": true,
+                      "Flags": 0,
+                      "Additive": false,
+                      "AutoCalculateNormals": true,
+                      "CastShadows": false,
+                      "Color": {
+                        "blend": "Linear",
+                        "color": [
+                          {
+                            "t": 0.5,
+                            "c": "1,1,1,1"
+                          }
+                        ],
+                        "alpha": []
+                      },
+                      "CylinderSegments": 12,
+                      "DepthFeather": 0,
+                      "EndCap": "Rounded",
+                      "Face": "Camera",
+                      "FogStrength": 1,
+                      "Lighting": false,
+                      "OnComponentDestroy": null,
+                      "OnComponentDisabled": null,
+                      "OnComponentEnabled": null,
+                      "OnComponentFixedUpdate": null,
+                      "OnComponentStart": null,
+                      "OnComponentUpdate": null,
+                      "Opaque": false,
+                      "Points": [
+                        null,
+                        null,
+                        null,
+                        null
+                      ],
+                      "RenderOptions": {
+                        "GameLayer": true,
+                        "OverlayLayer": false,
+                        "BloomLayer": false,
+                        "AfterUILayer": false
+                      },
+                      "SplineBias": 0,
+                      "SplineContinuity": 0,
+                      "SplineInterpolation": 8,
+                      "SplineTension": 0,
+                      "StartCap": "Rounded",
+                      "Texturing": {
+                        "Texture": null,
+                        "Material": "materials/default/default_line.vmat",
+                        "WorldSpace": true,
+                        "UnitsPerTexture": 10,
+                        "Scale": 1,
+                        "Offset": 0,
+                        "Scroll": 0,
+                        "FilterMode": "Anisotropic",
+                        "TextureAddressMode": "Wrap",
+                        "Clamp": false
+                      },
+                      "UseVectorPoints": false,
+                      "VectorPoints": [],
+                      "Width": [
+                        {
+                          "x": 0.5,
+                          "y": 0.5,
+                          "in": 0,
+                          "out": 0,
+                          "mode": "Mirrored"
+                        }
+                      ],
+                      "Wireframe": false
+                    }
+                  ],
+                  "Children": []
+                }
+              ]
+            }
+          ]
         }
       ]
     }
